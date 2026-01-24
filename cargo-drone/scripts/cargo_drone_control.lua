@@ -1,5 +1,4 @@
 local util = require("util")
-local gd = require("scripts.game_debug")
 local ep = require("scripts.entity_property")
 
 -- Shamelessly stolen from AAI Programmable Vehicles, because I couldn't be bothered doing it myself

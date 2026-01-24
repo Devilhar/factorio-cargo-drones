@@ -1,6 +1,4 @@
 
-local gd = require("scripts.game_debug")
-
 local entity_property = {}
 
 function entity_property.init()
@@ -22,11 +20,11 @@ function entity_property.entity_manage(entity)
 		entity = entity,
 		properties = {}
 	}
-	gd.print("Entity managed: " .. entity.unit_number)
+	print("Entity managed: " .. entity.unit_number)
 end
 function entity_property.entity_unmanage(entity_unit_number)
 	storage.managed_entities_queued_for_removal[entity_unit_number] = true
-	gd.print("Entity queued to unmanage: " .. entity_unit_number)
+	print("Entity queued to unmanage: " .. entity_unit_number)
 end
 
 function entity_property.get_managed_entities()
@@ -35,14 +33,15 @@ end
 
 function entity_property.set_entity_property(entity, property_name, property_value)
     if not storage.managed_entities[entity.unit_number] then
-        gd.error("Tried to set entity property on an unmanaged entity.")
+        print("Error; Tried to set entity property on an unmanaged entity.")
     end
 
     storage.managed_entities[entity.unit_number].properties[property_name] = property_value
 end
 function entity_property.get_entity_property(entity, property_name)
     if not storage.managed_entities[entity.unit_number] then
-        gd.error("Tried to get entity property on an unmanaged entity.")
+        print("Error; Tried to get entity property on an unmanaged entity.")
+
         return
     end
 
@@ -71,7 +70,7 @@ function entity_property.remove_invalid_entities()
 		storage.cargo_drone_requester_mooring[entity_id] = nil
 		storage.cargo_drone_refuel_mooring[entity_id] = nil
 
-		gd.print("Entity unmanaged: " .. entity_id)
+		print("Entity unmanaged: " .. entity_id)
 	end
 end
 

@@ -1,7 +1,6 @@
 
 require("scripts.cargo_drone_control")
 
-local gd = require("scripts.game_debug")
 local ep = require("scripts.entity_property")
 
 local function safe_call(func)
@@ -22,14 +21,6 @@ end
 
 function on_tick(event)
 	safe_call(function()
-		gd.call(function()
-			for _, surface in pairs(game.surfaces) do
-				for _, entity in pairs(surface.find_entities_filtered{ name = "cargo-drone" }) do
-					ep.entity_manage(entity)
-				end
-			end
-		end)
-
 		ep.remove_invalid_entities()
 
 		for entity_id, entity_data in pairs(ep.get_cargo_drones()) do
