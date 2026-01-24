@@ -1,8 +1,8 @@
 
-require("cargo_drone_control")
+require("scripts.cargo_drone_control")
 
-local gd = require("game_debug")
-local ep = require("entity_property")
+local gd = require("scripts.game_debug")
+local ep = require("scripts.entity_property")
 
 local function safe_call(func)
 	local result, err = pcall(func)

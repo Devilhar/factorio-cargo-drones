@@ -1,5 +1,5 @@
 
-local gd = require("game_debug")
+local gd = require("scripts.game_debug")
 
 local entity_property = {}
 

@@ -1,6 +1,6 @@
 local util = require("util")
-local gd = require("game_debug")
-local ep = require("entity_property")
+local gd = require("scripts.game_debug")
+local ep = require("scripts.entity_property")
 
 -- Shamelessly stolen from AAI Programmable Vehicles, because I couldn't be bothered doing it myself
 local function vector_to_orientation_xy(x, y)
