@@ -1,0 +1,9 @@
+{
+  "name": "cargo-drone",
+  "version": "1.0.3",
+  "title": "Cargo Drone",
+  "author": "Devilhar",
+  "factorio_version": "2.0",
+  "dependencies": ["base >= 2.0"],
+  "description": "Adds a cargo drone. Much love <3"
+}
