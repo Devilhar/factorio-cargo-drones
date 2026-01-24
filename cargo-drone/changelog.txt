@@ -1,4 +1,11 @@
 ---------------------------------------------------------------------------------------------------
+Version: 1.0.4
+Date: 24. 01. 2026
+  Changes:
+    - Cargo drones and moorings can no longer be built if the pressure is too low if using Space Age.
+  Bugfixes:
+    - Fixed inconsistent casing in locs.
+---------------------------------------------------------------------------------------------------
 Version: 1.0.3
 Date: 23. 01. 2026
   Changes:
