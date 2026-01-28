@@ -1,7 +1,6 @@
 
-require("scripts.cargo_drone_control")
-
-local ep = require("scripts.entity_property")
+local ep	= require("scripts.entity_property")
+local dc	= require("scripts.drone_controller")
 
 local function safe_call(func)
 	local result, err = pcall(func)
@@ -24,7 +23,7 @@ function on_tick(event)
 		ep.remove_invalid_entities()
 
 		for entity_id, entity_data in pairs(ep.get_cargo_drones()) do
-			tick_cargo_drone(entity_data.entity, event.tick)
+			dc.tick(entity_data.entity, event.tick)
 		end
 	end)
 end

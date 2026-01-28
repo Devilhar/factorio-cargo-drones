@@ -47,6 +47,15 @@ function entity_property.get_entity_property(entity, property_name)
 
     return storage.managed_entities[entity.unit_number].properties[property_name]
 end
+function entity_property.get_entity_properties(entity)
+    if not storage.managed_entities[entity.unit_number] then
+        print("Error; Tried to get entity properties on an unmanaged entity.")
+
+        return
+    end
+
+    return storage.managed_entities[entity.unit_number].properties
+end
 
 function entity_property.remove_invalid_entities()
 	local invalid_entities = storage.managed_entities_queued_for_removal
