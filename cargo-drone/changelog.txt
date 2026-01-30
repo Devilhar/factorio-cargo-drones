@@ -1,4 +1,9 @@
 ---------------------------------------------------------------------------------------------------
+Version: 1.0.5
+Date: 30. 01. 2026
+  Bugfixes:
+    - Fixed Cargo drones not accelerating properly by increasing their fuel consumption and lowering their effectivity
+---------------------------------------------------------------------------------------------------
 Version: 1.0.4
 Date: 24. 01. 2026
   Changes:
