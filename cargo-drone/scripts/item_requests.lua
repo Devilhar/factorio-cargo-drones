@@ -128,13 +128,13 @@ local function get_common_items(requester, requester_items, selected_provider_it
     for item_name, r_quality_count in pairs(requester_items[requester]) do
         for item_quality, r_count in pairs(r_quality_count[item_name]) do
             local p_quality_count = selected_provider_items[item_name]
-           
+
             if not p_quality_count then
                 goto continue
             end
 
             local p_count = p_quality_count[item_quality]
-           
+
             if p_count == nil or p_count <= 0 then
                 goto continue
             end
@@ -142,7 +142,7 @@ local function get_common_items(requester, requester_items, selected_provider_it
             if not items[item_name] then
                 items[item_name] = {}
             end
-            
+
             items[item_name][item_quality] = math.min(r_count, p_count)
 
             ::continue::
@@ -188,7 +188,7 @@ local function next_request()
                 local item_count = selected_name[key_item_quality]
 
                 selected_provider = get_closest_provider(key_requester, key_item_name, key_item_quality, item_count, item_provider_lookup)
-                
+
                 if selected_provider then
                     local request = {}
 
