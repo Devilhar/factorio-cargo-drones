@@ -16,5 +16,7 @@ Notice that the provider and requester moorings don't have any inventory space; 
 
 When a Cargo Drone is waiting at a mooring, you can insert and extract items by inserting into/out of the mooring
 
+You can find an example setup [here](example-setup.md)
+
 **Note**
 Moorings can only have 1 Cargo Drone heading towards them at a time. If a requester mooring require more items than what a Cargo Drone is carrying, no other Cargo Drone will be assigned until the first one is done delivering its cargo.
