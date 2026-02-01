@@ -1,4 +1,13 @@
 ---------------------------------------------------------------------------------------------------
+Version: 1.1.0
+Date: 30. 01. 2026
+  Minor Features:
+    - Cargo drone inventory size can now be changed in the settings.
+    - Moorings can now be the target of several Cargo drones.
+    - Cargo drones will queue and wait for their turn to dock with moorings.
+  Changes:
+    - Improved performance of task assignment and Cargo drones
+---------------------------------------------------------------------------------------------------
 Version: 1.0.5
 Date: 30. 01. 2026
   Bugfixes:
@@ -17,7 +26,7 @@ Date: 23. 01. 2026
     - Moved graphics into graphics directory.
   Bugfixes:
     - Caught errors not being printed correctly.
-    - Fixed Cargo Drones getting stuck if assigned to a mooring they are facing.
+    - Fixed Cargo drones getting stuck if assigned to a mooring they are facing.
 ---------------------------------------------------------------------------------------------------
 Version: 1.0.2
 Date: 22. 01. 2026
@@ -25,13 +34,13 @@ Date: 22. 01. 2026
     - New map icon.
     - Added Changelog.
   Bugfixes:
-    - Enemies will no longer target Cargo Drones.
-    - Moved the alert icon for Cargo Drones to the ground so that it can be seen.
+    - Enemies will no longer target Cargo drones.
+    - Moved the alert icon for Cargo drones to the ground so that it can be seen.
 ---------------------------------------------------------------------------------------------------
 Version: 1.0.1
 Date: 22. 01. 2026
   Bugfixes:
-    - Removed particles from under Cargo Drones when moving.
+    - Removed particles from under Cargo drones when moving.
 ---------------------------------------------------------------------------------------------------
 Version: 1.0.0
 Date: 22. 01. 2026
