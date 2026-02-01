@@ -46,6 +46,14 @@ function entity_property.entity_unmanage(entity_unit_number)
 	print("Entity queued to unmanage: " .. entity_unit_number)
 end
 
+function entity_property.get_managed_entity(unit_number)
+	if not storage.managed_entities[unit_number] then
+		return nil
+	end
+
+	return storage.managed_entities[unit_number].entity
+end
+
 function entity_property.get_managed_entities()
     return storage.managed_entities
 end
