@@ -40,6 +40,18 @@ function entity_property.entity_manage(entity)
 	}
 	print("Entity managed: " .. entity.unit_number)
 end
+function entity_property.entity_unmanage(unit_number)
+	storage.managed_entities[unit_number] = nil
+	storage.cargo_drones[unit_number] = nil
+	storage.cargo_drone_provider_mooring[unit_number] = nil
+	storage.cargo_drone_requester_mooring[unit_number] = nil
+	storage.cargo_drone_refuel_mooring[unit_number] = nil
+
+	print("Entity unmanaged: " .. unit_number)
+end
+function entity_property.is_managed(unit_number)
+	return storage.managed_entities[unit_number] ~= nil
+end
 
 function entity_property.get_managed_entity(unit_number)
 	if not storage.managed_entities[unit_number] then

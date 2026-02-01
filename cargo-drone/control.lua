@@ -4,6 +4,9 @@ local dc	= require("scripts.drone_controller")
 local dt	= require("scripts.drone_tasks")
 local rc    = require("scripts.requester_cooldown")
 
+local current_mod_state = 1
+local should_migrate = false
+
 local function safe_call(func)
 	local result, err = pcall(func)
 
@@ -14,31 +17,64 @@ local function safe_call(func)
 	game.print(err)
 end
 
+local function unmanage_entity(unit_number)
+	if ep.is_cargo_drone(unit_number) then
+		dt.drone_destroyed(unit_number)
+	elseif ep.is_provider_mooring(unit_number)
+		or ep.is_requester_mooring(unit_number)
+		or ep.is_refueler_mooring(unit_number) then
+		dt.mooring_destroyed(unit_number)
+	end
+
+	ep.entity_unmanage(unit_number)
+end
+
+local function resetup_object_events()
+	local removal = {}
+
+	for unit_number, entity_data in pairs(ep.get_managed_entities()) do
+		if entity_data.entity.valid then
+			script.register_on_object_destroyed(entity_data.entity)
+		else
+			table.insert(removal, unit_number)
+		end
+	end
+
+	for _, unit_number in ipairs(removal) do
+		unmanage_entity(unit_number)
+	end
+end
+
+local function migrate_state()
+	log("Migrating cargo-drone state...")
+
+	storage.mod_state = current_mod_state
+
+	resetup_object_events()
+	
+	log("cargo-drone state migration complete")
+end
+
 function on_init()
 	safe_call(function()
 		ep.init()
 	end)
 end
 
+function on_load(event)
+	if storage.mod_state == current_mod_state then
+		return
+	end
+
+	should_migrate = true
+end
+
 function on_tick(event)
 	safe_call(function()
-		local invalid_entities = {}
-
-		for unit_number, entity_data in pairs(ep.get_managed_entities()) do
-			if not entity_data.entity.valid then
-				invalid_entities[unit_number] = true
-
-				if ep.is_cargo_drone(unit_number) then
-					dt.drone_destroyed(unit_number)
-				elseif ep.is_provider_mooring(unit_number)
-					or ep.is_requester_mooring(unit_number)
-					or ep.is_refueler_mooring(unit_number) then
-					dt.mooring_destroyed(unit_number)
-				end
-			end
+		if should_migrate then
+			migrate_state()
+			should_migrate = false
 		end
-
-		ep.remove_entities(invalid_entities)
 
 		rc.tick()
 
@@ -46,10 +82,19 @@ function on_tick(event)
 	end)
 end
 
+function on_object_destroyed(event)
+	if not ep.is_managed(event.useful_id) then
+		return
+	end
+
+	unmanage_entity(event.useful_id)
+end
+
 function on_built_entity(event)
 	safe_call(function()
 		ep.entity_manage(event.entity)
 
+		script.register_on_object_destroyed(event.entity)
 		if event.entity.name == "cargo-drone" then
 			ep.add_cargo_drone(event.entity)
 		elseif event.entity.name == "cargo-drone-provider-mooring" then
@@ -70,7 +115,9 @@ function on_built_entity(event)
 end
 
 script.on_init(on_init)
+script.on_load(on_load)
 script.on_event(defines.events.on_tick, on_tick)
+script.on_event(defines.events.on_object_destroyed, on_object_destroyed)
 
 local build_events = {
 	defines.events.on_built_entity,
