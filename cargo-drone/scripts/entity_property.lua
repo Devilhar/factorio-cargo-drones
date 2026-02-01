@@ -1,4 +1,23 @@
 
+local function get_entity_property_from_unit_number(unit_number, property_name)
+    if not storage.managed_entities[unit_number] then
+        print("Error; Tried to get entity property on an unmanaged entity.")
+
+        return
+    end
+
+    return storage.managed_entities[unit_number].properties[property_name]
+end
+local function get_entity_properties_from_unit_number(unit_number)
+    if not storage.managed_entities[unit_number] then
+        print("Error; Tried to get entity properties on an unmanaged entity.")
+
+        return
+    end
+
+    return storage.managed_entities[unit_number].properties
+end
+
 local entity_property = {}
 
 function entity_property.init()
@@ -39,13 +58,16 @@ function entity_property.set_entity_property(entity, property_name, property_val
     storage.managed_entities[entity.unit_number].properties[property_name] = property_value
 end
 function entity_property.get_entity_property(entity, property_name)
-    if not storage.managed_entities[entity.unit_number] then
-        print("Error; Tried to get entity property on an unmanaged entity.")
-
-        return
-    end
-
-    return storage.managed_entities[entity.unit_number].properties[property_name]
+    return get_entity_property_from_unit_number(entity.unit_number, property_name)
+end
+function entity_property.get_entity_property_from_unit_number(unit_number, property_name)
+	return get_entity_property_from_unit_number(unit_number, property_name)
+end
+function entity_property.get_entity_properties(entity)
+    return get_entity_properties_from_unit_number(entity.unit_number)
+end
+function entity_property.get_entity_properties_from_unit_number(unit_number)
+    return get_entity_properties_from_unit_number(unit_number)
 end
 
 function entity_property.remove_invalid_entities()
