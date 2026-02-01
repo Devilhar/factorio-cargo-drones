@@ -22,7 +22,6 @@ local entity_property = {}
 
 function entity_property.init()
     storage.managed_entities = storage.managed_entities or {}
-	storage.managed_entities_queued_for_removal = storage.managed_entities_queued_for_removal or {}
 
     storage.cargo_drones = storage.cargo_drones or {}
     storage.cargo_drone_provider_mooring = storage.cargo_drone_provider_mooring or {}
@@ -41,10 +40,6 @@ function entity_property.entity_manage(entity)
 	}
 	print("Entity managed: " .. entity.unit_number)
 end
-function entity_property.entity_unmanage(entity_unit_number)
-	storage.managed_entities_queued_for_removal[entity_unit_number] = true
-	print("Entity queued to unmanage: " .. entity_unit_number)
-end
 
 function entity_property.get_managed_entity(unit_number)
 	if not storage.managed_entities[unit_number] then
@@ -56,6 +51,19 @@ end
 
 function entity_property.get_managed_entities()
     return storage.managed_entities
+end
+
+function entity_property.is_cargo_drone(unit_number)
+	return storage.cargo_drones[unit_number] ~= nil
+end
+function entity_property.is_provider_mooring(unit_number)
+	return storage.cargo_drone_provider_mooring[unit_number] ~= nil
+end
+function entity_property.is_requester_mooring(unit_number)
+	return storage.cargo_drone_requester_mooring[unit_number] ~= nil
+end
+function entity_property.is_refueler_mooring(unit_number)
+	return storage.cargo_drone_refuel_mooring[unit_number] ~= nil
 end
 
 function entity_property.set_entity_property(entity, property_name, property_value)
@@ -78,29 +86,19 @@ function entity_property.get_entity_properties_from_unit_number(unit_number)
     return get_entity_properties_from_unit_number(unit_number)
 end
 
-function entity_property.remove_invalid_entities()
-	local invalid_entities = storage.managed_entities_queued_for_removal
-
-	storage.managed_entities_queued_for_removal = {}
-
-    for entity_id, entity_data in pairs(storage.managed_entities) do
-		if not entity_data.entity.valid then
-			invalid_entities[entity_id] = true
-		end
-	end
-
-	for entity_id in pairs(invalid_entities) do
-		if storage.managed_entities[entity_id] and storage.managed_entities[entity_id].properties["render_obj"] then
-			storage.managed_entities[entity_id].properties["render_obj"].destroy()
+function entity_property.remove_entities(entities)
+	for unit_number in pairs(entities) do
+		if storage.managed_entities[unit_number] and storage.managed_entities[unit_number].properties["render_obj"] then
+			storage.managed_entities[unit_number].properties["render_obj"].destroy()
 		end
 
-		storage.managed_entities[entity_id] = nil
-		storage.cargo_drones[entity_id] = nil
-		storage.cargo_drone_provider_mooring[entity_id] = nil
-		storage.cargo_drone_requester_mooring[entity_id] = nil
-		storage.cargo_drone_refuel_mooring[entity_id] = nil
+		storage.managed_entities[unit_number] = nil
+		storage.cargo_drones[unit_number] = nil
+		storage.cargo_drone_provider_mooring[unit_number] = nil
+		storage.cargo_drone_requester_mooring[unit_number] = nil
+		storage.cargo_drone_refuel_mooring[unit_number] = nil
 
-		print("Entity unmanaged: " .. entity_id)
+		print("Entity unmanaged: " .. unit_number)
 	end
 end
 

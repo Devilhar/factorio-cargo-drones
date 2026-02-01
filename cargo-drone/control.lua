@@ -1,7 +1,8 @@
 
-require("scripts.cargo_drone_control")
-
-local ep = require("scripts.entity_property")
+local ep	= require("scripts.entity_property")
+local dc	= require("scripts.drone_controller")
+local dt	= require("scripts.drone_tasks")
+local rc    = require("scripts.requester_cooldown")
 
 local function safe_call(func)
 	local result, err = pcall(func)
@@ -21,11 +22,27 @@ end
 
 function on_tick(event)
 	safe_call(function()
-		ep.remove_invalid_entities()
+		local invalid_entities = {}
 
-		for entity_id, entity_data in pairs(ep.get_cargo_drones()) do
-			tick_cargo_drone(entity_data.entity, event.tick)
+		for unit_number, entity_data in pairs(ep.get_managed_entities()) do
+			if not entity_data.entity.valid then
+				invalid_entities[unit_number] = true
+
+				if ep.is_cargo_drone(unit_number) then
+					dt.drone_destroyed(unit_number)
+				elseif ep.is_provider_mooring(unit_number)
+					or ep.is_requester_mooring(unit_number)
+					or ep.is_refueler_mooring(unit_number) then
+					dt.mooring_destroyed(unit_number)
+				end
+			end
 		end
+
+		ep.remove_entities(invalid_entities)
+
+		rc.tick()
+
+		dc.tick(event.tick)
 	end)
 end
 
