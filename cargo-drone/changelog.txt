@@ -1,6 +1,6 @@
 ---------------------------------------------------------------------------------------------------
 Version: 1.1.0
-Date: 30. 01. 2026
+Date: 02. 02. 2026
   Minor Features:
     - Cargo drone inventory size can now be changed in the settings.
     - Moorings can now be the target of several Cargo drones.
