@@ -5,6 +5,8 @@ local ep    = require("scripts.entity_property")
 local dt    = require("scripts.drone_tasks")
 local rc    = require("scripts.requester_cooldown")
 
+local max_scans_per_tick = 10
+
 local function get_item_signals(requester)
     local requester_signals = requester.get_signals(defines.wire_connector_id.circuit_red, defines.wire_connector_id.circuit_green)
 
@@ -152,7 +154,13 @@ local function get_common_items(requester, requester_items, selected_provider_it
     return items
 end
 
+local update_stage = 0
+
 local surface_buffer = {}
+local provider_buffer = {}
+local requester_buffer = {}
+
+local buffer_key = nil
 
 local function try_create_and_get_surface_buffer(surface_index)
     if not surface_buffer[surface_index] then
@@ -176,7 +184,112 @@ local function try_create_and_get_surface_buffer(surface_index)
     return surface_buffer[surface_index]
 end
 
-local function next_request(surface_index)
+local function transfer_items_in_buffer(provider, requester, items)
+    local sb_provider = try_create_and_get_surface_buffer(provider.surface.index)
+    local sb_requester = try_create_and_get_surface_buffer(requester.surface.index)
+
+    for _, item in ipairs(items) do
+        sb_provider.item_provider_lookup[item.name][item.quality][provider] = sb_provider.item_provider_lookup[item.name][item.quality][provider] - item.count
+        sb_provider.provider_items[provider][item.name][item.quality]       = sb_provider.provider_items[provider][item.name][item.quality] - item.count
+        sb_requester.requester_items[requester][item.name][item.quality]    = sb_requester.requester_items[requester][item.name][item.quality] - item.count
+    end
+end
+
+local function requester_has_item_requests(items, requester_items)
+    for _, item in ipairs(items) do
+        -- Being extra strict, so that it doesn't overstock somewhere by mistake. Could be an issue for more expensive items
+        -- Probably better to just notify the player than hide them somewhere in the network.
+        if not requester_items[item.name]
+            or not requester_items[item.name][item.quality]
+            or requester_items[item.name][item.quality] < item.count then
+            return false
+        end
+    end
+
+    return true
+end
+
+local item_requests = {}
+
+function item_requests.begin_update_items()
+    update_stage = 0
+
+    surface_buffer = {}
+    provider_buffer = {}
+    requester_buffer = {}
+
+    buffer_key = nil
+
+    local providers = ep.get_cargo_drone_provider_moorings()
+    local requesters = ep.get_cargo_drone_requester_moorings()
+
+    for provider_id, provider_data in pairs(providers) do
+        provider_buffer[provider_id] = provider_data.entity
+    end
+    for requester_id, requester_data in pairs(requesters) do
+        requester_buffer[requester_id] = requester_data.entity
+    end
+end
+
+function item_requests.update_items()
+    local scans = 0
+
+    if update_stage == 0 then
+        local provider = nil
+
+        repeat
+            buffer_key, provider = next(provider_buffer, buffer_key)
+
+            if not buffer_key then
+                break
+            end
+
+            if provider.valid then
+                local sb = try_create_and_get_surface_buffer(provider.surface.index)
+
+                add_items(provider, sb.provider_items, sb.item_provider_lookup)
+            end
+
+            scans = scans + 1
+        until scans >= max_scans_per_tick
+
+        if buffer_key == nil then
+            update_stage = 1
+        end
+    end
+
+    if update_stage == 0 then
+        return false
+    end
+
+    if scans >= max_scans_per_tick then
+        return false
+    end
+
+    local requester = nil
+
+    repeat
+        buffer_key, requester = next(requester_buffer, buffer_key)
+
+        if not buffer_key then
+            break
+        end
+
+        if requester.valid then
+            if not rc.is_on_cooldown(buffer_key) then
+                local sb = try_create_and_get_surface_buffer(requester.surface.index)
+
+                add_items(requester, sb.requester_items, sb.item_requester_lookup)
+            end
+        end
+
+        scans = scans + 1
+    until scans >= max_scans_per_tick
+
+    return buffer_key == nil
+end
+
+function item_requests.get_next_item_request(surface_index)
     local sb = surface_buffer[surface_index]
 
     if not sb then
@@ -241,32 +354,7 @@ local function next_request(surface_index)
     return nil
 end
 
-local function transfer_items_in_buffer(provider, requester, items)
-    local sb_provider = try_create_and_get_surface_buffer(provider.surface.index)
-    local sb_requester = try_create_and_get_surface_buffer(requester.surface.index)
-
-    for _, item in ipairs(items) do
-        sb_provider.item_provider_lookup[item.name][item.quality][provider] = sb_provider.item_provider_lookup[item.name][item.quality][provider] - item.count
-        sb_provider.provider_items[provider][item.name][item.quality]       = sb_provider.provider_items[provider][item.name][item.quality] - item.count
-        sb_requester.requester_items[requester][item.name][item.quality]    = sb_requester.requester_items[requester][item.name][item.quality] - item.count
-    end
-end
-
-local function requester_has_item_requests(items, requester_items)
-    for _, item in ipairs(items) do
-        -- Being extra strict, so that it doesn't overstock somewhere by mistake. Could be an issue for more expensive items
-        -- Probably better to just notify the player than hide them somewhere in the network.
-        if not requester_items[item.name]
-            or not requester_items[item.name][item.quality]
-            or requester_items[item.name][item.quality] < item.count then
-            return false
-        end
-    end
-
-    return true
-end
-
-local function assign_to_request_with_items(drone)
+function item_requests.assign_to_request_with_items(drone)
     local inventory = drone.get_inventory(defines.inventory.car_trunk)
 
     local items = inventory.get_contents()
@@ -307,8 +395,9 @@ local function assign_to_request_with_items(drone)
 
         if item_stack.valid_for_read then
             inventory_filters[slot_index] = { name = item_stack.name, quality = item_stack.quality }
+            inventory.set_filter(slot_index, { name = item_stack.name, quality = item_stack.quality })
         else
-            inventory_filters[slot_index] = { name = "red-wire", quality = "normal" }
+            inventory.set_filter(slot_index, { name = "red-wire", quality = "normal" })
         end
     end
 
@@ -319,36 +408,6 @@ local function assign_to_request_with_items(drone)
     for _, item in ipairs(items) do
         sb_requester.requester_items[selected_requester][item.name][item.quality] = sb_requester.requester_items[selected_requester][item.name][item.quality] - item.count
     end
-end
-
-local item_requests = {}
-
-function item_requests.update_items()
-    surface_buffer = {}
-
-    local providers = ep.get_cargo_drone_provider_moorings()
-    local requesters = ep.get_cargo_drone_requester_moorings()
-
-    for provider_id, provider_data in pairs(providers) do
-        local sb = try_create_and_get_surface_buffer(provider_data.entity.surface.index)
-
-        add_items(provider_data.entity, sb.provider_items, sb.item_provider_lookup)
-    end
-    for requester_id, requester_data in pairs(requesters) do
-        if not rc.is_on_cooldown(requester_id) then
-            local sb = try_create_and_get_surface_buffer(requester_data.entity.surface.index)
-
-            add_items(requester_data.entity, sb.requester_items, sb.item_requester_lookup)
-        end
-    end
-end
-
-function item_requests.get_next_item_request(surface_index)
-    return next_request(surface_index)
-end
-
-function item_requests.assign_to_request_with_items(drone)
-    assign_to_request_with_items(drone)
 end
 
 function item_requests.assign_item_request(drone, item_request)
@@ -373,6 +432,7 @@ function item_requests.assign_item_request(drone, item_request)
 
 		while count > 0 and slot_index <= slot_count do
 			inventory_filters[slot_index] = { name = item_name, quality = item_quality }
+            inventory.set_filter(slot_index, { name = item_name, quality = item_quality })
 			added = added + math.min(count, stack_size)
 
 			count = count - stack_size
@@ -392,9 +452,9 @@ function item_requests.assign_item_request(drone, item_request)
 		end
 	end
 
-	for i = slot_index, slot_count do
-		inventory_filters[i] = { name = "red-wire", quality = "normal" }
-	end
+    for i = slot_index, slot_count do
+        inventory.set_filter(i, { name = "red-wire", quality = "normal" })
+    end
 
 	transfer_items_in_buffer(item_request.provider, item_request.requester, items_to_fetch)
 	dt.assign_cargo(drone, item_request.provider, item_request.requester, items_to_fetch, inventory_filters)
