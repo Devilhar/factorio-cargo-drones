@@ -7,6 +7,11 @@ local ir	= require("scripts.item_requests")
 local rc    = require("scripts.requester_cooldown")
 
 local drone_queue_distance = 20
+local random_tick_interval = 60
+local min_task_assign_interval = 60
+
+local update_state = 0
+local last_assign_tick = 0
 
 -- Shamelessly stolen from AAI Programmable Vehicles, because I couldn't be bothered doing it myself
 -- Begin steal mode
@@ -220,29 +225,41 @@ local function drone_goto_and_dock_with_mooring(drone, state, mooring, inventory
 end
 
 local function perform_task_none(drone, state, game_tick)
-    local inventory = drone.get_inventory(defines.inventory.car_trunk)
+    if game_tick % random_tick_interval == drone.unit_number % random_tick_interval then
+        local inventory = drone.get_inventory(defines.inventory.car_trunk)
 
-    for i = 1, #inventory do
-        inventory.set_filter(i, nil)
-    end
+        for i = 1, #inventory do
+            inventory.set_filter(i, nil)
+        end
 
-    if not inventory.is_empty() then
-        send_alert(drone, "signal-lock", "cargo-drone-alerts.invalid-items")
-    end
+        if not inventory.is_empty() then
+            send_alert(drone, "signal-lock", "cargo-drone-alerts.invalid-items")
+        end
 
-    if drone.burner.remaining_burning_fuel > 0 or not drone.burner.inventory.is_empty() then
-        check_refuel(drone)
+        if drone.burner.remaining_burning_fuel > 0 or not drone.burner.inventory.is_empty() then
+            check_refuel(drone)
+        end
     end
 end
 local function perform_task_cargo(drone, state, task, game_tick)
-    if drone.burner.remaining_burning_fuel <= 0 and drone.burner.inventory.is_empty() then
-        send_alert(drone, "signal-fuel", "cargo-drone-alerts.no-fuel")
-    end
-
     local inventory = drone.get_inventory(defines.inventory.car_trunk)
 
-    for slot_index, filter in ipairs(task.inventory_filters) do
-        inventory.set_filter(slot_index, filter)
+    if game_tick % random_tick_interval == drone.unit_number % random_tick_interval then
+        if drone.burner.remaining_burning_fuel <= 0 and drone.burner.inventory.is_empty() then
+            send_alert(drone, "signal-fuel", "cargo-drone-alerts.no-fuel")
+        end
+
+        local inventory = drone.get_inventory(defines.inventory.car_trunk)
+
+        for slot_index = 1, #inventory do
+            local filter = task.inventory_filters[slot_index]
+
+            if filter ~= nil then
+                inventory.set_filter(slot_index, filter)
+            else
+                inventory.set_filter(slot_index, { name = "red-wire", quality = "normal" })
+            end
+        end
     end
 
     if task.provider_unit_number ~= nil then
@@ -255,8 +272,10 @@ local function perform_task_cargo(drone, state, task, game_tick)
         return true
     end
 
-    if check_refuel(drone) then
-        return false
+    if game_tick % random_tick_interval == drone.unit_number % random_tick_interval then
+        if check_refuel(drone) then
+            return false
+        end
     end
 
     local mooring_target = nil
@@ -272,8 +291,10 @@ local function perform_task_cargo(drone, state, task, game_tick)
     return false
 end
 local function perform_task_refuel(drone, state, task, game_tick)
-    if drone.burner.remaining_burning_fuel <= 0 and drone.burner.inventory.is_empty() then
-        send_alert(drone, "signal-fuel", "cargo-drone-alerts.no-fuel")
+    if game_tick % random_tick_interval == drone.unit_number % random_tick_interval then
+        if drone.burner.remaining_burning_fuel <= 0 and drone.burner.inventory.is_empty() then
+            send_alert(drone, "signal-fuel", "cargo-drone-alerts.no-fuel")
+        end
     end
 
     local fuel_inventory = drone.get_inventory(defines.inventory.fuel)
@@ -289,11 +310,6 @@ local function perform_task_refuel(drone, state, task, game_tick)
     return false
 end
 
-local state_machine = {
-    [dt.task_types.cargo]    = perform_task_cargo,
-    [dt.task_types.refuel]   = perform_task_refuel
-}
-
 local function get_current_task(drone)
     local current_task_id = dt.get_current_drone_task_id(drone)
 
@@ -304,28 +320,40 @@ local function get_current_task(drone)
     return dt.get(current_task_id)
 end
 
+local state = {
+    riding_state = { acceleration = defines.riding.acceleration.braking, direction = defines.riding.direction.straight },
+    docked_mooring = { target_entity = nil, inventory = nil },
+    docking_mooring = nil
+}
+
 local function tick_drone(drone, game_tick)
     local current_task = get_current_task(drone)
-    local state = {
-        riding_state = { acceleration = defines.riding.acceleration.braking, direction = defines.riding.direction.straight },
-        docked_mooring = { target_entity = nil, inventory = nil },
-        docking_mooring = nil
-    }
+    state.riding_state.acceleration = defines.riding.acceleration.braking
+    state.riding_state.direction = defines.riding.direction.straight
+    state.docked_mooring.target_entity = nil
+    state.docked_mooring.inventory = nil
+    state.docking_mooring = nil
 
     if not current_task then
         perform_task_none(drone, state, game_tick)
-    else
-        local completed = state_machine[current_task.type](drone, state, current_task, game_tick)
+    elseif current_task.type == dt.task_types.cargo then
+        local completed = perform_task_cargo(drone, state, current_task, game_tick)
+
+        if completed then
+            complete_task(drone, current_task.id)
+        end
+    elseif current_task.type == dt.task_types.refuel then
+        local completed = perform_task_refuel(drone, state, current_task, game_tick)
 
         if completed then
             complete_task(drone, current_task.id)
         end
     end
 
+    drone.riding_state = state.riding_state
+
     local old_docked_mooring = ep.get_entity_property(drone, "docked_mooring")
     local old_docking_mooring = ep.get_entity_property(drone, "docking_mooring")
-
-    drone.riding_state = state.riding_state
 
     if old_docked_mooring and old_docked_mooring ~= state.docked_mooring.target_entity then
         if old_docked_mooring.valid and old_docked_mooring.proxy_target_entity == drone then
@@ -358,59 +386,77 @@ end
 local drone_controller = {}
 
 function drone_controller.tick(game_tick)
-    local idling_cargo_drones = {}
-    local idling_cargo_drones_with_cargo = {}
+    if update_state == 0 then
+        update_state = 1
+        ir.begin_update_items()
+    end
+
+    if update_state == 1 then
+        if ir.update_items() then
+            update_state = 2
+        end
+    end
+
+    if update_state == 2 and game_tick >= last_assign_tick + min_task_assign_interval then
+        local idling_cargo_drones = {}
+        local idling_cargo_drones_with_cargo = {}
+        
+        for unit_number, entity_data in pairs(ep.get_cargo_drones()) do
+            if not dt.get_current_drone_task_id(entity_data.entity) then
+                local surface_index = entity_data.entity.surface.index
+
+                local inventory = entity_data.entity.get_inventory(defines.inventory.car_trunk)
+
+                if inventory.is_empty() then
+                    if not idling_cargo_drones[surface_index] then
+                        idling_cargo_drones[surface_index] = {}
+                    end
+
+                    table.insert(idling_cargo_drones[surface_index], entity_data.entity)
+                else
+                    if not idling_cargo_drones_with_cargo[surface_index] then
+                        idling_cargo_drones_with_cargo[surface_index] = {}
+                    end
+
+                    table.insert(idling_cargo_drones_with_cargo[surface_index], entity_data.entity)
+                end
+            end
+
+            tick_drone(entity_data.entity, game_tick)
+        end
+
+        for _, drones in pairs(idling_cargo_drones_with_cargo) do
+            for _, drone in ipairs(drones) do
+                ir.assign_to_request_with_items(drone)
+            end
+        end
+
+        for surface_index, drones in pairs(idling_cargo_drones) do
+            while next(drones) ~= nil do
+                local item_request = ir.get_next_item_request(surface_index)
+
+                if not item_request then
+                    break
+                end
+
+                local closest_index = get_closest_drone_to_mooring(drones, item_request.provider)
+
+                if closest_index ~= nil then
+                    local drone = drones[closest_index]
+
+                    table.remove(drones, closest_index)
+
+                    ir.assign_item_request(drone, item_request)
+                end
+            end
+        end
+
+        last_assign_tick = game_tick
+        update_state = 0
+    end
 
     for unit_number, entity_data in pairs(ep.get_cargo_drones()) do
-        if not dt.get_current_drone_task_id(entity_data.entity) then
-            local surface_index = entity_data.entity.surface.index
-
-            local inventory = entity_data.entity.get_inventory(defines.inventory.car_trunk)
-
-            if inventory.is_empty() then
-                if not idling_cargo_drones[surface_index] then
-                    idling_cargo_drones[surface_index] = {}
-                end
-
-                table.insert(idling_cargo_drones[surface_index], entity_data.entity)
-            else
-                if not idling_cargo_drones_with_cargo[surface_index] then
-                    idling_cargo_drones_with_cargo[surface_index] = {}
-                end
-
-                table.insert(idling_cargo_drones_with_cargo[surface_index], entity_data.entity)
-            end
-        end
-
         tick_drone(entity_data.entity, game_tick)
-    end
-
-    ir.update_items()
-
-    for _, drones in pairs(idling_cargo_drones_with_cargo) do
-        for _, drone in ipairs(drones) do
-            ir.assign_to_request_with_items(drone)
-        end
-    end
-
-    for surface_index, drones in pairs(idling_cargo_drones) do
-        while next(drones) ~= nil do
-            local item_request = ir.get_next_item_request(surface_index)
-
-            if not item_request then
-                break
-            end
-
-            local closest_index = get_closest_drone_to_mooring(drones, item_request.provider)
-
-            if closest_index ~= nil then
-                local drone = drones[closest_index]
-
-                table.remove(drones, closest_index)
-
-                ir.assign_item_request(drone, item_request)
-            end
-        end
     end
 end
 
