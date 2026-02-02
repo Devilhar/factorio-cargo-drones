@@ -119,12 +119,12 @@ local function send_alert(drone, name, loc_id)
     end
 end
 
-local function get_closest_to_entity(entity_table, entity)
+local function get_closest_valid_mooring_to_entity(mooring_table, entity)
     local closest_entity = nil
     local closest_distance = 30000000 -- Longer than moving from one corner to the other, and then multiplied by 10 for good measure
 
-    for id, data in pairs(entity_table) do
-        if entity.surface.index == data.entity.surface.index then
+    for id, data in pairs(mooring_table) do
+        if entity.surface.index == data.entity.surface.index and not dt.is_at_target_limit(data.entity) then
             local distance = util.distance(entity.position, data.entity.position)
 
             if distance < closest_distance then
@@ -170,7 +170,7 @@ local function check_refuel(drone)
         return false
     end
 
-    local refueler = get_closest_to_entity(ep.get_cargo_drone_refuel_moorings(), drone)
+    local refueler = get_closest_valid_mooring_to_entity(ep.get_cargo_drone_refuel_moorings(), drone)
 
     if not refueler then
         return false
@@ -388,11 +388,11 @@ local drone_controller = {}
 function drone_controller.tick(game_tick)
     if update_state == 0 then
         update_state = 1
-        ir.begin_update_items()
+        ir.begin_update()
     end
 
     if update_state == 1 then
-        if ir.update_items() then
+        if ir.run_update() then
             update_state = 2
         end
     end

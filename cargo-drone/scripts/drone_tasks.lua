@@ -6,6 +6,8 @@ local task_types = {
     refuel  = 2
 }
 
+local target_limit_signal_id = { type = "virtual", name = "signal-L" }
+
 local function generate_next_id()
     local id = storage.tasks_next_id or 1
 
@@ -19,6 +21,16 @@ local function get_tasks()
     end
 
     return storage.drone_tasks
+end
+
+local function get_element_count(table)
+    local count = 0
+
+    for _, _ in pairs(table) do
+        count = count + 1
+    end
+
+    return count
 end
 
 local function assign_task_drone(drone_unit_number, task_id)
@@ -58,8 +70,12 @@ local function assign_task_mooring(mooring_unit_number, task_id)
     if not properties.task_ids then
         properties.task_ids = {}
     end
+    if not properties.task_target_count then
+        properties.task_target_count = 0
+    end
 
     properties.task_ids[task_id] = true
+    properties.task_target_count = properties.task_target_count + 1
 end
 local function unassign_task_mooring(mooring_unit_number, task_id)
     local properties = ep.get_entity_properties_from_unit_number(mooring_unit_number)
@@ -69,10 +85,22 @@ local function unassign_task_mooring(mooring_unit_number, task_id)
     end
 
     properties.task_ids[task_id] = nil
+    properties.task_target_count = properties.task_target_count - 1
 
     if next(properties.task_ids) == nil then
         properties.task_ids = nil
+        properties.task_target_count = nil
     end
+end
+
+local function recount_mooring_targets(mooring_unit_number)
+    local properties = ep.get_entity_properties_from_unit_number(mooring_unit_number)
+
+    if not properties.task_ids then
+        return
+    end
+
+    properties.task_target_count = get_element_count(properties.task_ids)
 end
 
 local function remove_and_cleanup_task(task_id)
@@ -171,12 +199,38 @@ function drone_tasks.remove_invalid_tasks()
     log("Removed " .. remove_count .. " invalid Cargo drone tasks")
 end
 
+function drone_tasks.recount_task_targets()
+    for _, task in pairs(get_tasks()) do
+        if task.provider_unit_number ~= nil then
+            recount_mooring_targets(task.provider_unit_number)
+        end
+        if task.requester_unit_number ~= nil then
+            recount_mooring_targets(task.requester_unit_number)
+        end
+        if task.refueler_unit_number ~= nil then
+            recount_mooring_targets(task.refueler_unit_number)
+        end
+    end
+end
+
 function drone_tasks.is_valid(id)
     return get_tasks()[id] ~= nil
 end
 
 function drone_tasks.get(id)
     return get_tasks()[id]
+end
+
+function drone_tasks.is_at_target_limit(mooring)
+    local limit_signal = mooring.get_signal(target_limit_signal_id, defines.wire_connector_id.circuit_red, defines.wire_connector_id.circuit_green)
+
+    if limit_signal == 0 then
+        return false
+    end
+
+    local target_count = ep.get_entity_property(mooring, "task_target_count") or 0
+
+    return target_count >= limit_signal
 end
 
 function drone_tasks.assign_cargo(drone, provider, requester, items, inventory_filters)
@@ -269,6 +323,7 @@ function drone_tasks.mooring_destroyed(unit_number)
     local task_ids = properties.task_ids
 
     properties.task_ids = nil
+    properties.task_target_count = nil
 
     for task_id, _ in pairs(task_ids) do
         remove_and_cleanup_task(task_id)
