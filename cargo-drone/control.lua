@@ -4,7 +4,7 @@ local dc	= require("scripts.drone_controller")
 local dt	= require("scripts.drone_tasks")
 local rc    = require("scripts.requester_cooldown")
 
-local current_mod_state = 1
+local current_mod_state = 2
 local should_migrate = false
 
 local function safe_call(func)
@@ -48,10 +48,17 @@ end
 local function migrate_state()
 	log("Migrating cargo-drone state...")
 
+	local old_mod_state = storage.mod_state or 0
+
 	storage.mod_state = current_mod_state
 
-	resetup_object_events()
-	
+	if old_mod_state < 1 then
+		resetup_object_events()
+	end
+	if old_mod_state < 2 then
+		dt.remove_invalid_tasks()
+	end
+
 	log("cargo-drone state migration complete")
 end
 

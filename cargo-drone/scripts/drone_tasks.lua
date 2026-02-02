@@ -84,6 +84,8 @@ local function remove_and_cleanup_task(task_id)
         return
     end
 
+    tasks[task_id] = nil
+
     if task.drone_unit_number ~= nil then
         unassign_task_drone(task.drone_unit_number, task_id)
     end
@@ -101,6 +103,73 @@ end
 local drone_tasks = {}
 
 drone_tasks.task_types = task_types
+
+function drone_tasks.remove_invalid_tasks()
+    local function is_drone_valid(unit_number, task_id)
+        if unit_number == nil then
+            return false
+        end
+
+        local entity = ep.get_managed_entity(unit_number)
+
+        if not entity or not entity.valid then
+            return false
+        end
+
+        local task_ids = ep.get_entity_property(entity, "task_ids")
+
+        if not task_ids then
+            return false
+        end
+
+        for _, id in ipairs(task_ids) do
+            if id == task_id then
+                return true
+            end
+        end
+
+        return false
+    end
+    local function is_mooring_valid(unit_number, task_id)
+        if unit_number == nil then
+            return true
+        end
+
+        local entity = ep.get_managed_entity(unit_number)
+
+        if not entity or not entity.valid then
+            return false
+        end
+
+        local task_ids = ep.get_entity_property(entity, "task_ids")
+
+        if not task_ids or not task_ids[task_id] then
+            return false
+        end
+
+        return true
+    end
+
+    local tasks = get_tasks()
+    local removal = {}
+    local remove_count = 0
+
+    for task_id, task in pairs(get_tasks()) do
+        if not is_drone_valid(task.drone_unit_number, task_id)
+            or not is_mooring_valid(task.provider_unit_number, task_id)
+            or not is_mooring_valid(task.requester_unit_number, task_id)
+            or not is_mooring_valid(task.refueler_unit_number, task_id) then
+            table.insert(removal, task_id)
+            remove_count = remove_count + 1
+        end
+    end
+
+    for _, task_id in ipairs(removal) do
+        tasks[task_id] = nil
+    end
+    
+    log("Removed " .. remove_count .. " invalid Cargo drone tasks")
+end
 
 function drone_tasks.is_valid(id)
     return get_tasks()[id] ~= nil
