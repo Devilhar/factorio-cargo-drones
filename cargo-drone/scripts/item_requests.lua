@@ -109,7 +109,7 @@ local function get_closest_provider(requester, item_name, item_quality, item_pro
     local closest_distance = 30000000 -- Longer than moving from one corner to the other, and then multiplied by 10 for good measure
 
     for provider, count in pairs(providers) do
-        if count > 0 then
+        if count > 0 and provider.valid then
             if provider.surface.index == requester.surface.index then
                 local distance = util.distance(provider.position, requester.position)
 
@@ -310,6 +310,7 @@ function item_requests.get_next_item_request(surface_index)
     sb.key_requester = next(sb.requester_items, sb.key_requester)
 
     while sb.key_requester do
+        if sb.key_requester.valid then
         local selected_requester = sb.requester_items[sb.key_requester]
 
         sb.key_item_name = next(selected_requester, sb.key_item_name)
@@ -344,6 +345,7 @@ function item_requests.get_next_item_request(surface_index)
             end
 
             sb.key_item_name = next(selected_requester, sb.key_item_name)
+            end
         end
 
         sb.key_requester = next(sb.requester_items, sb.key_requester)
@@ -379,8 +381,10 @@ function item_requests.assign_to_request_with_items(drone)
     local selected_requester = nil
 
     for requester, _ in pairs(sb.item_requester_lookup[first_item.name][first_item.quality]) do
+        if requester.valid then
         if requester_has_item_requests(items, sb.requester_items[requester]) then
             selected_requester = requester
+            end
         end
     end
 
