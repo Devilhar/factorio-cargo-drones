@@ -109,7 +109,7 @@ local function get_closest_provider(requester, item_name, item_quality, item_pro
     local closest_distance = 30000000 -- Longer than moving from one corner to the other, and then multiplied by 10 for good measure
 
     for provider, count in pairs(providers) do
-        if count > 0 and provider.valid then
+        if count > 0 and provider.valid and not dt.is_at_target_limit(provider) then
             if provider.surface.index == requester.surface.index then
                 local distance = util.distance(provider.position, requester.position)
 
@@ -211,7 +211,7 @@ end
 
 local item_requests = {}
 
-function item_requests.begin_update_items()
+function item_requests.begin_update()
     update_stage = 0
 
     surface_buffer = {}
@@ -231,7 +231,7 @@ function item_requests.begin_update_items()
     end
 end
 
-function item_requests.update_items()
+function item_requests.run_update()
     local scans = 0
 
     if update_stage == 0 then
@@ -310,41 +310,41 @@ function item_requests.get_next_item_request(surface_index)
     sb.key_requester = next(sb.requester_items, sb.key_requester)
 
     while sb.key_requester do
-        if sb.key_requester.valid then
-        local selected_requester = sb.requester_items[sb.key_requester]
-
-        sb.key_item_name = next(selected_requester, sb.key_item_name)
-
-        while sb.key_item_name do
-            local selected_name = selected_requester[sb.key_item_name]
-
-            sb.key_item_quality = next(selected_name, sb.key_item_quality)
-
-            while sb.key_item_quality do
-                local item_count = selected_name[sb.key_item_quality]
-
-                if item_count > 0 then
-                    selected_provider = get_closest_provider(sb.key_requester, sb.key_item_name, sb.key_item_quality, sb.item_provider_lookup)
-
-                    if selected_provider then
-                        local request = {}
-
-                        request.requester = sb.key_requester
-                        request.provider = selected_provider
-                        request.items = get_common_items(sb.key_requester, sb.requester_items, sb.provider_items[selected_provider])
-
-                        sb.key_requester = old_key_requester
-                        sb.key_item_name = old_key_item_name
-                        sb.key_item_quality = old_key_item_quality
-
-                        return request
-                    end
-                end
-
-                sb.key_item_quality = next(selected_name, sb.key_item_quality)
-            end
+        if sb.key_requester.valid and not dt.is_at_target_limit(sb.key_requester) then
+            local selected_requester = sb.requester_items[sb.key_requester]
 
             sb.key_item_name = next(selected_requester, sb.key_item_name)
+
+            while sb.key_item_name do
+                local selected_name = selected_requester[sb.key_item_name]
+
+                sb.key_item_quality = next(selected_name, sb.key_item_quality)
+
+                while sb.key_item_quality do
+                    local item_count = selected_name[sb.key_item_quality]
+
+                    if item_count > 0 then
+                        selected_provider = get_closest_provider(sb.key_requester, sb.key_item_name, sb.key_item_quality, sb.item_provider_lookup)
+
+                        if selected_provider then
+                            local request = {}
+
+                            request.requester = sb.key_requester
+                            request.provider = selected_provider
+                            request.items = get_common_items(sb.key_requester, sb.requester_items, sb.provider_items[selected_provider])
+
+                            sb.key_requester = old_key_requester
+                            sb.key_item_name = old_key_item_name
+                            sb.key_item_quality = old_key_item_quality
+
+                            return request
+                        end
+                    end
+
+                    sb.key_item_quality = next(selected_name, sb.key_item_quality)
+                end
+
+                sb.key_item_name = next(selected_requester, sb.key_item_name)
             end
         end
 
@@ -381,9 +381,9 @@ function item_requests.assign_to_request_with_items(drone)
     local selected_requester = nil
 
     for requester, _ in pairs(sb.item_requester_lookup[first_item.name][first_item.quality]) do
-        if requester.valid then
-        if requester_has_item_requests(items, sb.requester_items[requester]) then
-            selected_requester = requester
+        if requester.valid and not dt.is_at_target_limit(requester) then
+            if requester_has_item_requests(items, sb.requester_items[requester]) then
+                selected_requester = requester
             end
         end
     end
