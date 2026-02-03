@@ -2,6 +2,7 @@
 local util  = require("util")
 
 local ep    = require("scripts.entity_property")
+local mh    = require("scripts.mooring_helper")
 local dt    = require("scripts.drone_tasks")
 local rc    = require("scripts.requester_cooldown")
 
@@ -22,12 +23,17 @@ local function get_item_signals(mooring)
                 items[signal.signal.name] = {}
             end
 
+            local item_data = {
+                count = signal.count,
+                mooring = mooring
+            }
+
             if type(signal.signal.quality) == "string" then
-                items[signal.signal.name][signal.signal.quality] = signal.count
+                items[signal.signal.name][signal.signal.quality] = item_data
             elseif type(signal.signal.quality) == "table" then
-                items[signal.signal.name][signal.signal.quality.name] = signal.count
+                items[signal.signal.name][signal.signal.quality.name] = item_data
             else
-                items[signal.signal.name]["normal"] = signal.count
+                items[signal.signal.name]["normal"] = item_data
             end
         end
     end
@@ -53,10 +59,12 @@ local function get_items(mooring)
 
                 if selected_item then
                     if selected_item[item_data.quality] ~= nil then
-                        selected_item[item_data.quality] = selected_item[item_data.quality] - item_data.count
+                        local selected_quality = selected_item[item_data.quality]
 
-                        if selected_item[item_data.quality] <= 0 then
-                            selected_item[item_data.quality] = nil
+                        selected_quality.count = selected_quality.count - item_data.count
+
+                        if selected_quality.count <= 0 then
+                            selected_quality = nil
 
                             if next(items) == nil then
                                 return nil
@@ -79,20 +87,20 @@ local function add_items(mooring, mooring_items, item_mooring_lookup)
     end
 
     mooring_items[mooring] = items
-    for item_name, quality_count in pairs(items) do
+    for item_name, item_quality in pairs(items) do
         if not item_mooring_lookup[item_name] then
             item_mooring_lookup[item_name] = {}
         end
 
         local selected_item = item_mooring_lookup[item_name]
 
-        for quality, count in pairs(quality_count) do
-            if count > 0 then
+        for quality, item_data in pairs(item_quality) do
+            if item_data.count > 0 then
                 if not selected_item[quality] then
                     selected_item[quality] = {}
                 end
 
-                selected_item[quality][mooring] = count
+                table.insert(selected_item[quality], item_data)
             end
         end
     end
@@ -108,8 +116,10 @@ local function get_closest_provider(requester, item_name, item_quality, item_pro
     local closest_provider = nil
     local closest_distance = 30000000 -- Longer than moving from one corner to the other, and then multiplied by 10 for good measure
 
-    for provider, count in pairs(providers) do
-        if count > 0 and provider.valid and not dt.is_at_target_limit(provider) then
+    for _, item_data in ipairs(providers) do
+        local provider = item_data.mooring
+
+        if item_data.count > 0 and provider.valid and not dt.is_at_target_limit(provider) then
             if provider.surface.index == requester.surface.index then
                 local distance = util.distance(provider.position, requester.position)
 
@@ -127,17 +137,17 @@ end
 local function get_common_items(requester, requester_items, selected_provider_items)
     local items = {}
 
-    for item_name, r_quality_count in pairs(requester_items[requester]) do
-        for item_quality, r_count in pairs(r_quality_count) do
+    for item_name, r_quality in pairs(requester_items[requester]) do
+        for item_quality, r_item_data in pairs(r_quality) do
             local p_quality_count = selected_provider_items[item_name]
 
             if not p_quality_count then
                 goto continue
             end
 
-            local p_count = p_quality_count[item_quality]
+            local p_item_data = p_quality_count[item_quality]
 
-            if p_count == nil or p_count <= 0 then
+            if p_item_data == nil or p_item_data.count <= 0 then
                 goto continue
             end
 
@@ -145,7 +155,7 @@ local function get_common_items(requester, requester_items, selected_provider_it
                 items[item_name] = {}
             end
 
-            items[item_name][item_quality] = math.min(r_count, p_count)
+            items[item_name][item_quality] = math.min(r_item_data.count, p_item_data.count)
 
             ::continue::
         end
@@ -165,13 +175,14 @@ local buffer_key = nil
 local function try_create_and_get_surface_buffer(surface_index)
     if not surface_buffer[surface_index] then
         surface_buffer[surface_index] = {
-            -- item_name, item_quality, provider, item_count
+            -- item_name, item_quality, index, { count, mooring }
             item_provider_lookup = {},
-            -- provider, item_name, item_quality, item_count
+            -- provider, item_name, item_quality, { count, mooring }
             provider_items = {},
-            -- item_name, item_quality, requester, item_count
+
+            -- item_name, item_quality, index, { count, mooring }
             item_requester_lookup = {},
-            -- requester, item_name, item_quality, item_count
+            -- requester, item_name, item_quality, { count, mooring }
             requester_items = {},
 
             end_of_requests = false,
@@ -189,9 +200,8 @@ local function transfer_items_in_buffer(provider, requester, items)
     local sb_requester = try_create_and_get_surface_buffer(requester.surface.index)
 
     for _, item in ipairs(items) do
-        sb_provider.item_provider_lookup[item.name][item.quality][provider] = sb_provider.item_provider_lookup[item.name][item.quality][provider] - item.count
-        sb_provider.provider_items[provider][item.name][item.quality]       = sb_provider.provider_items[provider][item.name][item.quality] - item.count
-        sb_requester.requester_items[requester][item.name][item.quality]    = sb_requester.requester_items[requester][item.name][item.quality] - item.count
+        sb_provider.provider_items[provider][item.name][item.quality].count     = sb_provider.provider_items[provider][item.name][item.quality].count - item.count
+        sb_requester.requester_items[requester][item.name][item.quality].count  = sb_requester.requester_items[requester][item.name][item.quality].count - item.count
     end
 end
 
@@ -201,7 +211,7 @@ local function requester_has_item_requests(items, requester_items)
         -- Probably better to just notify the player than hide them somewhere in the network.
         if not requester_items[item.name]
             or not requester_items[item.name][item.quality]
-            or requester_items[item.name][item.quality] < item.count then
+            or requester_items[item.name][item.quality].count < item.count then
             return false
         end
     end
@@ -321,9 +331,9 @@ function item_requests.get_next_item_request(surface_index)
                 sb.key_item_quality = next(selected_name, sb.key_item_quality)
 
                 while sb.key_item_quality do
-                    local item_count = selected_name[sb.key_item_quality]
+                    local item_data = selected_name[sb.key_item_quality]
 
-                    if item_count > 0 then
+                    if item_data.count > 0 then
                         selected_provider = get_closest_provider(sb.key_requester, sb.key_item_name, sb.key_item_quality, sb.item_provider_lookup)
 
                         if selected_provider then
@@ -380,7 +390,9 @@ function item_requests.assign_to_request_with_items(drone)
 
     local selected_requester = nil
 
-    for requester, _ in pairs(sb.item_requester_lookup[first_item.name][first_item.quality]) do
+    for _, item_data in ipairs(sb.item_requester_lookup[first_item.name][first_item.quality]) do
+        local requester = item_data.mooring
+
         if requester.valid and not dt.is_at_target_limit(requester) then
             if requester_has_item_requests(items, sb.requester_items[requester]) then
                 selected_requester = requester
@@ -410,7 +422,9 @@ function item_requests.assign_to_request_with_items(drone)
     local sb_requester = try_create_and_get_surface_buffer(selected_requester.surface.index)
 
     for _, item in ipairs(items) do
-        sb_requester.requester_items[selected_requester][item.name][item.quality] = sb_requester.requester_items[selected_requester][item.name][item.quality] - item.count
+        local item_data = sb_requester.requester_items[selected_requester][item.name][item.quality]
+
+        item_data.count = item_data.count - item.count
     end
 end
 
