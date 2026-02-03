@@ -1,12 +1,11 @@
 
 local ep    = require("scripts.entity_property")
+local mh    = require("scripts.mooring_helper")
 
 local task_types = {
     cargo   = 1,
     refuel  = 2
 }
-
-local target_limit_signal_id = { type = "virtual", name = "signal-L" }
 
 local function generate_next_id()
     local id = storage.tasks_next_id or 1
@@ -264,15 +263,10 @@ function drone_tasks.get(id)
 end
 
 function drone_tasks.is_at_target_limit(mooring)
-    local limit_signal = mooring.get_signal(target_limit_signal_id, defines.wire_connector_id.circuit_red, defines.wire_connector_id.circuit_green)
-
-    if limit_signal == 0 then
-        return false
-    end
-
+    local drone_limit = mh.get_drone_limit(mooring)
     local target_count = ep.get_entity_property(mooring, "task_target_count") or 0
 
-    return target_count >= limit_signal
+    return target_count >= drone_limit
 end
 
 function drone_tasks.assign_cargo(drone, provider, requester, items, inventory_filters)
