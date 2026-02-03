@@ -16,6 +16,7 @@ local function get_item_signals(mooring)
     end
 
     local items = {}
+    local priority = mh.get_priority(mooring)
 
     for _, signal in ipairs(mooring_signals) do
         if signal.count > 0 and signal.signal.type == nil then
@@ -25,6 +26,7 @@ local function get_item_signals(mooring)
 
             local item_data = {
                 count = signal.count,
+                priority = priority,
                 mooring = mooring
             }
 
@@ -79,12 +81,40 @@ local function get_items(mooring)
     return items
 end
 
+local function insert_priority(sorted_moorings, element_data)
+    local length = #sorted_moorings
+
+    local lower = 1
+    local upper = length
+    local middle = 0
+
+    while lower <= upper do
+        middle = math.floor((lower + upper) / 2)
+
+        if sorted_moorings[middle].priority == element_data.priority then
+            lower = middle + 1
+        elseif sorted_moorings[middle].priority > element_data.priority then
+            lower = middle + 1
+        else
+            upper = middle - 1
+        end
+    end
+
+    if lower == length and sorted_moorings[lower].priority >= element_data.priority then
+        table.insert(sorted_moorings, element_data)
+    else
+        table.insert(sorted_moorings, lower, element_data)
+    end
+end
+
 local function add_items(mooring, mooring_items, item_mooring_lookup)
     local items = get_items(mooring)
 
     if not items then
-        return
+        return false
     end
+
+    local priority = mh.get_priority(mooring)
 
     mooring_items[mooring] = items
     for item_name, item_quality in pairs(items) do
@@ -100,10 +130,14 @@ local function add_items(mooring, mooring_items, item_mooring_lookup)
                     selected_item[quality] = {}
                 end
 
-                table.insert(selected_item[quality], item_data)
+                item_data.priority = priority
+
+                insert_priority(selected_item[quality], item_data)
             end
         end
     end
+
+    return true
 end
 
 local function get_closest_provider(requester, item_name, item_quality, item_provider_lookup)
@@ -113,6 +147,7 @@ local function get_closest_provider(requester, item_name, item_quality, item_pro
 
     local providers = item_provider_lookup[item_name][item_quality]
 
+    local highest_priority = -1
     local closest_provider = nil
     local closest_distance = 30000000 -- Longer than moving from one corner to the other, and then multiplied by 10 for good measure
 
@@ -121,11 +156,14 @@ local function get_closest_provider(requester, item_name, item_quality, item_pro
 
         if item_data.count > 0 and provider.valid and not dt.is_at_target_limit(provider) then
             if provider.surface.index == requester.surface.index then
-                local distance = util.distance(provider.position, requester.position)
+                if highest_priority <= item_data.priority then
+                    local distance = util.distance(provider.position, requester.position)
 
-                if distance < closest_distance then
-                    closest_provider = provider
-                    closest_distance = distance
+                    if highest_priority < item_data.priority or distance < closest_distance then
+                        highest_priority = item_data.priority
+                        closest_provider = provider
+                        closest_distance = distance
+                    end
                 end
             end
         end
@@ -175,18 +213,20 @@ local buffer_key = nil
 local function try_create_and_get_surface_buffer(surface_index)
     if not surface_buffer[surface_index] then
         surface_buffer[surface_index] = {
-            -- item_name, item_quality, index, { count, mooring }
+            -- item_name, item_quality, index, { count, priority, mooring }
             item_provider_lookup = {},
-            -- provider, item_name, item_quality, { count, mooring }
+            -- provider, item_name, item_quality, { count, priority, mooring }
             provider_items = {},
 
-            -- item_name, item_quality, index, { count, mooring }
+            -- item_name, item_quality, index, { count, priority, mooring }
             item_requester_lookup = {},
-            -- requester, item_name, item_quality, { count, mooring }
+            -- requester, item_name, item_quality, { count, priority, mooring }
             requester_items = {},
+            -- index, { priority, requester }
+            sorted_requesters = {},
 
             end_of_requests = false,
-            key_requester = nil,
+            key_index = nil,
             key_item_name = nil,
             key_item_quality = nil
         }
@@ -289,7 +329,16 @@ function item_requests.run_update()
             if not rc.is_on_cooldown(buffer_key) then
                 local sb = try_create_and_get_surface_buffer(requester.surface.index)
 
-                add_items(requester, sb.requester_items, sb.item_requester_lookup)
+                local has_items = add_items(requester, sb.requester_items, sb.item_requester_lookup)
+
+                if has_items then
+                    local requester_data = {
+                        priority = mh.get_priority(requester),
+                        requester = requester
+                    }
+
+                    insert_priority(sb.sorted_requesters, requester_data)
+                end
             end
         end
 
@@ -311,22 +360,25 @@ function item_requests.get_next_item_request(surface_index)
         return nil
     end
 
+    local selected_requester = nil
     local selected_provider = nil
 
-    local old_key_requester = sb.key_requester
+    local old_key_index = sb.key_index
     local old_key_item_name = sb.key_item_name
     local old_key_item_quality = sb.key_item_quality
 
-    sb.key_requester = next(sb.requester_items, sb.key_requester)
+    sb.key_index = next(sb.sorted_requesters, sb.key_index)
 
-    while sb.key_requester do
-        if sb.key_requester.valid and not dt.is_at_target_limit(sb.key_requester) then
-            local selected_requester = sb.requester_items[sb.key_requester]
+    while sb.key_index do
+        selected_requester = sb.sorted_requesters[sb.key_index].requester
+        
+        if selected_requester.valid and not dt.is_at_target_limit(selected_requester) then
+            local requester_items = sb.requester_items[selected_requester]
 
-            sb.key_item_name = next(selected_requester, sb.key_item_name)
+            sb.key_item_name = next(requester_items, sb.key_item_name)
 
             while sb.key_item_name do
-                local selected_name = selected_requester[sb.key_item_name]
+                local selected_name = requester_items[sb.key_item_name]
 
                 sb.key_item_quality = next(selected_name, sb.key_item_quality)
 
@@ -334,16 +386,16 @@ function item_requests.get_next_item_request(surface_index)
                     local item_data = selected_name[sb.key_item_quality]
 
                     if item_data.count > 0 then
-                        selected_provider = get_closest_provider(sb.key_requester, sb.key_item_name, sb.key_item_quality, sb.item_provider_lookup)
+                        selected_provider = get_closest_provider(selected_requester, sb.key_item_name, sb.key_item_quality, sb.item_provider_lookup)
 
                         if selected_provider then
                             local request = {}
 
-                            request.requester = sb.key_requester
+                            request.requester = selected_requester
                             request.provider = selected_provider
-                            request.items = get_common_items(sb.key_requester, sb.requester_items, sb.provider_items[selected_provider])
+                            request.items = get_common_items(selected_requester, sb.requester_items, sb.provider_items[selected_provider])
 
-                            sb.key_requester = old_key_requester
+                            sb.key_index = old_key_index
                             sb.key_item_name = old_key_item_name
                             sb.key_item_quality = old_key_item_quality
 
@@ -354,11 +406,11 @@ function item_requests.get_next_item_request(surface_index)
                     sb.key_item_quality = next(selected_name, sb.key_item_quality)
                 end
 
-                sb.key_item_name = next(selected_requester, sb.key_item_name)
+                sb.key_item_name = next(requester_items, sb.key_item_name)
             end
         end
 
-        sb.key_requester = next(sb.requester_items, sb.key_requester)
+        sb.key_index = next(sb.sorted_requesters, sb.key_index)
     end
 
     sb.end_of_requests = true
