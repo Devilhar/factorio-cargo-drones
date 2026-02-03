@@ -71,14 +71,14 @@ local function get_items(mooring)
     return items
 end
 
-local function add_items(provider, mooring_items, item_mooring_lookup)
-    local items = get_items(provider)
+local function add_items(mooring, mooring_items, item_mooring_lookup)
+    local items = get_items(mooring)
 
     if not items then
         return
     end
 
-    mooring_items[provider] = items
+    mooring_items[mooring] = items
     for item_name, quality_count in pairs(items) do
         if not item_mooring_lookup[item_name] then
             item_mooring_lookup[item_name] = {}
@@ -92,7 +92,7 @@ local function add_items(provider, mooring_items, item_mooring_lookup)
                     selected_item[quality] = {}
                 end
 
-                selected_item[quality][provider] = count 
+                selected_item[quality][mooring] = count
             end
         end
     end
