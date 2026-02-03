@@ -33,7 +33,32 @@ local function get_element_count(table)
     return count
 end
 
-local function assign_task_drone(drone_unit_number, task_id)
+local function set_drone_as_idle(drone)
+    if not storage.idle_drones then
+        storage.idle_drones = {}
+    end
+
+    local surface_index = drone.surface.index
+
+    if not storage.idle_drones[surface_index] then
+        storage.idle_drones[surface_index] = {}
+    end
+
+    storage.idle_drones[surface_index][drone.unit_number] = drone
+end
+local function reset_drone_as_idle(drone_unit_number, surface_index)
+    if not storage.idle_drones or not storage.idle_drones[surface_index] then
+        return
+    end
+
+    storage.idle_drones[surface_index][drone_unit_number] = nil
+
+    if next(storage.idle_drones[surface_index]) == nil then
+        storage.idle_drones[surface_index] = nil
+    end
+end
+
+local function assign_task_drone(drone_unit_number, surface_index, task_id)
     local properties = ep.get_entity_properties_from_unit_number(drone_unit_number)
 
     if not properties.task_ids then
@@ -41,6 +66,7 @@ local function assign_task_drone(drone_unit_number, task_id)
     end
 
     table.insert(properties.task_ids, 1, task_id)
+    reset_drone_as_idle(drone_unit_number, surface_index)
 end
 local function unassign_task_drone(drone_unit_number, task_id)
     local properties = ep.get_entity_properties_from_unit_number(drone_unit_number)
@@ -61,6 +87,12 @@ local function unassign_task_drone(drone_unit_number, task_id)
 
     if not properties.task_ids[1] then
         properties.task_ids = nil
+
+        local entity = ep.get_managed_entity(drone_unit_number)
+
+        if entity and entity.valid then
+            set_drone_as_idle(ep.get_managed_entity(drone_unit_number))
+        end
     end
 end
 
@@ -198,7 +230,6 @@ function drone_tasks.remove_invalid_tasks()
     
     log("Removed " .. remove_count .. " invalid Cargo drone tasks")
 end
-
 function drone_tasks.recount_task_targets()
     for _, task in pairs(get_tasks()) do
         if task.provider_unit_number ~= nil then
@@ -209,6 +240,17 @@ function drone_tasks.recount_task_targets()
         end
         if task.refueler_unit_number ~= nil then
             recount_mooring_targets(task.refueler_unit_number)
+        end
+    end
+end
+function drone_tasks.recreate_idle_drones()
+    storage.idle_drones = nil
+
+    for unit_number, drone_data in pairs(ep.get_cargo_drones()) do
+        local task_ids = ep.get_entity_property_from_unit_number(unit_number, "task_ids")
+
+        if not task_ids or not task_ids[1] then
+            set_drone_as_idle(drone_data.entity)
         end
     end
 end
@@ -246,7 +288,7 @@ function drone_tasks.assign_cargo(drone, provider, requester, items, inventory_f
         inventory_filters = inventory_filters
     }
 
-    assign_task_drone(drone.unit_number, id)
+    assign_task_drone(drone.unit_number, drone.surface.index, id)
     if provider then
         assign_task_mooring(provider.unit_number, id)
     end
@@ -264,7 +306,7 @@ function drone_tasks.assign_refuel(drone, refueler)
         refueler_unit_number = refueler.unit_number
     }
 
-    assign_task_drone(drone.unit_number, id)
+    assign_task_drone(drone.unit_number, drone.surface.index, id)
     assign_task_mooring(refueler.unit_number, id)
 
     return id
@@ -294,12 +336,22 @@ function drone_tasks.cargo_unassign_provider(task_id)
     task.provider_unit_number = nil
 end
 
+function drone_tasks.get_idle_drones_per_surface()
+    return storage.idle_drones or {}
+end
+
 function drone_tasks.destroy(id)
     remove_and_cleanup_task(id)
 end
 
+function drone_tasks.drone_created(drone)
+    set_drone_as_idle(drone)
+end
 function drone_tasks.drone_destroyed(unit_number)
     local properties = ep.get_entity_properties_from_unit_number(unit_number)
+    local surface_index = ep.get_managed_entity_surface_index(unit_number)
+
+    reset_drone_as_idle(unit_number, surface_index)
 
     if not properties.task_ids then
         return

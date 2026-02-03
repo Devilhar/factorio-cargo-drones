@@ -401,28 +401,24 @@ function drone_controller.tick(game_tick)
         local idling_cargo_drones = {}
         local idling_cargo_drones_with_cargo = {}
         
-        for unit_number, entity_data in pairs(ep.get_cargo_drones()) do
-            if not dt.get_current_drone_task_id(entity_data.entity) then
-                local surface_index = entity_data.entity.surface.index
-
-                local inventory = entity_data.entity.get_inventory(defines.inventory.car_trunk)
+        for surface_index, drones in pairs(dt.get_idle_drones_per_surface()) do
+            for unit_number, drone in pairs(drones) do
+                local inventory = drone.get_inventory(defines.inventory.car_trunk)
 
                 if inventory.is_empty() then
                     if not idling_cargo_drones[surface_index] then
                         idling_cargo_drones[surface_index] = {}
                     end
 
-                    table.insert(idling_cargo_drones[surface_index], entity_data.entity)
+                    table.insert(idling_cargo_drones[surface_index], drone)
                 else
                     if not idling_cargo_drones_with_cargo[surface_index] then
                         idling_cargo_drones_with_cargo[surface_index] = {}
                     end
 
-                    table.insert(idling_cargo_drones_with_cargo[surface_index], entity_data.entity)
+                    table.insert(idling_cargo_drones_with_cargo[surface_index], drone)
                 end
             end
-
-            tick_drone(entity_data.entity, game_tick)
         end
 
         for _, drones in pairs(idling_cargo_drones_with_cargo) do
