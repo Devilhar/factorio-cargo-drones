@@ -4,7 +4,7 @@ local dc	= require("scripts.drone_controller")
 local dt	= require("scripts.drone_tasks")
 local rc    = require("scripts.requester_cooldown")
 
-local current_mod_state = 3
+local current_mod_state = 4
 local should_migrate = false
 
 local function safe_call(func)
@@ -64,6 +64,12 @@ local function migrate_state()
 		dt.recount_task_targets()
 	end
 
+	if old_mod_state < 4 then
+		ep.reset_surface_indices()
+
+		dt.recreate_idle_drones()
+	end
+
 	log("cargo-drone state migration complete")
 end
 
@@ -109,6 +115,8 @@ function on_built_entity(event)
 		script.register_on_object_destroyed(event.entity)
 		if event.entity.name == "cargo-drone" then
 			ep.add_cargo_drone(event.entity)
+
+			dt.drone_created(event.entity)
 		elseif event.entity.name == "cargo-drone-provider-mooring" then
 			if not event.entity.get_control_behavior() then
 				event.entity.get_or_create_control_behavior().read_contents = false

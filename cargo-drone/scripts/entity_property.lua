@@ -29,6 +29,12 @@ function entity_property.init()
     storage.cargo_drone_refuel_mooring = storage.cargo_drone_refuel_mooring or {}
 end
 
+function entity_property.reset_surface_indices()
+	for _, entity_data in pairs(storage.managed_entities) do
+		entity_data.surface_index = entity_data.entity.surface.index
+	end
+end
+
 function entity_property.entity_manage(entity)
 	if storage.managed_entities[entity.unit_number] then
 		return
@@ -36,6 +42,7 @@ function entity_property.entity_manage(entity)
 
 	storage.managed_entities[entity.unit_number] = {
 		entity = entity,
+		surface_index = entity.surface.index,
 		properties = {}
 	}
 	print("Entity managed: " .. entity.unit_number)
@@ -60,9 +67,15 @@ function entity_property.get_managed_entity(unit_number)
 
 	return storage.managed_entities[unit_number].entity
 end
-
 function entity_property.get_managed_entities()
     return storage.managed_entities
+end
+function entity_property.get_managed_entity_surface_index(unit_number)
+	if not storage.managed_entities[unit_number] then
+		return nil
+	end
+
+	return storage.managed_entities[unit_number].surface_index
 end
 
 function entity_property.is_cargo_drone(unit_number)
