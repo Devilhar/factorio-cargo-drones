@@ -2,6 +2,7 @@
 local util  = require("util")
 
 local ep    = require("scripts.entity_property")
+local mh    = require("scripts.mooring_helper")
 local dt    = require("scripts.drone_tasks")
 local ir	= require("scripts.item_requests")
 local rc    = require("scripts.requester_cooldown")
@@ -119,17 +120,23 @@ local function send_alert(drone, name, loc_id)
     end
 end
 
-local function get_closest_valid_mooring_to_entity(mooring_table, entity)
+local function get_closest_valid_refueler(mooring_table, entity)
+    local highest_priority = -1
     local closest_entity = nil
     local closest_distance = 30000000 -- Longer than moving from one corner to the other, and then multiplied by 10 for good measure
 
     for id, data in pairs(mooring_table) do
         if entity.surface.index == data.entity.surface.index and not dt.is_at_target_limit(data.entity) then
-            local distance = util.distance(entity.position, data.entity.position)
+            local priority = mh.get_priority(data.entity)
 
-            if distance < closest_distance then
-                closest_entity = data.entity
-                closest_distance = distance
+            if highest_priority <= priority then
+                local distance = util.distance(entity.position, data.entity.position)
+
+                if highest_priority < priority or distance < closest_distance then
+                    highest_priority = priority
+                    closest_entity = data.entity
+                    closest_distance = distance
+                end
             end
         end
     end
@@ -170,7 +177,7 @@ local function check_refuel(drone)
         return false
     end
 
-    local refueler = get_closest_valid_mooring_to_entity(ep.get_cargo_drone_refuel_moorings(), drone)
+    local refueler = get_closest_valid_refueler(ep.get_cargo_drone_refuel_moorings(), drone)
 
     if not refueler then
         return false
