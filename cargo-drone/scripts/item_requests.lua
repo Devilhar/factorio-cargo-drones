@@ -66,7 +66,7 @@ local function get_items(mooring)
                         selected_quality.count = selected_quality.count - item_data.count
 
                         if selected_quality.count <= 0 then
-                            selected_quality = nil
+                            selected_item[item_data.quality] = nil
 
                             if next(items) == nil then
                                 return nil
