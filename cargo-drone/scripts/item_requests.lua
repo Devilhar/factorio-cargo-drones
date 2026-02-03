@@ -7,32 +7,32 @@ local rc    = require("scripts.requester_cooldown")
 
 local max_scans_per_tick = 10
 
-local function get_item_signals(requester)
-    local requester_signals = requester.get_signals(defines.wire_connector_id.circuit_red, defines.wire_connector_id.circuit_green)
+local function get_item_signals(mooring)
+    local mooring_signals = mooring.get_signals(defines.wire_connector_id.circuit_red, defines.wire_connector_id.circuit_green)
 
-    if not requester_signals then
+    if not mooring_signals then
         return nil
     end
 
-    local requested_items = {}
+    local items = {}
 
-    for _, signal in ipairs(requester_signals) do
+    for _, signal in ipairs(mooring_signals) do
         if signal.count > 0 and signal.signal.type == nil then
-            if not requested_items[signal.signal.name] then
-                requested_items[signal.signal.name] = {}
+            if not items[signal.signal.name] then
+                items[signal.signal.name] = {}
             end
 
             if type(signal.signal.quality) == "string" then
-                requested_items[signal.signal.name][signal.signal.quality] = signal.count
+                items[signal.signal.name][signal.signal.quality] = signal.count
             elseif type(signal.signal.quality) == "table" then
-                requested_items[signal.signal.name][signal.signal.quality.name] = signal.count
+                items[signal.signal.name][signal.signal.quality.name] = signal.count
             else
-                requested_items[signal.signal.name]["normal"] = signal.count
+                items[signal.signal.name]["normal"] = signal.count
             end
         end
     end
 
-    return requested_items
+    return items
 end
 
 local function get_items(mooring)
