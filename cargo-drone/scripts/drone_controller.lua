@@ -23,6 +23,15 @@ local drones_tickrates = {
 -- This is reset every time the game is reloaded
 local drones_tickrate_buffer = {}
 
+local max_actions = 10
+
+local key_surface = nil
+local key_drone = nil
+
+local idling_cargo_drones = {}
+local idling_cargo_drones_empty = {}
+local idling_cargo_drones_with_cargo = {}
+
 -- Shamelessly stolen from AAI Programmable Vehicles, because I couldn't be bothered doing it myself
 -- Begin steal mode
 local function vector_to_orientation_xy(x, y)
@@ -427,36 +436,47 @@ function drone_controller.tick(game_tick)
         ir.begin_update()
     end
 
-    if update_state == 1 then
-        if ir.run_update() then
-            update_state = 2
+    local current_action = 0
+
+    if update_state == 2 then
+        while key_surface ~= nil and current_action < max_actions do
+            local idle_drones = idling_cargo_drones[key_surface]
+
+            while key_drone ~= nil and current_action < max_actions do
+                local drone = idle_drones[key_drone]
+
+                if drone.valid then
+                    local inventory = drone.get_inventory(defines.inventory.car_trunk)
+
+                    if inventory.is_empty() then
+                        if not idling_cargo_drones_empty[key_surface] then
+                            idling_cargo_drones_empty[key_surface] = {}
+                        end
+
+                        table.insert(idling_cargo_drones_empty[key_surface], drone)
+                    else
+                        if not idling_cargo_drones_with_cargo[key_surface] then
+                            idling_cargo_drones_with_cargo[key_surface] = {}
+                        end
+
+                        table.insert(idling_cargo_drones_with_cargo[key_surface], drone)
+                    end
+                end
+
+                current_action = current_action + 1
+
+                key_drone, drone = next(idle_drones, key_drone)
+            end
+
+            key_surface, idle_drones = next(idling_cargo_drones, key_surface)
+        end
+
+        if key_surface == nil then
+            update_state = 3
         end
     end
 
-    if update_state == 2 and game_tick >= last_assign_tick + min_task_assign_interval then
-        local idling_cargo_drones = {}
-        local idling_cargo_drones_with_cargo = {}
-        
-        for surface_index, drones in pairs(dt.get_idle_drones_per_surface()) do
-            for unit_number, drone in pairs(drones) do
-                local inventory = drone.get_inventory(defines.inventory.car_trunk)
-
-                if inventory.is_empty() then
-                    if not idling_cargo_drones[surface_index] then
-                        idling_cargo_drones[surface_index] = {}
-                    end
-
-                    table.insert(idling_cargo_drones[surface_index], drone)
-                else
-                    if not idling_cargo_drones_with_cargo[surface_index] then
-                        idling_cargo_drones_with_cargo[surface_index] = {}
-                    end
-
-                    table.insert(idling_cargo_drones_with_cargo[surface_index], drone)
-                end
-            end
-        end
-
+    if update_state == 3 and game_tick >= last_assign_tick + min_task_assign_interval then
         for _, drones in pairs(idling_cargo_drones_with_cargo) do
             for _, drone in ipairs(drones) do
                 ir.assign_to_request_with_items(drone)
@@ -485,6 +505,34 @@ function drone_controller.tick(game_tick)
 
         last_assign_tick = game_tick
         update_state = 0
+    end
+
+    if update_state == 1 then
+        if ir.run_update() then
+            idling_cargo_drones = {}
+            idling_cargo_drones_empty = {}
+            idling_cargo_drones_with_cargo = {}
+
+            for surface_index, drones in pairs(dt.get_idle_drones_per_surface()) do
+                for _, drone in pairs(drones) do
+                    if not idling_cargo_drones[surface_index] then
+                        idling_cargo_drones[surface_index] = {}
+                    end
+
+                    table.insert(idling_cargo_drones[surface_index], drone)
+                end
+            end
+            
+            local idle_drones = nil
+
+            key_surface, idle_drones = next(idling_cargo_drones)
+
+            if idle_drones then
+                key_drone = next(idle_drones)
+            end
+
+            update_state = 2
+        end
     end
 
     local tickrate_drone = 0
