@@ -175,12 +175,14 @@ local function get_closest_drone_to_mooring(drones, mooring)
     local closest_distance = 30000000 -- Longer than moving from one corner to the other, and then multiplied by 10 for good measure
 
     for i, drone in ipairs(drones) do
-		local distance = util.distance(drone.position, mooring.position)
-
-		if distance < closest_distance then
-			closest_index = i
-			closest_distance = distance
-		end
+        if drone.valid then
+            local distance = util.distance(drone.position, mooring.position)
+            
+            if distance < closest_distance then
+                closest_index = i
+                closest_distance = distance
+            end
+        end
     end
 
     return closest_index
@@ -472,39 +474,87 @@ function drone_controller.tick(game_tick)
         end
 
         if key_surface == nil then
+            local idle_drones = nil
+
+            key_surface, idle_drones = next(idling_cargo_drones_with_cargo)
+
+            if idle_drones then
+                key_drone = next(idle_drones)
+            end
+
             update_state = 3
         end
     end
 
     if update_state == 3 and game_tick >= last_assign_tick + min_task_assign_interval then
-        for _, drones in pairs(idling_cargo_drones_with_cargo) do
-            for _, drone in ipairs(drones) do
-                ir.assign_to_request_with_items(drone)
+        while key_surface ~= nil do
+            local idle_drones = idling_cargo_drones_with_cargo[key_surface]
+
+            while key_drone ~= nil do
+                local drone = idle_drones[key_drone]
+
+                if drone.valid then
+                    ir.assign_to_request_with_items(drone)
+                end
+
+                key_drone, drone = next(idle_drones, key_drone)
+                
+                current_action = current_action + 1
+
+                if current_action >= max_actions then
+                    goto max_action_reached
+                end
             end
+            
+            key_surface, idle_drones = next(idling_cargo_drones_with_cargo, key_surface)
         end
 
-        for surface_index, drones in pairs(idling_cargo_drones) do
-            while next(drones) ~= nil do
-                local item_request = ir.get_next_item_request(surface_index)
+        ::max_action_reached::
+
+        if key_surface == nil then
+            key_surface = next(idling_cargo_drones_empty)
+
+            update_state = 4
+        end
+    end
+
+    if update_state == 4 then
+        while key_surface ~= nil do
+            local idle_drones = idling_cargo_drones_empty[key_surface]
+
+            while next(idle_drones) ~= nil do
+                local item_request = ir.get_next_item_request(key_surface)
 
                 if not item_request then
                     break
                 end
 
-                local closest_index = get_closest_drone_to_mooring(drones, item_request.provider)
+                local closest_index = get_closest_drone_to_mooring(idle_drones, item_request.provider)
 
                 if closest_index ~= nil then
-                    local drone = drones[closest_index]
+                    local drone = idle_drones[closest_index]
 
-                    table.remove(drones, closest_index)
+                    table.remove(idle_drones, closest_index)
 
                     ir.assign_item_request(drone, item_request)
                 end
+
+                current_action = current_action + 1
+                
+                if current_action >= max_actions then
+                    goto max_action_reached
+                end
             end
+            
+            key_surface, idle_drones = next(idling_cargo_drones_empty, key_surface)
         end
 
-        last_assign_tick = game_tick
-        update_state = 0
+        ::max_action_reached::
+
+        if key_surface == nil then
+            last_assign_tick = game_tick
+            update_state = 0
+        end
     end
 
     if update_state == 1 then
