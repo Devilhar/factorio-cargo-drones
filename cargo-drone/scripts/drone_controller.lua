@@ -14,6 +14,15 @@ local min_task_assign_interval = 60
 local update_state = 0
 local last_assign_tick = 0
 
+-- Tickrates need to either be divisible by random_tick_interval, or random_tick_interval need to be divisible by the tickrate
+local drones_tickrates = {
+    every = 1,
+    reduced = 60,
+    minimal = 60 * 5,
+}
+-- This is reset every time the game is reloaded
+local drones_tickrate_buffer = {}
+
 -- Shamelessly stolen from AAI Programmable Vehicles, because I couldn't be bothered doing it myself
 -- Begin steal mode
 local function vector_to_orientation_xy(x, y)
@@ -110,6 +119,14 @@ local function move_to_position(car_entity, state, target_position)
     end
 
     state.riding_state = { acceleration = acceleration, direction = direction }
+
+    if direction == defines.riding.direction.straight then
+        if distance_to_target >= 50 then
+            state.tickrate = drones_tickrates.reduced
+        elseif distance_to_target >= 200 then
+            state.tickrate = drones_tickrates.minimal
+        end
+    end
 
     return false
 end
@@ -215,6 +232,8 @@ local function drone_goto_and_dock_with_mooring(drone, state, mooring, inventory
         local docking_drone = ep.get_entity_property(mooring, "docking_drone")
 
         if docking_drone and docking_drone.valid and docking_drone ~= drone then
+            state.tickrate = drones_tickrates.reduced
+
             return
         else
             state.docking_mooring = mooring
@@ -232,6 +251,8 @@ local function drone_goto_and_dock_with_mooring(drone, state, mooring, inventory
 end
 
 local function perform_task_none(drone, state, game_tick)
+    state.tickrate = drones_tickrates.minimal
+
     if game_tick % random_tick_interval == drone.unit_number % random_tick_interval then
         local inventory = drone.get_inventory(defines.inventory.car_trunk)
 
@@ -328,6 +349,7 @@ local function get_current_task(drone)
 end
 
 local state = {
+    tickrate = drones_tickrates.every,
     riding_state = { acceleration = defines.riding.acceleration.braking, direction = defines.riding.direction.straight },
     docked_mooring = { target_entity = nil, inventory = nil },
     docking_mooring = nil
@@ -335,6 +357,7 @@ local state = {
 
 local function tick_drone(drone, game_tick)
     local current_task = get_current_task(drone)
+    state.tickrate = drones_tickrates.every
     state.riding_state.acceleration = defines.riding.acceleration.braking
     state.riding_state.direction = defines.riding.direction.straight
     state.docked_mooring.target_entity = nil
@@ -388,9 +411,15 @@ local function tick_drone(drone, game_tick)
         ep.set_entity_property(drone, "docking_mooring", state.docking_mooring)
         ep.set_entity_property(state.docking_mooring, "docking_drone", drone)
     end
+
+    return state.tickrate
 end
 
 local drone_controller = {}
+
+function drone_controller.drone_destroyed(unit_number)
+    drones_tickrate_buffer[unit_number] = nil
+end
 
 function drone_controller.tick(game_tick)
     if update_state == 0 then
@@ -458,9 +487,22 @@ function drone_controller.tick(game_tick)
         update_state = 0
     end
 
+    local tickrate_drone = 0
+    local tickrate_new = 0
+
     for unit_number, entity_data in pairs(ep.get_cargo_drones()) do
-        tick_drone(entity_data.entity, game_tick)
+        tickrate_drone = drones_tickrate_buffer[unit_number] or drones_tickrates.every
+
+        if unit_number % tickrate_drone == game_tick % tickrate_drone then
+
+            tickrate_new = tick_drone(entity_data.entity, game_tick)
+
+            if tickrate_new ~= tickrate_drone then
+                drones_tickrate_buffer[unit_number] = tickrate_new
+            end
+        end
     end
+
 end
 
 return drone_controller

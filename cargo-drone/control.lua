@@ -19,6 +19,8 @@ end
 
 local function unmanage_entity(unit_number)
 	if ep.is_cargo_drone(unit_number) then
+		dc.drone_destroyed(unit_number)
+
 		dt.drone_destroyed(unit_number)
 	elseif ep.is_provider_mooring(unit_number)
 		or ep.is_requester_mooring(unit_number)
