@@ -8,6 +8,8 @@ local rc    = require("scripts.requester_cooldown")
 
 local max_scans_per_tick = 10
 
+local heuristic_target_count_cost = 50
+
 local function get_item_signals(mooring)
     local mooring_signals = mooring.get_signals(defines.wire_connector_id.circuit_red, defines.wire_connector_id.circuit_green)
 
@@ -149,7 +151,7 @@ local function get_closest_provider(requester, item_name, item_quality, item_pro
 
     local highest_priority = -1
     local closest_provider = nil
-    local closest_distance = 30000000 -- Longer than moving from one corner to the other, and then multiplied by 10 for good measure
+    local lowest_cost = 30000000 -- Longer than moving from one corner to the other, and then multiplied by 10 for good measure
 
     for _, item_data in ipairs(providers) do
         local provider = item_data.mooring
@@ -157,12 +159,12 @@ local function get_closest_provider(requester, item_name, item_quality, item_pro
         if item_data.count > 0 and provider.valid and not dt.is_at_target_limit(provider) then
             if provider.surface.index == requester.surface.index then
                 if highest_priority <= item_data.priority then
-                    local distance = util.distance(provider.position, requester.position)
+                    local cost = util.distance(provider.position, requester.position) + dt.get_target_count(provider) * heuristic_target_count_cost
 
-                    if highest_priority < item_data.priority or distance < closest_distance then
+                    if highest_priority < item_data.priority or cost < lowest_cost then
                         highest_priority = item_data.priority
                         closest_provider = provider
-                        closest_distance = distance
+                        lowest_cost = cost
                     end
                 end
             end

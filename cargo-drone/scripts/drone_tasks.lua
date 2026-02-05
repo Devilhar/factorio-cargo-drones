@@ -269,6 +269,10 @@ function drone_tasks.is_at_target_limit(mooring)
     return target_count >= drone_limit
 end
 
+function drone_tasks.get_target_count(mooring)
+    return ep.get_entity_property(mooring, "task_target_count") or 0
+end
+
 function drone_tasks.assign_cargo(drone, provider, requester, items, inventory_filters)
     local id = generate_next_id()
 
