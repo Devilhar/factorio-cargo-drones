@@ -180,9 +180,16 @@ cargo_drone.working_sound =
 	activate_sound = { filename = "__base__/sound/car-engine-start.ogg", volume = 0.67 },
 	deactivate_sound = { filename = "__base__/sound/car-engine-stop.ogg", volume = 0.67 },
 }
+local cargo_drone_sound_docking = {
+	type = "sound",
+	name = "cargo-drone-sound-docking",
+	filename = "__base__/sound/car-metal-impact-2.ogg",
+	speed = 0.5
+}
 
 data:extend({
 	cargo_drone,
+	cargo_drone_sound_docking,
 	{
 		type = "item-with-entity-data",
 		name = "cargo-drone",
