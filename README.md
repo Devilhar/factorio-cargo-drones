@@ -30,3 +30,6 @@ Note that Cargo drones already tasked with going to a mooring will not stop or c
 You can set any mooring's priority to a number between 0 and 255 (inclusive) by sending it a [P] signal. Moorings with a higher priority signal will be targeted first by Cargo drones.
 
 Mooring priority defaults to 0 if no priority signal is sent.
+
+### Special thanks
+Thank you to KeithFromCanada for feedback and help
