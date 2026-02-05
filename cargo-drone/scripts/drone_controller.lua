@@ -495,6 +495,7 @@ function drone_controller.tick(game_tick)
 
                 if drone.valid then
                     ir.assign_to_request_with_items(drone)
+                    drones_tickrate_buffer[drone.unit_number] = drones_tickrates.every
                 end
 
                 key_drone, drone = next(idle_drones, key_drone)
@@ -537,6 +538,7 @@ function drone_controller.tick(game_tick)
                     table.remove(idle_drones, closest_index)
 
                     ir.assign_item_request(drone, item_request)
+                    drones_tickrate_buffer[drone.unit_number] = drones_tickrates.every
                 end
 
                 current_action = current_action + 1
