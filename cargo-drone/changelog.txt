@@ -1,4 +1,16 @@
 ---------------------------------------------------------------------------------------------------
+Version: 1.3.2
+Date: 05. 02. 2026
+  Minor Features:
+    - Added a docking sound for Cargo drones.
+  Changes:
+    - Cargo drones should now spread themselves more evenly in a group of Provider moorings with the same item and priority to avoid queuing.
+    - Lowered the volume of Cargo drones.
+    - Reduced the tickrate of Cargo drones when they don't require as many updates.
+    - Reduced lag spikes by collecting idle drones and assigning tasks over several ticks.
+  Bugfixes:
+    - Cargo drones should no longer overshoot moorings when moving at higher speeds.
+---------------------------------------------------------------------------------------------------
 Version: 1.3.1
 Date: 03. 02. 2026
   Bugfixes:
