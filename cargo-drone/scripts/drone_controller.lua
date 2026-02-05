@@ -81,12 +81,12 @@ local function move_to_position(car_entity, state, target_position)
     local distance_to_target = util.distance(car_entity.position, target_position)
 
     if distance_to_target < 1 then
-        if car_entity.speed == 0 then
+        if car_entity.speed == 0 or distance_to_target < 0.2 then
             state.riding_state = { acceleration = defines.riding.acceleration.nothing, direction = defines.riding.direction.straight }
 
             return true
         end
-
+        
         state.riding_state = { acceleration = defines.riding.acceleration.braking, direction = defines.riding.direction.straight }
 
         return false
@@ -96,7 +96,7 @@ local function move_to_position(car_entity, state, target_position)
         return math.floor(orientation * 64 + 0.5) / 64
     end
 
-    local target_speed = distance_to_target / 60 / 2
+    local target_speed = distance_to_target / 60 / 2.5
     local target_orientation = orientation_from_to(car_entity.position, target_position)
 
     target_orientation = orientation_closest_64_cardinal(target_orientation)
@@ -257,6 +257,7 @@ local function drone_goto_and_dock_with_mooring(drone, state, mooring, inventory
         return
     end
 
+    drone.speed = 0
     state.docked_mooring.target_entity = mooring
     state.docked_mooring.inventory = inventory
 end
