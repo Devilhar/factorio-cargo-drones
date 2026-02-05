@@ -138,6 +138,48 @@ cargo_drone.minimap_representation = {
 	scale = 0.5,
 }
 
+cargo_drone.working_sound =
+{
+	main_sounds =
+	{
+		{
+			sound = {filename = "__base__/sound/car-engine-driving.ogg", volume = 0.16},
+			match_volume_to_activity = true,
+			activity_to_volume_modifiers =
+			{
+				multiplier = 1.8,
+				offset = 0.95,
+			},
+			match_speed_to_activity = true,
+			activity_to_speed_modifiers =
+			{
+				multiplier = 0.8,
+				minimum = 1.0,
+				maximum = 1.4,
+				offset = 0.1,
+			}
+		},
+		{
+			sound = { filename = "__base__/sound/car-engine.ogg", volume = 1.2 },
+			match_volume_to_activity = true,
+			activity_to_volume_modifiers =
+			{
+				multiplier = 1.8,
+				offset = 0.95,
+			},
+			match_speed_to_activity = true,
+			activity_to_speed_modifiers =
+			{
+				multiplier = 0.8,
+				minimum = 1.0,
+				maximum = 1.4,
+				offset = 0.1,
+			}
+		},
+	},
+	activate_sound = { filename = "__base__/sound/car-engine-start.ogg", volume = 0.67 },
+	deactivate_sound = { filename = "__base__/sound/car-engine-stop.ogg", volume = 0.67 },
+}
 
 data:extend({
 	cargo_drone,
