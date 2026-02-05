@@ -7,7 +7,7 @@ Here is a blueprint book with cheat sheets:
 
 <summary>Cheat sheet</summary>
 
-```0eNq9V01v2zgQ/SsE97agDEm2i8ZATjm16MHY9rJwDYO2mIioJKokZdcI/N93hvq0JUc20i4COBQ1evM48zgcvtJtUohcy8xutkr9oIvXdsbQxarziO8iYXZa5laqjC7oV5FFxMaC7FRmRWaJei4fY2Essco95FrtZSQ0IxysZWaEtsRYzeVLbOEZzKSdUEYloJQujXzJeIL+Mp4KcLTj+kV5kVaZ8Go8L1UKaL3QE3yaReIXXQSnNaPAQ1opSiT3cNxkRboVGgxYjWisEInniILrXBlZrumVAk4YTOaMHunCC2B0OrEeUNgAlQuCuT5KeIbCaCS12JUGQTgAOmU3rbfvaHbhCNOhVbLZipjvpdJopwWPNlWeIDbPPDHihPE6ACsM1ipgAZuyYA1z0ooUaLSpZzThWwEpocuKDmnp7IU2js38Q/gwe3iYfwz9+WwWtInxcbVvCOlJpcKQg7QxMTLNE0GQAdHiZ4FKMsIW+YT8qwqy4xnhUUS4ISnPjrWJwYkjvD/wDEXllPcEerL4vFPpVmbcKhDhtgBlxtKQhg6+rr3bgyI515AFSKkDFb84ErpDoBWlP6tQv0r59D0CDbogZ/qcvSlPriFWECK589rQDuGX6H4PfViiLSwKNXJQBl88S23spg26PeZIYy+1LWCmDZmz8ATfxRhzIxAGsZwMcH8wqnKheSW7v+FTVdi8uBv8NBTzGbtNDv1ATc8Tcfv+7ZOYtySqdY/kqHYdXnVtyryZ8zFotxY1gwwluGEuZisizYbyfCDwE6IKhGE+Uzp1EQaCaIMEF/TRTRSYryDABVZ44QBecCdeeFrD33DZY6sp/J+5EfyyeVkK22rgFlepQ0atMP4KyCesVnCQVbnGWhFdW7jXaBvjOc7eJblyWyWZ1YMFDYI+kXK1UJdhQ/Ftgq8C36cdnDP64Tj94I/RD/tErtF/+1z6p95mdx1MwcjB9Lkwtu5ZnguRXDQueMpU7u46IBDqfafD9ao+rbuB6U1NR8huoNh38qHjZDQziHVnYsKRxHyN1cEQ+EHdJjKVmBGQHuCTFZJ57Cxn/YRj4sbGtaHQUdR0oEGFOgchmXzPvmFjUBg0Ij1BdXqHg9I/qo6BJ0ltYCZ91732bd036Z0QgzbdhKz/927kpsPE9Z8d7f3Ww2TkXP5y51FwfrKMgC/vA5/75TkDAUr4UejNuXa/QdVYVa680sNjvYo1KUelpo2rMDxFWLxcjSjbxtwSbt1HBhZArIQfbJktmAl7Vq++Z6j3q0yWDRPYK6b7pWl2DBvdasmBH82A96rbhokYqin2+DUmcc3epOSWqIN7p4yRcBK0RrAH/fJCeYYxZBfO5xN6R+Eb7da8j5XIw3detsLRy9YXV9hwmctqRTcVz+lQRfbc/b7F7iQKL+wgGxMLgd4vKm15IVs21/imMJYJaMq7u6XdXJguyxCHUrAXm/rC+MYyT/8Bb3+zwA==```
+```0eNrdWEuO4zYQvQrBLAYIJMOSrZ6xgV71KsEEaGQGCAKPYdAW2yJaEj0kZY/R8AFykFwsJ0kV9bMstWXNJ4tsbIkqvfqw6rFKL3QdZ3ynRGpWaymf6fylXtF0vji7xWch1xsldkbIlM7pB240MREnwvBEE7ZnImbrGO5Tu7xTci9CrgjTJJbpFv+FeQOSa7nnhBHNDQgqriMZhyPqULGRaa5Wi23KYtSZsoSDsg1TW+mGSqbcLYHdREowbUtP8Goa8i907p2WDuWpEUbwHMneHFdplqy5AgGnRBSp5srAmkN3UovcqRcKIJO3o8ChRzp3g1EA2KFQfJM/9/yT08L0K0xtOI/dTcS16YC9O4ftwJk4N3nbBp417YUoGiXj1ZpHbC+kQjHFWbjCB9zu7BOLNe+yYVrZEPKNVbuRyVqkzMiuSM1yvZPLOE27rSgw0ZDQ4mhcPb+DHXsSSptVnQHmuEN79kKZDFbqYFsJl7NNRHOvtWGYqP4Y75IdU9bqOf3nr78pJobMzC4zlxl2E/5peTohxAF8RICF73jO1PGWzmJiryZLeIoqEw5JlesokIvYOuXFnPrjWs1v7LldQoeI2yJSHOolkYrDDUutEygKr9WF6VB4h4Mr9LGsuDpV9mCL3ZHgzp9NZ7PgnT8OplOvLpkxZsGVMn+QCdfkIExEtEh2cW4sUfxzBmmORZztRuRPmZENSwkLQ6zzhKXHUkTjwhGeH2B3SnJ4KHaL1OnlkHWGhCA0qczBx6V2c5CkDjCC8i8MDRqRP0QcVxYlQmtwvogpYso0PhLxRHgqs21UBhuCWogO4J5CybeSz1WicIOSgKazbqbwb2AxN7g7R2mW583s0/a3Q9G0qej78E9Zz1cJqHYyGL+qW+du6+Y1bE+5bw5wTlxVbb1aWFIlnYtl+xlIAizGupYqsYTRIJt7u5BhKXljW1wFoN8B6A0D9AFwaamoHbmggmcKygXwxaYndm/zyHk3sneNe0HgX8nYsBcAs6qJ24WYyx0Hx3Pq+ZmWnD0UvDNCd4PONjcIhoXnf3S4eXCkBdXhdgeHm7OY2jW8gl9Y8776wBOpSLKEsASTmsingpCNLCmc4uYVWCKs3/zJI7/g2XMm6aDAKyXqVrHHSPSX2elMbdsFKOa2JXldvmau32+u96PM9Rvm+g1zr3cRv5eUP6iN8HraiF8zjYc/nlbkKeMx0UYxsY1wEQKEPUGhbtBpjFA/bA4oz7XJwDHgiomvTwWopHdnEGvgxvg9G/MhkgdN4AfzNBaJwB2BVMMWaoHG3J+5s3zAa2KvoYVKQzvEFebAxAdUCCEZfUo/YhuXaRQirYQ66/QOUj0X/R2DHq4Q0KO26tYgtGyLtLqVTpnzDVn+563fbX2N5zVy77u2NT1nwvuBTU6zxekBfxwGHhT9DgQoZkc4XJu5+xFYY1GocnMN96UXS5Jf5Tmdf6moj5yezIZpyxBm7EsaHCBGwA8OOAbEuGnw1acU8/1VSx4rS3T5xaRM86pinN5Siw/sqDu0F7MRLETApjj/lJjE9hqj3LZYHuwzCQMPDpiVENTg2LGV3MDokvODYEQHEF//5PCuSHJ/4Nxw2av4eTdyhTrfW2JDNx8Lj24iz0kXI7v2W1mNfbZRBEY6SBsdcY7aL5g2H5/LKd2piTHfgIre7Ux9MzFd0hADKtjzVTneX3Hz9C+tidi1```
 
 </details>
 
@@ -17,11 +17,19 @@ The easiest setup is to have a chest inserting into the Provider mooring and sen
 
 <img src="https://raw.githubusercontent.com/devilhar/factorio-cargo-drones/main/images/provider-setup.png">
 
-#### Signals
-
 To wire up the signals, simply connect the chest to the mooring with either red or green wire. The color makes no difference. By default, wired chests automatically read their content, but you can make sure by opening the chest and see that the "Read content" checkbox is checked.
 
 <img src="https://raw.githubusercontent.com/devilhar/factorio-cargo-drones/main/images/provider-chest-configuration.png">
+
+But this can result in a lot of Cargo drones getting tasked with picking up single items as they're added into the chest one by one. To counteract this, add a Decider combinator and instead wire the chest to the Decider combinator's input (The side with an arrow pointing *into it* when in Alt-mode).
+
+<img src="https://raw.githubusercontent.com/devilhar/factorio-cargo-drones/main/images/provider-setup-decider.png">
+
+Inside the Decider combinator, add a condition which checks if "Each" is higher than or equal to a minimum value you set. This value is the required amount of each item for them to be made available for pickup. In the example the minimum amount is 20.
+
+Finally add an output, and set it to "Each" and check "Input count".
+
+<img src="https://raw.githubusercontent.com/devilhar/factorio-cargo-drones/main/images/provider-decider-combinator-configuration.png">
 
 ### Requester mooring
 
@@ -37,13 +45,23 @@ Connect the chest to the Arithmetic combinator's input (The side with an arrow p
 
 <img src="https://raw.githubusercontent.com/devilhar/factorio-cargo-drones/main/images/requester-chest-configuration.png">
 
-In the Arithmetic combinator, set the Input (The first box under Input) and Output to "Each". Then set the Constant number to -1. Finally wire the output to the Requester mooring (The side with an arrow pointing *out* when in Alt-mode). The wire color makes no difference.
+In the Arithmetic combinator, set the Input (The first box under Input) and Output to "Each". Then set the Constant number to -1. Finally wire the output to the Requester mooring (The side with an arrow pointing *out* when in Alt-mode).
 
 <img src="https://raw.githubusercontent.com/devilhar/factorio-cargo-drones/main/images/requester-arithmetic-combinator-configuration.png">
 
-Wire the Constant combinator to the requester mooring, the color makes no difference. Then add the items you wish to request.
+Wire the Constant combinator to the Arithmetic combinator's Output. Then add the items you wish to request.
 
 <img src="https://raw.githubusercontent.com/devilhar/factorio-cargo-drones/main/images/requester-constant-combinator-configuration.png">
+
+But this can result in a lot of Cargo drones getting tasked with picking up single items as they're taken out of the chest one by one. To counteract this, add a Decider combinator and instead wire the Arithmetic combinator's Output to the Decider combinator's input (The side with an arrow pointing *into it* when in Alt-mode).
+
+<img src="https://raw.githubusercontent.com/devilhar/factorio-cargo-drones/main/images/requester-setup-decider.png">
+
+Inside the Decider combinator, add a condition which checks if "Each" is higher than or equal to a minimum value you set. This value is the required amount each item need to be missing for it to be requested. In the example the minimum amount is 20.
+
+Finally add an output, and set it to "Each" and check "Input count".
+
+<img src="https://raw.githubusercontent.com/devilhar/factorio-cargo-drones/main/images/requester-decider-combinator-configuration.png">
 
 ### Refueler mooring
 
