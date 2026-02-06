@@ -75,12 +75,18 @@ local function migrate_state()
 		dt.fix_task_zero_count_item()
 	end
 
+	if old_mod_state < 6 then
+		gm.create_player_storage()
+	end
+
 	log("cargo-drone state migration complete")
 end
 
 function on_init()
 	safe_call(function()
 		ep.init()
+
+		gm.create_player_storage()
 	end)
 end
 
@@ -101,11 +107,23 @@ function on_tick(event)
 end
 
 function on_object_destroyed(event)
+	gm.on_object_destroyed(event)
+
 	if not ep.is_managed(event.useful_id) then
 		return
 	end
 
 	unmanage_entity(event.useful_id)
+end
+
+function on_gui_opened(event)
+	gm.on_gui_opened(event)
+end
+function on_gui_closed(event)
+	gm.on_gui_closed(event)
+end
+function on_gui_click(event)
+    gm.on_gui_click(event)
 end
 
 function on_built_entity(event)
@@ -138,6 +156,9 @@ script.on_init(on_init)
 script.on_configuration_changed(on_configuration_changed)
 script.on_event(defines.events.on_tick, on_tick)
 script.on_event(defines.events.on_object_destroyed, on_object_destroyed)
+script.on_event(defines.events.on_gui_opened, on_gui_opened)
+script.on_event(defines.events.on_gui_closed, on_gui_closed)
+script.on_event(defines.events.on_gui_click, on_gui_click)
 
 local build_events = {
 	defines.events.on_built_entity,
