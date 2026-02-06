@@ -5,7 +5,6 @@ local dt	= require("scripts.drone_tasks")
 local rc    = require("scripts.requester_cooldown")
 
 local current_mod_state = 4
-local should_migrate = false
 
 local function safe_call(func)
 	local result, err = pcall(func)
@@ -81,21 +80,16 @@ function on_init()
 	end)
 end
 
-function on_load(event)
+function on_configuration_changed(event)
 	if storage.mod_state == current_mod_state then
 		return
 	end
 
-	should_migrate = true
+	migrate_state()
 end
 
 function on_tick(event)
 	safe_call(function()
-		if should_migrate then
-			migrate_state()
-			should_migrate = false
-		end
-
 		rc.tick()
 
 		dc.tick(event.tick)
@@ -137,7 +131,7 @@ function on_built_entity(event)
 end
 
 script.on_init(on_init)
-script.on_load(on_load)
+script.on_configuration_changed(on_configuration_changed)
 script.on_event(defines.events.on_tick, on_tick)
 script.on_event(defines.events.on_object_destroyed, on_object_destroyed)
 
