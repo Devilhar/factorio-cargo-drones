@@ -241,9 +241,23 @@ local function transfer_items_in_buffer(provider, requester, items)
     local sb_provider = try_create_and_get_surface_buffer(provider.surface.index)
     local sb_requester = try_create_and_get_surface_buffer(requester.surface.index)
 
+    local provider_items = sb_provider.provider_items[provider]
+    local requester_items = sb_requester.requester_items[requester]
+
     for _, item in ipairs(items) do
-        sb_provider.provider_items[provider][item.name][item.quality].count     = sb_provider.provider_items[provider][item.name][item.quality].count - item.count
-        sb_requester.requester_items[requester][item.name][item.quality].count  = sb_requester.requester_items[requester][item.name][item.quality].count - item.count
+        local provider_item_data = provider_items[item.name][item.quality]
+        local requester_item_data = requester_items[item.name][item.quality]
+
+        provider_item_data.count   = provider_item_data.count - item.count
+        requester_item_data.count  = requester_item_data.count - item.count
+
+        if requester_item_data.count <= 0 then
+            requester_items[item.name][item.quality] = nil
+
+            if next(requester_items[item.name]) == nil then
+                requester_items[item.name] = nil
+            end
+        end
     end
 end
 

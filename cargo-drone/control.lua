@@ -4,7 +4,7 @@ local dc	= require("scripts.drone_controller")
 local dt	= require("scripts.drone_tasks")
 local rc    = require("scripts.requester_cooldown")
 
-local current_mod_state = 4
+local current_mod_state = 5
 
 local function safe_call(func)
 	local result, err = pcall(func)
@@ -69,6 +69,10 @@ local function migrate_state()
 		ep.reset_surface_indices()
 
 		dt.recreate_idle_drones()
+	end
+
+	if old_mod_state < 5 then
+		dt.fix_task_zero_count_item()
 	end
 
 	log("cargo-drone state migration complete")

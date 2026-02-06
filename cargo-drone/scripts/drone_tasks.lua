@@ -213,7 +213,7 @@ function drone_tasks.remove_invalid_tasks()
     local removal = {}
     local remove_count = 0
 
-    for task_id, task in pairs(get_tasks()) do
+    for task_id, task in pairs(tasks) do
         if not is_drone_valid(task.drone_unit_number, task_id)
             or not is_mooring_valid(task.provider_unit_number, task_id)
             or not is_mooring_valid(task.requester_unit_number, task_id)
@@ -252,6 +252,39 @@ function drone_tasks.recreate_idle_drones()
             set_drone_as_idle(drone_data.entity)
         end
     end
+end
+function drone_tasks.fix_task_zero_count_item()
+    local removal = {}
+    local remove_count = 0
+    local remove_item_count = 0
+
+    for task_id, task in pairs(get_tasks()) do
+        if task.items then
+            local i = 1
+
+            while i < #task.items do
+                local item = task.items
+
+                if item.count == nil or item.count <= 0 then
+                    table.remove(task.items, i)
+                    remove_item_count = remove_item_count + 1
+                else
+                    i = i + 1
+                end
+            end
+
+            if #task.items == 0 then
+                table.insert(removal, task_id)
+                remove_count = remove_count + 1
+            end
+        end
+    end
+
+    for _, task_id in ipairs(removal) do
+        remove_and_cleanup_task(task_id)
+    end
+
+    log("Removed " .. remove_item_count .. " zero cound items, and " .. remove_count .. " tasks with zero count items")
 end
 
 function drone_tasks.is_valid(id)
