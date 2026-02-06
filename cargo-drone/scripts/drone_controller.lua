@@ -445,10 +445,10 @@ function drone_controller.tick(game_tick)
     local current_action = 0
 
     if update_state == 2 then
-        while key_surface ~= nil and current_action < max_actions do
+        while key_surface ~= nil do
             local idle_drones = idling_cargo_drones[key_surface]
 
-            while key_drone ~= nil and current_action < max_actions do
+            while key_drone ~= nil do
                 local drone = idle_drones[key_drone]
 
                 if drone.valid then
@@ -469,13 +469,23 @@ function drone_controller.tick(game_tick)
                     end
                 end
 
+                key_drone, drone = next(idle_drones, key_drone)
+
                 current_action = current_action + 1
 
-                key_drone, drone = next(idle_drones, key_drone)
+                if current_action >= max_actions then
+                    goto max_action_reached
+                end
             end
 
             key_surface, idle_drones = next(idling_cargo_drones, key_surface)
+            
+            if key_surface then
+                key_drone = next(idle_drones, key_drone)
+            end
         end
+
+        ::max_action_reached::
 
         if key_surface == nil then
             local idle_drones = nil
