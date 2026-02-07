@@ -2,7 +2,126 @@
 local window_gui_name = "cargo-drone-mooring"
 local close_button_gui_name = "cargo-drone-mooring-close-button"
 
+local function build_gui_mooring(player, mooring, parent)
+    local mooring_frame = parent.add{
+        type = "frame",
+        name = "cargo-drone-mooring-frame", -- FIXME: Is it needed? What does it do?
+        style = "inside_shallow_frame",
+        direction = "vertical",
+    }
+
+    local preview_flow = mooring_frame.add{
+        type = "flow",
+        direction = "horizontal",
+    }
+
+    preview_flow.style.vertical_align = "center"
+    preview_flow.style.horizontal_spacing = 8
+
+    local preview = preview_flow.add{
+        type = "entity-preview",
+        name = "cargo-drone-preview", -- FIXME: Needed?
+        style = "wide_entity_button",
+    }
+
+    preview.entity = mooring
+    preview.style.height = 416
+    preview.style.width = 160
+end
+
+local function build_gui_drones(player, mooring, parent)
+    local drones_frame = parent.add{
+        type = "frame",
+        style = "inside_shallow_frame",
+        direction = "vertical"
+    }
+
+    local subheader_frame = drones_frame.add{
+        type = "frame",
+        style = "subheader_frame"
+    }
+
+    subheader_frame.style.horizontally_stretchable = true
+    subheader_frame.style.vertical_align = "center"
+
+    subheader_frame.add{
+        type = "label",
+        caption = "Cargo drones on the way",
+        style = "subheader_label"
+    }
+
+    local drones_scroll = drones_frame.add{
+        type = "scroll-pane",
+        style = "scroll_pane_in_shallow_frame"
+    }
+
+    drones_scroll.style.margin = 4
+    drones_scroll.style.maximal_height = 416
+
+    local drone_table = drones_scroll.add{
+        type = "table",
+        column_count = 1,
+        --style = "bordered_table"
+    }
+
+    drone_table.style.horizontally_stretchable = true
+    drone_table.style.margin = 0
+    
+    for i = 1, 6 do
+        local minimap_border = drone_table.add{
+            type = "frame",
+            style = "shallow_frame",
+            direction = "vertical",
+        }
+
+        minimap_border.style.margin = 4
+
+        local minimap_frame = minimap_border.add{
+            type = "frame",
+            style = "inside_deep_frame",
+            direction = "vertical",
+        }
+
+        --minimap_frame.style.margin = 4
+
+        local minimap_flow = minimap_frame.add{
+            type = "flow",
+            direction = "horizontal",
+        }
+
+        local minimap = minimap_flow.add{
+            type = "minimap",
+            name = "cargo-drone-mooring-drone-minimap", -- FIXME: Needed?
+        }
+
+        minimap.entity = mooring
+        minimap.style.height = 120
+        minimap.style.width = 240
+        
+        local drone_task_frame = minimap_border.add{
+            type = "frame",
+            style = "inside_deep_frame"
+        }
+
+        local drone_task_header_frame = drone_task_frame.add{
+            type = "frame",
+            style = "subheader_frame"
+        }
+
+        drone_task_header_frame.style.horizontally_stretchable = true
+        drone_task_header_frame.style.vertical_align = "center"
+
+        drone_task_header_frame.add{
+            type = "label",
+            caption = "Heading to provider [42m]",
+            style = "subheader_label"
+        }
+
+    end
+end
+
 local function build_gui(player, mooring)
+    -- Shamelessly stolen from Entity GUI Library
     local frame = player.gui.screen.add{
         type = "frame",
         name = window_gui_name,
@@ -49,6 +168,19 @@ local function build_gui(player, mooring)
         style = "frame_action_button",
         tooltip = { "gui.close-instruction" },
     }
+
+    local main_flow = frame.add{
+        type = "flow",
+        direction = "horizontal",
+    }
+
+    main_flow.style.horizontal_spacing = 8
+
+    build_gui_mooring(player, mooring, main_flow)
+
+    build_gui_drones(player, mooring, main_flow)
+
+    -- End steal mode
 
     storage.player_gui[player.index] = {
         frame = frame,
