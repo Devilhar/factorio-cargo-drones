@@ -104,6 +104,8 @@ function on_tick(event)
 		rc.tick()
 
 		dc.tick(event.tick)
+
+		gm.update_data_observers()
 	end)
 end
 
@@ -123,8 +125,26 @@ end
 function on_gui_closed(event)
 	gm.on_gui_closed(event)
 end
+function on_gui_location_changed(event)
+	gm.on_gui_location_changed(event)
+end
 function on_gui_click(event)
     gm.on_gui_click(event)
+end
+function on_gui_checked_state_changed(event)
+	gm.on_gui_checked_state_changed(event)
+end
+function on_gui_value_changed(event)
+	gm.on_gui_value_changed(event)
+end
+function on_gui_text_changed(event)
+	gm.on_gui_text_changed(event)
+end
+function on_gui_hover(event)
+	gm.on_gui_hover(event)
+end
+function on_gui_leave(event)
+	gm.on_gui_leave(event)
 end
 
 function on_built_entity(event)
@@ -159,7 +179,13 @@ script.on_event(defines.events.on_tick, on_tick)
 script.on_event(defines.events.on_object_destroyed, on_object_destroyed)
 script.on_event(defines.events.on_gui_opened, on_gui_opened)
 script.on_event(defines.events.on_gui_closed, on_gui_closed)
+script.on_event(defines.events.on_gui_location_changed, on_gui_location_changed)
 script.on_event(defines.events.on_gui_click, on_gui_click)
+script.on_event(defines.events.on_gui_checked_state_changed, on_gui_checked_state_changed)
+script.on_event(defines.events.on_gui_value_changed, on_gui_value_changed)
+script.on_event(defines.events.on_gui_text_changed, on_gui_text_changed)
+script.on_event(defines.events.on_gui_hover, on_gui_hover)
+script.on_event(defines.events.on_gui_leave, on_gui_leave)
 
 local build_events = {
 	defines.events.on_built_entity,
