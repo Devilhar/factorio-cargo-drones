@@ -3,6 +3,7 @@ local ep	= require("scripts.entity_property")
 local dc	= require("scripts.drone_controller")
 local dt	= require("scripts.drone_tasks")
 local rc    = require("scripts.requester_cooldown")
+local gm	= require("scripts.gui_mooring")
 
 local current_mod_state = 5
 
