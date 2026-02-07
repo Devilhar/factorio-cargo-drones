@@ -297,6 +297,11 @@ end
 
 function drone_tasks.is_at_target_limit(mooring)
     local drone_limit = mh.get_drone_limit(mooring)
+
+    if drone_limit == nil then
+        return false
+    end
+
     local target_count = ep.get_entity_property(mooring, "task_target_count") or 0
 
     return target_count >= drone_limit
