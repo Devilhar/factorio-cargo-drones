@@ -163,6 +163,9 @@ end
 function drone_tasks.get(id)
     return get_tasks()[id]
 end
+function drone_tasks.get_entity_task_ids(entity)
+    return ep.get_entity_property(entity, "task_ids")
+end
 
 function drone_tasks.is_at_target_limit(mooring)
     local drone_limit = mh.get_drone_limit(mooring)
