@@ -119,6 +119,25 @@ function on_object_destroyed(event)
 	unmanage_entity(event.useful_id)
 end
 
+function on_entity_settings_pasted(event)
+	if not event.source or not event.source.valid then
+		return
+	end
+	if not event.destination or not event.destination.valid then
+		return
+	end
+
+	-- FIXME: Create settings table for easier managing
+	-- FIXME: Support all moorings
+	if event.source.name == "cargo-drone-provider-mooring" and event.destination.name == "cargo-drone-provider-mooring" then
+		game.print("COPY")
+		ep.set_entity_property(event.destination, "drone_limit_enabled", ep.get_entity_property(event.source, "drone_limit_enabled"))
+		ep.set_entity_property(event.destination, "drone_limit_value", ep.get_entity_property(event.source, "drone_limit_value"))
+		ep.set_entity_property(event.destination, "priority_value", ep.get_entity_property(event.source, "priority_value"))
+		ep.set_entity_property(event.destination, "priority_circuit", ep.get_entity_property(event.source, "priority_circuit"))
+	end
+end
+
 function on_gui_opened(event)
 	gm.on_gui_opened(event)
 end
@@ -177,6 +196,8 @@ script.on_init(on_init)
 script.on_configuration_changed(on_configuration_changed)
 script.on_event(defines.events.on_tick, on_tick)
 script.on_event(defines.events.on_object_destroyed, on_object_destroyed)
+script.on_event(defines.events.on_entity_settings_pasted, on_entity_settings_pasted)
+
 script.on_event(defines.events.on_gui_opened, on_gui_opened)
 script.on_event(defines.events.on_gui_closed, on_gui_closed)
 script.on_event(defines.events.on_gui_location_changed, on_gui_location_changed)
