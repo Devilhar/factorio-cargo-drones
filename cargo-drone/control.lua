@@ -6,7 +6,7 @@ local rc    = require("scripts.requester_cooldown")
 local mh	= require("scripts.mooring_helper")
 local gm	= require("scripts.gui_mooring")
 
-local current_mod_state = 5
+local current_mod_state = 6
 
 local mooring_type = {
 	provider = 1,
@@ -107,8 +107,6 @@ local function try_setup_mooring(mooring)
 	mh.clean_settings(mooring)
 
 	ep.set_entity_property(mooring, "proxy_container", proxy_container)
-
-	return
 end
 
 local function migrate_state()
@@ -174,12 +172,29 @@ function on_tick(event)
 
 		dc.tick(event.tick)
 
-		gm.update_data_observers()
+		gm.tick()
 	end)
 end
 
-function on_object_destroyed(event)
-	gm.on_object_destroyed(event)
+function on_built_entity(event)
+	safe_call(function()
+		local entity = event.entity
+
+		if entity.name == "cargo-drone" then
+			ep.entity_manage(entity)
+
+			script.register_on_object_destroyed(entity)
+
+			ep.add_cargo_drone(entity)
+
+			dt.drone_created(entity)
+		else
+			try_setup_mooring(entity)
+		end
+	end)
+end
+function on_destroyed_entity(event)
+	gm.on_destroyed_entity(event)
 
 	local entity = event.entity
 
@@ -222,9 +237,6 @@ end
 function on_gui_closed(event)
 	gm.on_gui_closed(event)
 end
-function on_gui_location_changed(event)
-	gm.on_gui_location_changed(event)
-end
 function on_gui_click(event)
     gm.on_gui_click(event)
 end
@@ -237,29 +249,8 @@ end
 function on_gui_text_changed(event)
 	gm.on_gui_text_changed(event)
 end
-function on_gui_hover(event)
-	gm.on_gui_hover(event)
-end
-function on_gui_leave(event)
-	gm.on_gui_leave(event)
-end
-
-function on_built_entity(event)
-	safe_call(function()
-		local entity = event.entity
-
-		if entity.name == "cargo-drone" then
-			ep.entity_manage(entity)
-
-			script.register_on_object_destroyed(entity)
-
-			ep.add_cargo_drone(entity)
-
-			dt.drone_created(entity)
-		else
-			try_setup_mooring(entity)
-		end
-	end)
+function on_gui_elem_changed(event)
+	gm.on_gui_elem_changed(event)
 end
 
 script.on_init(on_init)
@@ -269,13 +260,11 @@ script.on_event(defines.events.on_entity_settings_pasted, on_entity_settings_pas
 
 script.on_event(defines.events.on_gui_opened, on_gui_opened)
 script.on_event(defines.events.on_gui_closed, on_gui_closed)
-script.on_event(defines.events.on_gui_location_changed, on_gui_location_changed)
 script.on_event(defines.events.on_gui_click, on_gui_click)
 script.on_event(defines.events.on_gui_checked_state_changed, on_gui_checked_state_changed)
 script.on_event(defines.events.on_gui_value_changed, on_gui_value_changed)
 script.on_event(defines.events.on_gui_text_changed, on_gui_text_changed)
-script.on_event(defines.events.on_gui_hover, on_gui_hover)
-script.on_event(defines.events.on_gui_leave, on_gui_leave)
+script.on_event(defines.events.on_gui_elem_changed, on_gui_elem_changed)
 
 local event_filters = {
 	{ filter = "name", name = "cargo-drone" },
@@ -298,7 +287,7 @@ local destroy_events = {
 }
 
 script.on_event(build_events, on_built_entity)
-script.on_event(destroy_events, on_object_destroyed)
+script.on_event(destroy_events, on_destroyed_entity)
 
 for _, event in ipairs(build_events) do
 	script.set_event_filter(event, event_filters)
