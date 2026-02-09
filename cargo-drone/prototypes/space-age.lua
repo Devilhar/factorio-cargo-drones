@@ -11,6 +11,6 @@ local function one_pressure_condition()
 end
 
 data.raw["car"]["cargo-drone"].surface_conditions = one_pressure_condition()
-data.raw["proxy-container"]["cargo-drone-provider-mooring"].surface_conditions = one_pressure_condition()
-data.raw["proxy-container"]["cargo-drone-requester-mooring"].surface_conditions = one_pressure_condition()
-data.raw["proxy-container"]["cargo-drone-refuel-mooring"].surface_conditions = one_pressure_condition()
+data.raw["constant-combinator"]["cargo-drone-mooring-constant-combinator-provider"].surface_conditions = one_pressure_condition()
+data.raw["constant-combinator"]["cargo-drone-mooring-constant-combinator-requester"].surface_conditions = one_pressure_condition()
+data.raw["constant-combinator"]["cargo-drone-mooring-constant-combinator-refueler"].surface_conditions = one_pressure_condition()

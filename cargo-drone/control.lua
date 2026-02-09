@@ -3,9 +3,31 @@ local ep	= require("scripts.entity_property")
 local dc	= require("scripts.drone_controller")
 local dt	= require("scripts.drone_tasks")
 local rc    = require("scripts.requester_cooldown")
+local mh	= require("scripts.mooring_helper")
 local gm	= require("scripts.gui_mooring")
 
 local current_mod_state = 5
+
+local mooring_type = {
+	provider = 1,
+	requester = 2,
+	refueler = 3
+}
+
+local moorings_data = {
+	["cargo-drone-mooring-constant-combinator-provider"] = {
+		type = mooring_type.provider,
+		proxy_container_name = "cargo-drone-mooring-proxy-container-provider"
+	},
+	["cargo-drone-mooring-constant-combinator-requester"] = {
+		type = mooring_type.requester,
+		proxy_container_name = "cargo-drone-mooring-proxy-container-requester"
+	},
+	["cargo-drone-mooring-constant-combinator-refueler"] = {
+		type = mooring_type.refueler,
+		proxy_container_name = "cargo-drone-mooring-proxy-container-refueler"
+	},
+}
 
 local function safe_call(func)
 	local result, err = pcall(func)
@@ -47,6 +69,48 @@ local function resetup_object_events()
 	end
 end
 
+local function try_setup_mooring(mooring)
+	local mooring_data = moorings_data[mooring.name]
+
+	if mooring_data == nil then
+		return
+	end
+
+	local proxy_container = mooring.surface.create_entity({
+		name = mooring_data.proxy_container_name,
+		position = mooring.position,
+		force = mooring.force,
+		create_build_effect_smoke = false,
+		raise_built = true,
+	})
+
+	if not proxy_container then
+		mooring.destroy()
+
+		return
+	end
+
+	ep.entity_manage(mooring)
+
+	script.register_on_object_destroyed(mooring)
+
+	if mooring_data.type == mooring_type.provider then
+		ep.add_cargo_drone_provider_mooring(mooring)
+	elseif mooring_data.type == mooring_type.requester then
+		ep.add_cargo_drone_requester_mooring(mooring)
+
+		ep.set_entity_property(mooring, "next_free_gametick", 0)
+	else
+		ep.add_cargo_drone_refuel_mooring(mooring)
+	end
+
+	mh.clean_settings(mooring)
+
+	ep.set_entity_property(mooring, "proxy_container", proxy_container)
+
+	return
+end
+
 local function migrate_state()
 	log("Migrating cargo-drone state...")
 
@@ -54,30 +118,35 @@ local function migrate_state()
 
 	storage.mod_state = current_mod_state
 
-	if old_mod_state < 1 then
-		resetup_object_events()
-	end
-	
-	if old_mod_state < 2 then
-		dt.remove_invalid_tasks()
+	if old_mod_state < 6 then
+		ep.remove_invalid_entities()
 	end
 
-	if old_mod_state < 3 then
-		dt.recount_task_targets()
+	if old_mod_state < 1 then
+		resetup_object_events()
 	end
 
 	if old_mod_state < 4 then
 		ep.reset_surface_indices()
-
-		dt.recreate_idle_drones()
-	end
-
-	if old_mod_state < 5 then
-		dt.fix_task_zero_count_item()
 	end
 
 	if old_mod_state < 6 then
 		gm.create_player_storage()
+		dt.migration_remove_all_tasks()
+
+		for _, surface in pairs(game.surfaces) do
+			for _, entity in pairs(surface.find_entities_filtered{ name = "cargo-drone-mooring-constant-combinator-provider" }) do
+				try_setup_mooring(entity)
+			end
+			for _, entity in pairs(surface.find_entities_filtered{ name = "cargo-drone-mooring-constant-combinator-requester" }) do
+				try_setup_mooring(entity)
+			end
+			for _, entity in pairs(surface.find_entities_filtered{ name = "cargo-drone-mooring-constant-combinator-refueler" }) do
+				try_setup_mooring(entity)
+			end
+		end
+
+		game.print("Warning. Due to a migration issue when updating cargo-drone from a version prior to 1.4.0, all circuit wires connected to moorings have been removed and will need to be replaced. Note that drone limit and priority must now be configured in the moorings. Sorry for the inconvenience.")
 	end
 
 	log("cargo-drone state migration complete")
@@ -112,29 +181,38 @@ end
 function on_object_destroyed(event)
 	gm.on_object_destroyed(event)
 
-	if not ep.is_managed(event.useful_id) then
+	local entity = event.entity
+
+	local unit_number = entity.unit_number
+
+	if not ep.is_managed(unit_number) then
 		return
 	end
 
-	unmanage_entity(event.useful_id)
+	if ep.is_provider_mooring(unit_number)
+		or ep.is_requester_mooring(unit_number)
+		or ep.is_refueler_mooring(unit_number) then
+		local proxy_container = ep.get_entity_property(entity, "proxy_container")
+
+		if proxy_container then
+			proxy_container.destroy({ raise_destroy = true })
+		end
+	end
+
+	unmanage_entity(unit_number)
 end
 
 function on_entity_settings_pasted(event)
-	if not event.source or not event.source.valid then
-		return
-	end
 	if not event.destination or not event.destination.valid then
 		return
 	end
 
-	-- FIXME: Create settings table for easier managing
-	-- FIXME: Support all moorings
-	if event.source.name == "cargo-drone-provider-mooring" and event.destination.name == "cargo-drone-provider-mooring" then
-		game.print("COPY")
-		ep.set_entity_property(event.destination, "drone_limit_enabled", ep.get_entity_property(event.source, "drone_limit_enabled"))
-		ep.set_entity_property(event.destination, "drone_limit_value", ep.get_entity_property(event.source, "drone_limit_value"))
-		ep.set_entity_property(event.destination, "priority_value", ep.get_entity_property(event.source, "priority_value"))
-		ep.set_entity_property(event.destination, "priority_circuit", ep.get_entity_property(event.source, "priority_circuit"))
+	local unit_number = event.destination.unit_number
+
+	if ep.is_provider_mooring(unit_number)
+		or ep.is_requester_mooring(unit_number)
+		or ep.is_refueler_mooring(unit_number) then
+		mh.clean_settings(event.destination)
 	end
 end
 
@@ -168,26 +246,18 @@ end
 
 function on_built_entity(event)
 	safe_call(function()
-		ep.entity_manage(event.entity)
+		local entity = event.entity
 
-		script.register_on_object_destroyed(event.entity)
-		if event.entity.name == "cargo-drone" then
-			ep.add_cargo_drone(event.entity)
+		if entity.name == "cargo-drone" then
+			ep.entity_manage(entity)
 
-			dt.drone_created(event.entity)
-		elseif event.entity.name == "cargo-drone-provider-mooring" then
-			if not event.entity.get_control_behavior() then
-				event.entity.get_or_create_control_behavior().read_contents = false
-			end
-			ep.add_cargo_drone_provider_mooring(event.entity)
-		elseif event.entity.name == "cargo-drone-requester-mooring" then
-			if not event.entity.get_control_behavior() then
-				event.entity.get_or_create_control_behavior().read_contents = false
-			end
-			ep.add_cargo_drone_requester_mooring(event.entity)
-			ep.set_entity_property(event.entity, "next_free_gametick", 0)
-		elseif event.entity.name == "cargo-drone-refuel-mooring" then
-			ep.add_cargo_drone_refuel_mooring(event.entity)
+			script.register_on_object_destroyed(entity)
+
+			ep.add_cargo_drone(entity)
+
+			dt.drone_created(entity)
+		else
+			try_setup_mooring(entity)
 		end
 	end)
 end
@@ -195,7 +265,6 @@ end
 script.on_init(on_init)
 script.on_configuration_changed(on_configuration_changed)
 script.on_event(defines.events.on_tick, on_tick)
-script.on_event(defines.events.on_object_destroyed, on_object_destroyed)
 script.on_event(defines.events.on_entity_settings_pasted, on_entity_settings_pasted)
 
 script.on_event(defines.events.on_gui_opened, on_gui_opened)
@@ -208,6 +277,12 @@ script.on_event(defines.events.on_gui_text_changed, on_gui_text_changed)
 script.on_event(defines.events.on_gui_hover, on_gui_hover)
 script.on_event(defines.events.on_gui_leave, on_gui_leave)
 
+local event_filters = {
+	{ filter = "name", name = "cargo-drone" },
+	{ filter = "name", name = "cargo-drone-mooring-constant-combinator-provider" },
+	{ filter = "name", name = "cargo-drone-mooring-constant-combinator-requester" },
+	{ filter = "name", name = "cargo-drone-mooring-constant-combinator-refueler" }
+}
 local build_events = {
 	defines.events.on_built_entity,
 	defines.events.on_robot_built_entity,
@@ -215,14 +290,19 @@ local build_events = {
 	defines.events.script_raised_revive,
 	defines.events.on_entity_cloned,
 }
-local build_event_filters = {
-	{ filter = "name", name = "cargo-drone" },
-	{ filter = "name", name = "cargo-drone-provider-mooring" },
-	{ filter = "name", name = "cargo-drone-requester-mooring" },
-	{ filter = "name", name = "cargo-drone-refuel-mooring" }
+local destroy_events = {
+	defines.events.on_entity_died,
+	defines.events.on_player_mined_entity,
+	defines.events.on_robot_mined_entity,
+	defines.events.script_raised_destroy,
 }
+
 script.on_event(build_events, on_built_entity)
+script.on_event(destroy_events, on_object_destroyed)
 
 for _, event in ipairs(build_events) do
-	script.set_event_filter(event, build_event_filters)
+	script.set_event_filter(event, event_filters)
+end
+for _, event in ipairs(destroy_events) do
+	script.set_event_filter(event, event_filters)
 end
