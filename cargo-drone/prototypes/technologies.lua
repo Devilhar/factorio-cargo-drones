@@ -12,15 +12,15 @@ data:extend({
 			},
 			{
 				type = "unlock-recipe",
-				recipe = "cargo-drone-provider-mooring"
+				recipe = "cargo-drone-mooring-constant-combinator-provider"
 			},
 			{
 				type = "unlock-recipe",
-				recipe = "cargo-drone-requester-mooring"
+				recipe = "cargo-drone-mooring-constant-combinator-requester"
 			},
 			{
 				type = "unlock-recipe",
-				recipe = "cargo-drone-refuel-mooring"
+				recipe = "cargo-drone-mooring-constant-combinator-refueler"
 			}
 		},
 		prerequisites = {

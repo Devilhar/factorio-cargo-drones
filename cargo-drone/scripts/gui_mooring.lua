@@ -520,9 +520,15 @@ function gui_mooring.on_gui_opened(event)
 		return
 	end
 
-	if entity.name ~= "cargo-drone-provider-mooring"
-        and entity.name ~= "cargo-drone-requester-mooring"
-        and entity.name ~= "cargo-drone-refuel-mooring" then
+    local entity_name = entity.name
+
+    if entity_name == "entity-ghost" then
+        entity_name = entity.ghost_name
+    end
+
+	if entity_name ~= "cargo-drone-mooring-constant-combinator-provider"
+        and entity_name ~= "cargo-drone-mooring-constant-combinator-requester"
+        and entity_name ~= "cargo-drone-mooring-constant-combinator-refueler" then
         return
 	end
 

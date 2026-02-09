@@ -22,16 +22,6 @@ local function get_tasks()
     return storage.drone_tasks
 end
 
-local function get_element_count(table)
-    local count = 0
-
-    for _, _ in pairs(table) do
-        count = count + 1
-    end
-
-    return count
-end
-
 local function set_drone_as_idle(drone)
     if not storage.idle_drones then
         storage.idle_drones = {}
@@ -124,16 +114,6 @@ local function unassign_task_mooring(mooring_unit_number, task_id)
     end
 end
 
-local function recount_mooring_targets(mooring_unit_number)
-    local properties = ep.get_entity_properties_from_unit_number(mooring_unit_number)
-
-    if not properties.task_ids then
-        return
-    end
-
-    properties.task_target_count = get_element_count(properties.task_ids)
-end
-
 local function remove_and_cleanup_task(task_id)
     local tasks = get_tasks()
 
@@ -163,128 +143,17 @@ local drone_tasks = {}
 
 drone_tasks.task_types = task_types
 
-function drone_tasks.remove_invalid_tasks()
-    local function is_drone_valid(unit_number, task_id)
-        if unit_number == nil then
-            return false
-        end
-
-        local entity = ep.get_managed_entity(unit_number)
-
-        if not entity or not entity.valid then
-            return false
-        end
-
-        local task_ids = ep.get_entity_property(entity, "task_ids")
-
-        if not task_ids then
-            return false
-        end
-
-        for _, id in ipairs(task_ids) do
-            if id == task_id then
-                return true
-            end
-        end
-
-        return false
-    end
-    local function is_mooring_valid(unit_number, task_id)
-        if unit_number == nil then
-            return true
-        end
-
-        local entity = ep.get_managed_entity(unit_number)
-
-        if not entity or not entity.valid then
-            return false
-        end
-
-        local task_ids = ep.get_entity_property(entity, "task_ids")
-
-        if not task_ids or not task_ids[task_id] then
-            return false
-        end
-
-        return true
-    end
-
-    local tasks = get_tasks()
-    local removal = {}
-    local remove_count = 0
-
-    for task_id, task in pairs(tasks) do
-        if not is_drone_valid(task.drone_unit_number, task_id)
-            or not is_mooring_valid(task.provider_unit_number, task_id)
-            or not is_mooring_valid(task.requester_unit_number, task_id)
-            or not is_mooring_valid(task.refueler_unit_number, task_id) then
-            table.insert(removal, task_id)
-            remove_count = remove_count + 1
-        end
-    end
-
-    for _, task_id in ipairs(removal) do
-        tasks[task_id] = nil
-    end
-    
-    log("Removed " .. remove_count .. " invalid Cargo drone tasks")
-end
-function drone_tasks.recount_task_targets()
-    for _, task in pairs(get_tasks()) do
-        if task.provider_unit_number ~= nil then
-            recount_mooring_targets(task.provider_unit_number)
-        end
-        if task.requester_unit_number ~= nil then
-            recount_mooring_targets(task.requester_unit_number)
-        end
-        if task.refueler_unit_number ~= nil then
-            recount_mooring_targets(task.refueler_unit_number)
-        end
-    end
-end
-function drone_tasks.recreate_idle_drones()
+function drone_tasks.migration_remove_all_tasks()
     storage.idle_drones = nil
+    
+    for _, drone_data in pairs(ep.get_cargo_drones()) do
+        local task_ids = ep.set_entity_property(drone_data.entity, "task_ids", nil)
 
-    for unit_number, drone_data in pairs(ep.get_cargo_drones()) do
-        local task_ids = ep.get_entity_property_from_unit_number(unit_number, "task_ids")
-
-        if not task_ids or not task_ids[1] then
-            set_drone_as_idle(drone_data.entity)
-        end
-    end
-end
-function drone_tasks.fix_task_zero_count_item()
-    local removal = {}
-    local remove_count = 0
-    local remove_item_count = 0
-
-    for task_id, task in pairs(get_tasks()) do
-        if task.items then
-            local i = 1
-
-            while i < #task.items do
-                local item = task.items
-
-                if item.count == nil or item.count <= 0 then
-                    table.remove(task.items, i)
-                    remove_item_count = remove_item_count + 1
-                else
-                    i = i + 1
-                end
-            end
-
-            if #task.items == 0 then
-                table.insert(removal, task_id)
-                remove_count = remove_count + 1
-            end
-        end
+        set_drone_as_idle(drone_data.entity)
     end
 
-    for _, task_id in ipairs(removal) do
-        remove_and_cleanup_task(task_id)
-    end
-
-    log("Removed " .. remove_item_count .. " zero cound items, and " .. remove_count .. " tasks with zero count items")
+    storage.drone_tasks = {}
+    storage.tasks_next_id = nil
 end
 
 function drone_tasks.is_valid(id)

@@ -1,0 +1,17 @@
+{
+  "entity": [
+    ["cargo-drone-provider-mooring", "cargo-drone-mooring-constant-combinator-provider"],
+    ["cargo-drone-requester-mooring", "cargo-drone-mooring-constant-combinator-requester"],
+    ["cargo-drone-refuel-mooring", "cargo-drone-mooring-constant-combinator-refueler"]
+  ],
+  "item": [
+    ["cargo-drone-provider-mooring", "cargo-drone-mooring-constant-combinator-provider"],
+    ["cargo-drone-requester-mooring", "cargo-drone-mooring-constant-combinator-requester"],
+    ["cargo-drone-refuel-mooring", "cargo-drone-mooring-constant-combinator-refueler"]
+  ],
+  "recipe": [
+    ["cargo-drone-provider-mooring", "cargo-drone-mooring-constant-combinator-provider"],
+    ["cargo-drone-requester-mooring", "cargo-drone-mooring-constant-combinator-requester"],
+    ["cargo-drone-refuel-mooring", "cargo-drone-mooring-constant-combinator-refueler"]
+  ]
+}
