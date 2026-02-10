@@ -19,17 +19,21 @@ When a Cargo Drone is waiting at a mooring, you can insert and extract items by 
 You can find an example setup and Blueprint book cheat sheet [here](example-setup.md)
 
 ### Limit Cargo drones per mooring
-You can set a limit of incoming Cargo drones to any mooring by sending the mooring a [L] signal.
-- Any value over 0 will set the limit to that value
-- Any value below 0 will stop new Cargo drones from heading towards it
-- If the signal is 0, there is no limit
+You can set a limit of incoming Cargo drones to any mooring by setting it in its menu or by sending the mooring a signal.
+
+For Signals:
+- Any value greater than 0 will set the limit to that value
+- Any value less than or equal to 0 will stop new Cargo drones from heading towards it
 
 Note that Cargo drones already tasked with going to a mooring will not stop or change task if the mooring is now above its limit.
 
 ### Mooring priority
-You can set any mooring's priority to a number between 0 and 255 (inclusive) by sending it a [P] signal. Moorings with a higher priority signal will be targeted first by Cargo drones.
+You can set any mooring's priority to a number between 0 and 255 (inclusive) by setting it in its menu or by sending the mooring a signal. Moorings with a higher priority signal will be targeted first by Cargo drones.
 
-Mooring priority defaults to 0 if no priority signal is sent.
+For Signals:
+- The value will be clamped between 0 and 255
+
+Note that Cargo drones already tasked with going to a mooring will change target if there's a new mooring with higher priority.
 
 ### Special thanks
 Thank you to KeithFromCanada for feedback and help
