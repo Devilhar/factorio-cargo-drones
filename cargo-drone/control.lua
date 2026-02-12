@@ -157,7 +157,9 @@ function on_init()
 		gm.create_player_storage()
 	end)
 end
-
+function on_load()
+	gm.on_load()
+end
 function on_configuration_changed(event)
 	if storage.mod_state == current_mod_state then
 		return
@@ -165,7 +167,6 @@ function on_configuration_changed(event)
 
 	migrate_state()
 end
-
 function on_tick(event)
 	safe_call(function()
 		rc.tick()
@@ -174,6 +175,16 @@ function on_tick(event)
 
 		gm.tick()
 	end)
+end
+
+function on_player_joined_game(event)
+	gm.on_player_joined_game(event)
+end
+function on_player_left_game(event)
+	gm.on_player_left_game(event)
+end
+function on_player_removed(event)
+	gm.on_player_removed(event)
 end
 
 function on_built_entity(event)
@@ -216,7 +227,6 @@ function on_destroyed_entity(event)
 
 	unmanage_entity(unit_number)
 end
-
 function on_entity_settings_pasted(event)
 	if not event.destination or not event.destination.valid then
 		return
@@ -253,19 +263,6 @@ function on_gui_elem_changed(event)
 	gm.on_gui_elem_changed(event)
 end
 
-script.on_init(on_init)
-script.on_configuration_changed(on_configuration_changed)
-script.on_event(defines.events.on_tick, on_tick)
-script.on_event(defines.events.on_entity_settings_pasted, on_entity_settings_pasted)
-
-script.on_event(defines.events.on_gui_opened, on_gui_opened)
-script.on_event(defines.events.on_gui_closed, on_gui_closed)
-script.on_event(defines.events.on_gui_click, on_gui_click)
-script.on_event(defines.events.on_gui_checked_state_changed, on_gui_checked_state_changed)
-script.on_event(defines.events.on_gui_value_changed, on_gui_value_changed)
-script.on_event(defines.events.on_gui_text_changed, on_gui_text_changed)
-script.on_event(defines.events.on_gui_elem_changed, on_gui_elem_changed)
-
 local event_filters = {
 	{ filter = "name", name = "cargo-drone" },
 	{ filter = "name", name = "cargo-drone-mooring-constant-combinator-provider" },
@@ -286,8 +283,26 @@ local destroy_events = {
 	defines.events.script_raised_destroy,
 }
 
+script.on_init(on_init)
+script.on_load(on_load)
+script.on_configuration_changed(on_configuration_changed)
+script.on_event(defines.events.on_tick, on_tick)
+
+script.on_event(defines.events.on_player_joined_game, on_player_joined_game)
+script.on_event(defines.events.on_player_joined_game, on_player_left_game)
+script.on_event(defines.events.on_player_joined_game, on_player_removed)
+
 script.on_event(build_events, on_built_entity)
 script.on_event(destroy_events, on_destroyed_entity)
+script.on_event(defines.events.on_entity_settings_pasted, on_entity_settings_pasted)
+
+script.on_event(defines.events.on_gui_opened, on_gui_opened)
+script.on_event(defines.events.on_gui_closed, on_gui_closed)
+script.on_event(defines.events.on_gui_click, on_gui_click)
+script.on_event(defines.events.on_gui_checked_state_changed, on_gui_checked_state_changed)
+script.on_event(defines.events.on_gui_value_changed, on_gui_value_changed)
+script.on_event(defines.events.on_gui_text_changed, on_gui_text_changed)
+script.on_event(defines.events.on_gui_elem_changed, on_gui_elem_changed)
 
 for _, event in ipairs(build_events) do
 	script.set_event_filter(event, event_filters)

@@ -14,22 +14,24 @@ local window_gui_name = gui_prefix .. "window-mooring-main"
 
 local not_observed = {}
 
+local gui_data = {}
+
 local function register_on_click(player, element, callback)
     if element.name == "" then
         error("Registered nameless GuiElement")
     end
 
-    storage.gui_player[player.index].on_click[element.name] = callback
+    gui_data[player.index].on_click[element.name] = callback
 end
 local function register_on_changed(player, element, callback)
     if element.name == "" then
         error("Registered nameless GuiElement")
     end
 
-    storage.gui_player[player.index].on_changed[element.name] = callback
+    gui_data[player.index].on_changed[element.name] = callback
 end
 local function register_data_observer(player, get_data, callable)
-    table.insert(storage.gui_player[player.index].data_observers, {
+    table.insert(gui_data[player.index].data_observers, {
         get_data = get_data,
         callable = callable,
         previous_data = not_observed
@@ -45,11 +47,11 @@ local function handle_event(event, action_type)
 
     local player = game.get_player(event.player_index)
 
-    if not storage.gui_player[player.index] then
+    if not gui_data[player.index] then
         return
     end
 
-    local callable = storage.gui_player[player.index][action_type][element.name]
+    local callable = gui_data[player.index][action_type][element.name]
 
     if not callable then
         return
@@ -419,7 +421,7 @@ local function build_gui_drones(player, mooring, parent)
         end
     end
 
-    storage.gui_player[player.index].drone_update = function()
+    gui_data[player.index].drone_update = function()
         local task_ids = dt.get_entity_task_ids(mooring)
 
         local index = 1
@@ -705,16 +707,14 @@ local function build_gui_circuit(player, mooring, parent)
 end
 
 local function build_gui(player, mooring)
-    local show_circuit_network =
-        mooring.get_circuit_network(defines.wire_connector_id.circuit_red) ~= nil
-        or mooring.get_circuit_network(defines.wire_connector_id.circuit_green) ~= nil
-
     storage.gui_player[player.index] = {
-        entity_unit_number = mooring.unit_number,
+        player = player,
+        entity_unit_number = mooring.unit_number
+    }
+    gui_data[player.index] = {
         on_click = {},
         on_changed = {},
-        data_observers = {},
-        show_circuit_network = show_circuit_network
+        data_observers = {}
     }
     if not storage.gui_entity_lookup[mooring.unit_number] then
         storage.gui_entity_lookup[mooring.unit_number] = {}
@@ -801,7 +801,7 @@ function gui_mooring.create_player_storage()
 end
 
 function gui_mooring.tick()
-    for player_index, player_data in pairs(storage.gui_player) do
+    for player_index, player_data in pairs(gui_data) do
         for _, observer in ipairs(player_data.data_observers) do
             local data = observer.get_data()
 
@@ -813,6 +813,53 @@ function gui_mooring.tick()
         end
         player_data.drone_update()
     end
+end
+
+function gui_mooring.on_load()
+    if not storage.gui_player then
+        return
+    end
+
+    for player_index, player_data in pairs(storage.gui_player) do
+        local player = player_data.player
+        local entity = ep.get_managed_entity(player_data.entity_unit_number)
+
+        if player.connected and entity ~= nil and entity.valid then
+
+            player.gui.screen[window_gui_name].destroy()
+
+            player.opened = nil
+
+            build_gui(player, entity)
+        end
+    end
+end
+function gui_mooring.on_player_joined_game(event)
+    local player_data = storage.gui_player[event.player_index]
+
+    if not player_data then
+        return
+    end
+
+    local player = player_data.player
+    local entity = ep.get_managed_entity(player_data.entity_unit_number)
+
+    player.gui.screen[window_gui_name].destroy()
+
+    player.opened = nil
+
+    if not entity or not entity.valid then
+        return
+    end
+
+    build_gui(player, entity)
+end
+function gui_mooring.on_player_left_game(event)
+    gui_data[event.player_index] = nil
+end
+function gui_mooring.on_player_removed(event)
+    storage.gui_player[event.player_index] = nil
+    gui_data[event.player_index] = nil
 end
 
 function gui_mooring.on_gui_opened(event)
@@ -872,6 +919,7 @@ function gui_mooring.on_gui_closed(event)
     end
 
     storage.gui_player[event.player_index] = nil
+    gui_data[player.index] = nil
 
     player.opened = nil
 end
@@ -880,7 +928,7 @@ function gui_mooring.on_gui_click(event)
 
     local player = game.get_player(event.player_index)
 
-    if not storage.gui_player[player.index] then
+    if not gui_data[player.index] then
         return
     end
 
