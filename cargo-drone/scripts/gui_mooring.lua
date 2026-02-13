@@ -815,6 +815,10 @@ function gui_mooring.tick()
     for player_index, player_data in pairs(storage.gui_player) do
         local local_data = gui_local_data[player_index]
 
+        if not player_data.player.connected then
+            goto continue
+        end
+
         if not local_data or not player_data.entity or not player_data.entity.valid then
             local surface = game.get_surface(player_data.surface_index)
 
@@ -878,33 +882,6 @@ function gui_mooring.tick()
     end
 end
 
-function gui_mooring.on_player_joined_game(event)
-    local player_data = storage.gui_player[event.player_index]
-
-    if not player_data then
-        return
-    end
-
-    remove_from_lookup(event.player_index, player_data.entity_unit_number)
-
-    local player = player_data.player
-    local entity = player_data.entity
-
-    player.gui.screen[window_gui_name].destroy()
-
-    player.opened = nil
-
-    if not entity or not entity.valid then
-        return
-    end
-
-    add_to_lookup(player.index, entity.unit_number)
-
-    build_gui(player, entity)
-end
-function gui_mooring.on_player_left_game(event)
-    gui_local_data[event.player_index] = nil
-end
 function gui_mooring.on_player_removed(event)
     local player_data = storage.gui_player[event.player_index]
 
