@@ -221,7 +221,7 @@ function mooring_helper.get_drone_limit(mooring)
         return 0
     end
 
-    local limit_signal = mooring.get_signal(signal_id_drone_limit, defines.wire_connector_id.circuit_red, defines.wire_connector_id.circuit_green)
+    local limit_signal = mooring.get_signal(signal_id, defines.wire_connector_id.circuit_red, defines.wire_connector_id.circuit_green)
 
     if limit_signal < 0 then
         return 0
