@@ -157,9 +157,6 @@ function on_init()
 		gm.create_player_storage()
 	end)
 end
-function on_load()
-	gm.on_load()
-end
 function on_configuration_changed(event)
 	if storage.mod_state == current_mod_state then
 		return
@@ -284,7 +281,6 @@ local destroy_events = {
 }
 
 script.on_init(on_init)
-script.on_load(on_load)
 script.on_configuration_changed(on_configuration_changed)
 script.on_event(defines.events.on_tick, on_tick)
 
