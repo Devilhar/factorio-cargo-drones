@@ -14,24 +14,16 @@ local window_gui_name = gui_prefix .. "window-mooring-main"
 
 local not_observed = {}
 
-local gui_data = {}
+local gui_local_data = {}
 
 local function register_on_click(player, element, callback)
-    if element.name == "" then
-        error("Registered nameless GuiElement")
-    end
-
-    gui_data[player.index].on_click[element.name] = callback
+    gui_local_data[player.index].on_click[element.name] = callback
 end
 local function register_on_changed(player, element, callback)
-    if element.name == "" then
-        error("Registered nameless GuiElement")
-    end
-
-    gui_data[player.index].on_changed[element.name] = callback
+    gui_local_data[player.index].on_changed[element.name] = callback
 end
 local function register_data_observer(player, get_data, callable)
-    table.insert(gui_data[player.index].data_observers, {
+    table.insert(gui_local_data[player.index].data_observers, {
         get_data = get_data,
         callable = callable,
         previous_data = not_observed
@@ -47,11 +39,11 @@ local function handle_event(event, action_type)
 
     local player = game.get_player(event.player_index)
 
-    if not gui_data[player.index] then
+    if not gui_local_data[player.index] then
         return
     end
 
-    local callable = gui_data[player.index][action_type][element.name]
+    local callable = gui_local_data[player.index][action_type][element.name]
 
     if not callable then
         return
@@ -421,7 +413,7 @@ local function build_gui_drones(player, mooring, parent)
         end
     end
 
-    gui_data[player.index].drone_update = function()
+    gui_local_data[player.index].drone_update = function()
         local task_ids = dt.get_entity_task_ids(mooring)
 
         local index = 1
@@ -526,7 +518,6 @@ local function build_gui_circuit_connection_status(player, mooring, parent)
         end)
 
 end
-
 local function build_gui_circuit(player, mooring, parent)
     local frame = parent.add{
         type = "frame",
@@ -707,20 +698,11 @@ local function build_gui_circuit(player, mooring, parent)
 end
 
 local function build_gui(player, mooring)
-    storage.gui_player[player.index] = {
-        player = player,
-        entity_unit_number = mooring.unit_number
-    }
-    gui_data[player.index] = {
+    gui_local_data[player.index] = {
         on_click = {},
         on_changed = {},
         data_observers = {}
     }
-    if not storage.gui_entity_lookup[mooring.unit_number] then
-        storage.gui_entity_lookup[mooring.unit_number] = {}
-    end
-
-    storage.gui_entity_lookup[mooring.unit_number][player.index] = true
 
     local frame = player.gui.screen.add{
         type = "frame",
@@ -737,9 +719,15 @@ local function build_gui(player, mooring)
 
     titlebar.drag_target = frame
 
+    local localised_name = mooring.localised_name
+
+    if mooring.name == "entity-ghost" then
+        localised_name = mooring.ghost_localised_name
+    end
+
     local title = titlebar.add{
         type = "label",
-        caption = mooring.localised_name,
+        caption = localised_name,
         style = "frame_title",
         ignored_by_interaction = true
     }
@@ -793,6 +781,27 @@ local function build_gui(player, mooring)
     player.opened = frame
 end
 
+local function add_to_lookup(player_index, entity_unit_number)
+    if not storage.gui_entity_lookup[entity_unit_number] then
+        storage.gui_entity_lookup[entity_unit_number] = {}
+    end
+
+    storage.gui_entity_lookup[entity_unit_number][player_index] = true
+end
+local function remove_from_lookup(player_index, entity_unit_number)
+    local players = storage.gui_entity_lookup[entity_unit_number]
+
+    if not players then
+        error("Tried to remove non-existing entity lookup")
+    end
+
+    players[player_index] = nil
+
+    if next(players) == nil then
+        storage.gui_entity_lookup[entity_unit_number] = nil
+    end
+end
+
 local gui_mooring = {}
 
 function gui_mooring.create_player_storage()
@@ -801,8 +810,53 @@ function gui_mooring.create_player_storage()
 end
 
 function gui_mooring.tick()
-    for player_index, player_data in pairs(gui_data) do
-        for _, observer in ipairs(player_data.data_observers) do
+    local removed = nil
+
+    for player_index, player_data in pairs(storage.gui_player) do
+        local local_data = gui_local_data[player_index]
+
+        if not local_data or not player_data.entity or not player_data.entity.valid then
+            local surface = game.get_surface(player_data.surface_index)
+
+            if not surface then
+                if removed == nil then
+                    removed = {}
+                end
+
+                table.insert(removed, player_index)
+
+                goto continue
+            end
+
+            local entity = surface.find_entity(player_data.entity_name, player_data.position)
+
+            if not entity then
+                if removed == nil then
+                    removed = {}
+                end
+
+                table.insert(removed, player_index)
+
+                goto continue
+            end
+
+            remove_from_lookup(player_index, player_data.entity_unit_number)
+
+            player_data.entity = entity
+            player_data.entity_unit_number = entity.unit_number
+
+            add_to_lookup(player_index, entity.unit_number)
+
+            player_data.player.gui.screen[window_gui_name].destroy()
+
+            player_data.player.opened = nil
+
+            build_gui(player_data.player, entity)
+
+            local_data = gui_local_data[player_index]
+        end
+
+        for _, observer in ipairs(local_data.data_observers) do
             local data = observer.get_data()
 
             if data ~= observer.previous_data then
@@ -811,29 +865,19 @@ function gui_mooring.tick()
                 observer.previous_data = data
             end
         end
-        player_data.drone_update()
-    end
-end
+        local_data.drone_update()
 
-function gui_mooring.on_load()
-    if not storage.gui_player then
-        return
+        ::continue::
     end
 
-    for player_index, player_data in pairs(storage.gui_player) do
-        local player = player_data.player
-        local entity = ep.get_managed_entity(player_data.entity_unit_number)
-
-        if player.connected and entity ~= nil and entity.valid then
-
-            player.gui.screen[window_gui_name].destroy()
-
-            player.opened = nil
-
-            build_gui(player, entity)
+    if removed ~= nil then
+        for _, player_index in ipairs(removed) do
+            player_data.player.gui.screen[window_gui_name].destroy()
+            
         end
     end
 end
+
 function gui_mooring.on_player_joined_game(event)
     local player_data = storage.gui_player[event.player_index]
 
@@ -841,8 +885,10 @@ function gui_mooring.on_player_joined_game(event)
         return
     end
 
+    remove_from_lookup(event.player_index, player_data.entity_unit_number)
+
     local player = player_data.player
-    local entity = ep.get_managed_entity(player_data.entity_unit_number)
+    local entity = player_data.entity
 
     player.gui.screen[window_gui_name].destroy()
 
@@ -852,14 +898,24 @@ function gui_mooring.on_player_joined_game(event)
         return
     end
 
+    add_to_lookup(player.index, entity.unit_number)
+
     build_gui(player, entity)
 end
 function gui_mooring.on_player_left_game(event)
-    gui_data[event.player_index] = nil
+    gui_local_data[event.player_index] = nil
 end
 function gui_mooring.on_player_removed(event)
+    local player_data = storage.gui_player[event.player_index]
+
+    if not player_data then
+        return
+    end
+
+    remove_from_lookup(event.player_index, player_data.entity_unit_number)
+
     storage.gui_player[event.player_index] = nil
-    gui_data[event.player_index] = nil
+    gui_local_data[event.player_index] = nil
 end
 
 function gui_mooring.on_gui_opened(event)
@@ -889,6 +945,17 @@ function gui_mooring.on_gui_opened(event)
 
     player.opened = nil
 
+    storage.gui_player[player.index] = {
+        player = player,
+        entity = entity,
+        entity_unit_number = entity.unit_number,
+        entity_name = entity_name,
+        surface_index = entity.surface.index,
+        position = entity.position
+    }
+
+    add_to_lookup(player.index, entity.unit_number)
+
     build_gui(player, entity)
 end
 function gui_mooring.on_gui_closed(event)
@@ -910,16 +977,10 @@ function gui_mooring.on_gui_closed(event)
 
     local entity_unit_number = storage.gui_player[event.player_index].entity_unit_number
 
-    local players = storage.gui_entity_lookup[entity_unit_number]
-
-    players[event.player_index] = nil
-
-    if next(players) == nil then
-        storage.gui_entity_lookup[entity_unit_number] = nil
-    end
+    remove_from_lookup(event.player_index, entity_unit_number)
 
     storage.gui_player[event.player_index] = nil
-    gui_data[player.index] = nil
+    gui_local_data[player.index] = nil
 
     player.opened = nil
 end
@@ -928,7 +989,7 @@ function gui_mooring.on_gui_click(event)
 
     local player = game.get_player(event.player_index)
 
-    if not gui_data[player.index] then
+    if not gui_local_data[player.index] then
         return
     end
 
@@ -956,8 +1017,9 @@ end
 function gui_mooring.on_gui_elem_changed(event)
     handle_event(event, "on_changed")
 end
+
 function gui_mooring.on_destroyed_entity(event)
-    local players = storage.gui_entity_lookup[event.entity.unit_number]
+    local players = storage.gui_entity_lookup[event.entity_unit_number]
 
     if not players then
         return
