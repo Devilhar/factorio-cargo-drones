@@ -174,12 +174,6 @@ function on_tick(event)
 	end)
 end
 
-function on_player_joined_game(event)
-	gm.on_player_joined_game(event)
-end
-function on_player_left_game(event)
-	gm.on_player_left_game(event)
-end
 function on_player_removed(event)
 	gm.on_player_removed(event)
 end
@@ -284,8 +278,6 @@ script.on_init(on_init)
 script.on_configuration_changed(on_configuration_changed)
 script.on_event(defines.events.on_tick, on_tick)
 
-script.on_event(defines.events.on_player_joined_game, on_player_joined_game)
-script.on_event(defines.events.on_player_joined_game, on_player_left_game)
 script.on_event(defines.events.on_player_joined_game, on_player_removed)
 
 script.on_event(build_events, on_built_entity)
