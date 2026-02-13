@@ -876,8 +876,18 @@ function gui_mooring.tick()
 
     if removed ~= nil then
         for _, player_index in ipairs(removed) do
-            player_data.player.gui.screen[window_gui_name].destroy()
+            local window = storage.gui_player[player_index].player.gui.screen[window_gui_name]
+
+            if window then
+                window.destroy()
+            end
+
+            local player_data = storage.gui_player[player_index]
+
+            remove_from_lookup(player_index, player_data.entity_unit_number)
             
+            storage.gui_player[player_index] = nil
+            gui_local_data[player_index] = nil
         end
     end
 end
