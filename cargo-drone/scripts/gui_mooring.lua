@@ -347,8 +347,7 @@ local function build_gui_drones(player, mooring, parent)
 
         local minimap = minimap_flow.add{
             type = "minimap",
-            name = minimap_name,
-            raise_hover_events = true
+            name = minimap_name
         }
 
         minimap.entity = drone
@@ -782,14 +781,14 @@ local function build_gui(player, mooring)
 end
 
 local function add_to_lookup(player_index, entity_unit_number)
-    if not storage.gui_entity_lookup[entity_unit_number] then
-        storage.gui_entity_lookup[entity_unit_number] = {}
+    if not storage.gui_mooring_entity_lookup[entity_unit_number] then
+        storage.gui_mooring_entity_lookup[entity_unit_number] = {}
     end
 
-    storage.gui_entity_lookup[entity_unit_number][player_index] = true
+    storage.gui_mooring_entity_lookup[entity_unit_number][player_index] = true
 end
 local function remove_from_lookup(player_index, entity_unit_number)
-    local players = storage.gui_entity_lookup[entity_unit_number]
+    local players = storage.gui_mooring_entity_lookup[entity_unit_number]
 
     if not players then
         error("Tried to remove non-existing entity lookup")
@@ -798,21 +797,21 @@ local function remove_from_lookup(player_index, entity_unit_number)
     players[player_index] = nil
 
     if next(players) == nil then
-        storage.gui_entity_lookup[entity_unit_number] = nil
+        storage.gui_mooring_entity_lookup[entity_unit_number] = nil
     end
 end
 
 local gui_mooring = {}
 
 function gui_mooring.create_player_storage()
-    storage.gui_player = storage.gui_player or {}
-    storage.gui_entity_lookup = storage.gui_entity_lookup or {}
+    storage.gui_mooring_player = storage.gui_mooring_player or {}
+    storage.gui_mooring_entity_lookup = storage.gui_mooring_entity_lookup or {}
 end
 
 function gui_mooring.tick()
     local removed = nil
 
-    for player_index, player_data in pairs(storage.gui_player) do
+    for player_index, player_data in pairs(storage.gui_mooring_player) do
         local local_data = gui_local_data[player_index]
 
         if not player_data.player.connected then
@@ -876,24 +875,24 @@ function gui_mooring.tick()
 
     if removed ~= nil then
         for _, player_index in ipairs(removed) do
-            local window = storage.gui_player[player_index].player.gui.screen[window_gui_name]
+            local window = storage.gui_mooring_player[player_index].player.gui.screen[window_gui_name]
 
             if window then
                 window.destroy()
             end
 
-            local player_data = storage.gui_player[player_index]
+            local player_data = storage.gui_mooring_player[player_index]
 
             remove_from_lookup(player_index, player_data.entity_unit_number)
             
-            storage.gui_player[player_index] = nil
+            storage.gui_mooring_player[player_index] = nil
             gui_local_data[player_index] = nil
         end
     end
 end
 
 function gui_mooring.on_player_removed(event)
-    local player_data = storage.gui_player[event.player_index]
+    local player_data = storage.gui_mooring_player[event.player_index]
 
     if not player_data then
         return
@@ -901,7 +900,7 @@ function gui_mooring.on_player_removed(event)
 
     remove_from_lookup(event.player_index, player_data.entity_unit_number)
 
-    storage.gui_player[event.player_index] = nil
+    storage.gui_mooring_player[event.player_index] = nil
     gui_local_data[event.player_index] = nil
 end
 
@@ -932,7 +931,7 @@ function gui_mooring.on_gui_opened(event)
 
     player.opened = nil
 
-    storage.gui_player[player.index] = {
+    storage.gui_mooring_player[player.index] = {
         player = player,
         entity = entity,
         entity_unit_number = entity.unit_number,
@@ -956,17 +955,17 @@ function gui_mooring.on_gui_closed(event)
         return
     end
 
-    if not storage.gui_player[event.player_index] then
+    if not storage.gui_mooring_player[event.player_index] then
         return
     end
 
     player.gui.screen[window_gui_name].destroy()
 
-    local entity_unit_number = storage.gui_player[event.player_index].entity_unit_number
+    local entity_unit_number = storage.gui_mooring_player[event.player_index].entity_unit_number
 
     remove_from_lookup(event.player_index, entity_unit_number)
 
-    storage.gui_player[event.player_index] = nil
+    storage.gui_mooring_player[event.player_index] = nil
     gui_local_data[player.index] = nil
 
     player.opened = nil
@@ -1006,7 +1005,7 @@ function gui_mooring.on_gui_elem_changed(event)
 end
 
 function gui_mooring.on_destroyed_entity(event)
-    local players = storage.gui_entity_lookup[event.entity_unit_number]
+    local players = storage.gui_mooring_entity_lookup[event.entity_unit_number]
 
     if not players then
         return
