@@ -5,6 +5,7 @@ local dt	= require("scripts.drone_tasks")
 local rc    = require("scripts.requester_cooldown")
 local mh	= require("scripts.mooring_helper")
 local gm	= require("scripts.gui_mooring")
+local gcd	= require("scripts.gui_cargo_drone")
 
 local current_mod_state = 6
 
@@ -130,6 +131,7 @@ local function migrate_state()
 
 	if old_mod_state < 6 then
 		gm.create_player_storage()
+		gcd.create_player_storage()
 		dt.migration_remove_all_tasks()
 
 		for _, surface in pairs(game.surfaces) do
@@ -155,6 +157,7 @@ function on_init()
 		ep.init()
 
 		gm.create_player_storage()
+		gcd.create_player_storage()
 	end)
 end
 function on_configuration_changed(event)
@@ -171,11 +174,13 @@ function on_tick(event)
 		dc.tick(event.tick)
 
 		gm.tick()
+		gcd.tick()
 	end)
 end
 
 function on_player_removed(event)
 	gm.on_player_removed(event)
+	gcd.on_player_removed(event)
 end
 
 function on_built_entity(event)
@@ -234,12 +239,15 @@ end
 
 function on_gui_opened(event)
 	gm.on_gui_opened(event)
+	gcd.on_gui_opened(event)
 end
 function on_gui_closed(event)
 	gm.on_gui_closed(event)
+	gcd.on_gui_closed(event)
 end
 function on_gui_click(event)
     gm.on_gui_click(event)
+    gcd.on_gui_click(event)
 end
 function on_gui_checked_state_changed(event)
 	gm.on_gui_checked_state_changed(event)
