@@ -250,6 +250,92 @@ local function build_gui_mooring(player, mooring, parent)
             priority_slider.slider_value = data
         end)
 
+    ---------- Item Signals ----------
+
+    if mooring.name ~= "cargo-drone-mooring-constant-combinator-refueler" then
+        local label_caption = "cargo-drone-gui-mooring.provided-items"
+
+        if mooring.name == "cargo-drone-mooring-constant-combinator-requester" then
+            label_caption = "cargo-drone-gui-mooring.requested-items"
+        end
+
+        local items_header = mooring_frame.add{
+            type = "label",
+            style = "subheader_label",
+            caption = { label_caption }
+        }
+
+        items_header.style.margin = 4
+
+        local items_frame = mooring_frame.add{
+            type = "frame",
+            style = "inside_deep_frame",
+            direction = "horizontal"
+        }
+
+        items_frame.style.margin = 4
+        items_frame.style.horizontally_stretchable = true
+
+        local items_table = items_frame.add{
+            type = "table",
+            column_count = 11
+        }
+        local item_indices = {}
+
+        items_table.style.minimal_height = 40
+        items_table.style.padding = 4
+
+        local function update_item_element(index, item)
+            local item_sprite = item_indices[index]
+
+            if not item_sprite then
+                item_sprite = items_table.add{
+                    type = "sprite-button",
+                    style = "transparent_slot"
+                }
+
+                item_indices[index] = item_sprite
+            end
+
+            item_sprite.sprite = "item/" .. item.signal.name
+            item_sprite.quality = item.signal.quality
+            item_sprite.number = item.count
+            item_sprite.tooltip = prototypes.item[item.signal.name].localised_name
+            item_sprite.visible = true
+        end
+
+        local function update_item_signals()
+            local mooring_signals = mooring.get_signals(defines.wire_connector_id.circuit_red, defines.wire_connector_id.circuit_green)
+
+            local current_index = 1
+
+            if mooring_signals then
+                for i, item in ipairs(mooring_signals) do
+                    if item.signal.type ~= nil then
+                        goto continue
+                    end
+                    if item.count <= 0 then
+                        goto continue
+                    end
+
+                    update_item_element(i, item)
+
+                    current_index = current_index + 1
+
+                    ::continue::
+                end
+            end
+
+            for i = current_index, #item_indices do
+                item_indices[i].visible = false
+            end
+        end
+
+        update_item_signals()
+
+        gui_local_data[player.index].item_signal_update = update_item_signals
+    end
+
     ---------- Filler ----------
     local mooring_filler = mooring_frame.add{
         type = "empty-widget",
@@ -867,6 +953,9 @@ function gui_mooring.tick()
 
                 observer.previous_data = data
             end
+        end
+        if local_data.item_signal_update then
+            local_data.item_signal_update()
         end
         local_data.drone_update()
 
