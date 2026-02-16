@@ -619,6 +619,8 @@ local function build_gui_circuit(player, mooring, parent)
 
     build_gui_circuit_connection_status(player, mooring, main_frame)
 
+    ---------- Drone Limit ----------
+
     local drone_limit_circuit_checkbox = main_frame.add{
         type = "checkbox",
         name = gui_prefix .. "set-drone-limit-checkbox",
@@ -701,6 +703,93 @@ local function build_gui_circuit(player, mooring, parent)
     main_frame.add{
         type = "line",
     }
+
+    ---------- Drone Count ----------
+
+    local drone_count_circuit_checkbox = main_frame.add{
+        type = "checkbox",
+        name = gui_prefix .. "read-drone-count-checkbox",
+        caption = { "cargo-drone-gui-control-behavior-modes.read-drone-count" },
+        tooltip = { "cargo-drone-gui-control-behavior-modes.read-drone-count-description" },
+        style = "subheader_caption_checkbox",
+        state = mh.is_drone_count_circuit(mooring)
+    }
+
+    drone_count_circuit_checkbox.style.top_margin = 4
+    drone_count_circuit_checkbox.style.bottom_margin = 4
+    drone_count_circuit_checkbox.style.left_margin = 12
+    drone_count_circuit_checkbox.style.right_margin = 12
+
+    local drone_count_signal_flow = main_frame.add{
+        type = "flow",
+        direction = "horizontal"
+    }
+
+    drone_count_signal_flow.style.vertical_align = "center"
+    drone_count_signal_flow.style.top_margin = 4
+    drone_count_signal_flow.style.bottom_margin = 4
+    drone_count_signal_flow.style.left_margin = 12
+    drone_count_signal_flow.style.right_margin = 12
+
+    local drone_count_signal_label = drone_count_signal_flow.add{
+        type = "label",
+        caption = { "cargo-drone-gui-control-behavior-modes.drone-count" }
+    }
+
+    local drone_count_signal_filler = drone_count_signal_flow.add{
+        type = "empty-widget",
+    }
+
+    drone_count_signal_filler.style.horizontally_stretchable = true
+
+    local drone_count_signal_choose_elem_button = drone_count_signal_flow.add{
+        type = "choose-elem-button",
+        name = gui_prefix .. "drone-count-signal-choose-elem-button",
+        elem_type = "signal"
+    }
+
+    register_on_changed(player, drone_count_circuit_checkbox, function()
+        mh.set_drone_count_circuit(mooring, drone_count_circuit_checkbox.state)
+    end)
+    register_data_observer(player,
+        function() return mh.is_drone_count_circuit(mooring) end,
+        function(data)
+            drone_count_circuit_checkbox.state = data
+            drone_count_signal_label.enabled = data
+            drone_count_signal_choose_elem_button.enabled = data
+        end)
+
+    local function drone_count_signal_changed(_)
+        drone_count_signal_choose_elem_button.elem_value = mh.get_drone_count_circuit_signal_id(mooring)
+    end
+    local function get_drone_count_signal_element(element)
+        local signal_id = mh.get_drone_count_circuit_signal_id(mooring)
+
+        if signal_id == nil then
+            return nil
+        end
+
+        return signal_id[element]
+    end
+
+    register_on_changed(player, drone_count_signal_choose_elem_button, function()
+        mh.set_drone_count_circuit_signal_id(mooring, drone_count_signal_choose_elem_button.elem_value)
+    end)
+    register_data_observer(player,
+        function() return get_drone_count_signal_element("type") end,
+        drone_count_signal_changed)
+    register_data_observer(player,
+        function() return get_drone_count_signal_element("name") end,
+        drone_count_signal_changed)
+    register_data_observer(player,
+        function() return get_drone_count_signal_element("quality") end,
+        drone_count_signal_changed)
+
+    main_frame.add{
+        type = "line",
+    }
+
+    ---------- Priority ----------
 
     local priority_circuit_checkbox = main_frame.add{
         type = "checkbox",
