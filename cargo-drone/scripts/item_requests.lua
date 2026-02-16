@@ -156,10 +156,10 @@ local function get_closest_provider(requester, item_name, item_quality, item_pro
     for _, item_data in ipairs(providers) do
         local provider = item_data.mooring
 
-        if item_data.count > 0 and provider.valid and not dt.is_at_target_limit(provider) then
+        if item_data.count > 0 and provider.valid and not mh.is_at_drone_limit(provider) then
             if provider.surface.index == requester.surface.index then
                 if highest_priority <= item_data.priority then
-                    local cost = util.distance(provider.position, requester.position) + dt.get_target_count(provider) * heuristic_target_count_cost
+                    local cost = util.distance(provider.position, requester.position) + mh.get_drone_count_value(provider.unit_number) * heuristic_target_count_cost
 
                     if highest_priority < item_data.priority or cost < lowest_cost then
                         highest_priority = item_data.priority
@@ -388,7 +388,7 @@ function item_requests.get_next_item_request(surface_index)
     while sb.key_index do
         selected_requester = sb.sorted_requesters[sb.key_index].requester
         
-        if selected_requester.valid and not dt.is_at_target_limit(selected_requester) then
+        if selected_requester.valid and not mh.is_at_drone_limit(selected_requester) then
             local requester_items = sb.requester_items[selected_requester]
 
             sb.key_item_name = next(requester_items, sb.key_item_name)
@@ -461,7 +461,7 @@ function item_requests.assign_to_request_with_items(drone)
     for _, item_data in ipairs(sb.item_requester_lookup[first_item.name][first_item.quality]) do
         local requester = item_data.mooring
 
-        if requester.valid and not dt.is_at_target_limit(requester) then
+        if requester.valid and not mh.is_at_drone_limit(requester) then
             if requester_has_item_requests(items, sb.requester_items[requester]) then
                 selected_requester = requester
             end

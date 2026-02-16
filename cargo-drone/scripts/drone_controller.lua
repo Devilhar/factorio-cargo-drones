@@ -152,7 +152,7 @@ local function get_closest_valid_refueler(mooring_table, entity)
     local closest_distance = 30000000 -- Longer than moving from one corner to the other, and then multiplied by 10 for good measure
 
     for id, data in pairs(mooring_table) do
-        if entity.surface.index == data.entity.surface.index and not dt.is_at_target_limit(data.entity) then
+        if entity.surface.index == data.entity.surface.index and not mh.is_at_drone_limit(data.entity) then
             local priority = mh.get_priority(data.entity)
 
             if highest_priority <= priority then
