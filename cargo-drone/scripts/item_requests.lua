@@ -204,17 +204,9 @@ local function get_common_items(requester, requester_items, selected_provider_it
     return items
 end
 
-local update_stage = 0
-
-local surface_buffer = {}
-local provider_buffer = {}
-local requester_buffer = {}
-
-local buffer_key = nil
-
 local function try_create_and_get_surface_buffer(surface_index)
-    if not surface_buffer[surface_index] then
-        surface_buffer[surface_index] = {
+    if not storage.item_requests.surface_buffer[surface_index] then
+        storage.item_requests.surface_buffer[surface_index] = {
             -- item_name, item_quality, index, { count, priority, mooring }
             item_provider_lookup = {},
             -- provider, item_name, item_quality, { count, priority, mooring }
@@ -234,7 +226,7 @@ local function try_create_and_get_surface_buffer(surface_index)
         }
     end
 
-    return surface_buffer[surface_index]
+    return storage.item_requests.surface_buffer[surface_index]
 end
 
 local function transfer_items_in_buffer(provider, requester, items)
@@ -277,36 +269,48 @@ end
 
 local item_requests = {}
 
+function item_requests.init()
+    storage.item_requests = {}
+
+    storage.item_requests.update_stage = 0
+
+    storage.item_requests.surface_buffer = {}
+    storage.item_requests.provider_buffer = {}
+    storage.item_requests.requester_buffer = {}
+
+    storage.item_requests.buffer_key = nil
+end
+
 function item_requests.begin_update()
-    update_stage = 0
+    storage.item_requests.update_stage = 0
 
-    surface_buffer = {}
-    provider_buffer = {}
-    requester_buffer = {}
+    storage.item_requests.surface_buffer = {}
+    storage.item_requests.provider_buffer = {}
+    storage.item_requests.requester_buffer = {}
 
-    buffer_key = nil
+    storage.item_requests.buffer_key = nil
 
     local providers = ep.get_cargo_drone_provider_moorings()
     local requesters = ep.get_cargo_drone_requester_moorings()
 
     for provider_id, provider_data in pairs(providers) do
-        provider_buffer[provider_id] = provider_data.entity
+        storage.item_requests.provider_buffer[provider_id] = provider_data.entity
     end
     for requester_id, requester_data in pairs(requesters) do
-        requester_buffer[requester_id] = requester_data.entity
+        storage.item_requests.requester_buffer[requester_id] = requester_data.entity
     end
 end
 
 function item_requests.run_update()
     local scans = 0
 
-    if update_stage == 0 then
+    if storage.item_requests.update_stage == 0 then
         local provider = nil
 
         repeat
-            buffer_key, provider = next(provider_buffer, buffer_key)
+            storage.item_requests.buffer_key, provider = next(storage.item_requests.provider_buffer, storage.item_requests.buffer_key)
 
-            if not buffer_key then
+            if not storage.item_requests.buffer_key then
                 break
             end
 
@@ -319,12 +323,12 @@ function item_requests.run_update()
             scans = scans + 1
         until scans >= max_scans_per_tick
 
-        if buffer_key == nil then
-            update_stage = 1
+        if storage.item_requests.buffer_key == nil then
+            storage.item_requests.update_stage = 1
         end
     end
 
-    if update_stage == 0 then
+    if storage.item_requests.update_stage == 0 then
         return false
     end
 
@@ -335,14 +339,14 @@ function item_requests.run_update()
     local requester = nil
 
     repeat
-        buffer_key, requester = next(requester_buffer, buffer_key)
+        storage.item_requests.buffer_key, requester = next(storage.item_requests.requester_buffer, storage.item_requests.buffer_key)
 
-        if not buffer_key then
+        if not storage.item_requests.buffer_key then
             break
         end
 
         if requester.valid then
-            if not rc.is_on_cooldown(buffer_key) then
+            if not rc.is_on_cooldown(storage.item_requests.buffer_key) then
                 local sb = try_create_and_get_surface_buffer(requester.surface.index)
 
                 local has_items = add_items(requester, sb.requester_items, sb.item_requester_lookup)
@@ -361,11 +365,11 @@ function item_requests.run_update()
         scans = scans + 1
     until scans >= max_scans_per_tick
 
-    return buffer_key == nil
+    return storage.item_requests.buffer_key == nil
 end
 
 function item_requests.get_next_item_request(surface_index)
-    local sb = surface_buffer[surface_index]
+    local sb = storage.item_requests.surface_buffer[surface_index]
 
     if not sb then
         return nil
@@ -445,7 +449,7 @@ function item_requests.assign_to_request_with_items(drone)
         return
     end
 
-    local sb = surface_buffer[drone.surface.index]
+    local sb = storage.item_requests.surface_buffer[drone.surface.index]
 
     if not sb then
         return
