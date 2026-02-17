@@ -14,6 +14,8 @@ local window_gui_name = gui_prefix .. "window-mooring-main"
 
 local not_observed = {}
 
+local drone_has_burnt_result = prototypes.entity["cargo-drone"].burner_prototype.burnt_inventory_size > 0
+
 local function get_drone_limit_signal_element(player_data, element)
     local signal_id = mh.get_drone_limit_circuit_signal_id(player_data.entity)
 
@@ -34,6 +36,15 @@ local function get_drone_count_signal_element(player_data, element)
 end
 local function get_priority_signal_element(player_data, element)
     local signal_id = mh.get_priority_circuit_signal_id(player_data.entity)
+
+    if signal_id == nil then
+        return nil
+    end
+
+    return signal_id[element]
+end
+local function get_fuel_inventory_signal_element(player_data, element)
+    local signal_id = mh.get_fuel_inventory_circuit_signal_id(player_data.entity)
 
     if signal_id == nil then
         return nil
@@ -101,6 +112,13 @@ local callbacks = {
     end,
     [gui_prefix .. "priority-signal-choose-elem-button"] = function(player_data)
         mh.set_priority_circuit_signal_id(player_data.entity, player_data.elements.priority_signal_choose_elem_button.elem_value)
+    end,
+
+    [gui_prefix .. "read-inventory-checkbox"] = function(player_data)
+        mh.set_fuel_inventory_output(player_data.entity, player_data.elements.read_inventory_checkbox.state)
+    end,
+    [gui_prefix .. "read-inventory-signal-choose-elem-button"] = function(player_data)
+        mh.set_fuel_inventory_circuit_signal_id(player_data.entity, player_data.elements.read_inventory_signal_choose_elem_button.elem_value)
     end,
 }
 local observers = {
@@ -284,6 +302,33 @@ local observers = {
         get = function(player_data) return get_priority_signal_element(player_data, "quality") end,
         updated = function(player_data, data)
             player_data.elements.priority_signal_choose_elem_button.elem_value = mh.get_priority_circuit_signal_id(player_data.entity)
+        end
+    },
+    
+    get_fuel_inventory_output = {
+        get = function(player_data) return mh.get_fuel_inventory_output(player_data.entity) end,
+        updated = function(player_data, data)
+            player_data.elements.read_inventory_checkbox.state = data
+            player_data.elements.read_inventory_signal_label.enabled = data
+            player_data.elements.read_inventory_signal_choose_elem_button.enabled = data
+        end
+    },
+    get_fuel_inventory_signal_element_type = {
+        get = function(player_data) return get_fuel_inventory_signal_element(player_data, "type") end,
+        updated = function(player_data, data)
+            player_data.elements.read_inventory_signal_choose_elem_button.elem_value = mh.get_fuel_inventory_circuit_signal_id(player_data.entity)
+        end
+    },
+    get_fuel_inventory_signal_element_name = {
+        get = function(player_data) return get_fuel_inventory_signal_element(player_data, "name") end,
+        updated = function(player_data, data)
+            player_data.elements.read_inventory_signal_choose_elem_button.elem_value = mh.get_fuel_inventory_circuit_signal_id(player_data.entity)
+        end
+    },
+    get_fuel_inventory_signal_element_quality = {
+        get = function(player_data) return get_fuel_inventory_signal_element(player_data, "quality") end,
+        updated = function(player_data, data)
+            player_data.elements.read_inventory_signal_choose_elem_button.elem_value = mh.get_fuel_inventory_circuit_signal_id(player_data.entity)
         end
     },
 }
@@ -804,11 +849,11 @@ local function build_gui_circuit(player_data, mooring, parent)
     player_data.elements.drone_limit_signal_label = drone_limit_signal_label
     player_data.elements.drone_limit_signal_choose_elem_button = drone_limit_signal_choose_elem_button
 
+    ---------- Drone Count ----------
+
     main_frame.add{
         type = "line",
     }
-
-    ---------- Drone Count ----------
 
     local drone_count_circuit_checkbox = main_frame.add{
         type = "checkbox",
@@ -856,11 +901,11 @@ local function build_gui_circuit(player_data, mooring, parent)
     player_data.elements.drone_count_signal_label = drone_count_signal_label
     player_data.elements.drone_count_signal_choose_elem_button = drone_count_signal_choose_elem_button
 
+    ---------- Priority ----------
+
     main_frame.add{
         type = "line",
     }
-
-    ---------- Priority ----------
 
     local priority_circuit_checkbox = main_frame.add{
         type = "checkbox",
@@ -907,6 +952,64 @@ local function build_gui_circuit(player_data, mooring, parent)
     player_data.elements.priority_circuit_checkbox = priority_circuit_checkbox
     player_data.elements.priority_signal_label = priority_signal_label
     player_data.elements.priority_signal_choose_elem_button = priority_signal_choose_elem_button
+
+    ---------- Read Inventory ----------
+
+    local show_read_inventory = drone_has_burnt_result
+        and player_data.entity_name == "cargo-drone-mooring-constant-combinator-refueler"
+
+    main_frame.add{
+        type = "line",
+        visible = show_read_inventory
+    }
+
+    local read_inventory_checkbox = main_frame.add{
+        type = "checkbox",
+        name = gui_prefix .. "read-inventory-checkbox",
+        caption = { "cargo-drone-gui-control-behavior-modes.read-inventory" },
+        tooltip = { "cargo-drone-gui-control-behavior-modes.read-inventory-description" },
+        style = "subheader_caption_checkbox",
+        visible = show_read_inventory,
+        state = mh.get_fuel_inventory_output(mooring)
+    }
+
+    read_inventory_checkbox.style.top_margin = 4
+    read_inventory_checkbox.style.bottom_margin = 4
+    read_inventory_checkbox.style.left_margin = 12
+    read_inventory_checkbox.style.right_margin = 12
+
+    local read_inventory_signal_flow = main_frame.add{
+        type = "flow",
+        direction = "horizontal",
+        visible = show_read_inventory
+    }
+
+    read_inventory_signal_flow.style.vertical_align = "center"
+    read_inventory_signal_flow.style.top_margin = 4
+    read_inventory_signal_flow.style.bottom_margin = 4
+    read_inventory_signal_flow.style.left_margin = 12
+    read_inventory_signal_flow.style.right_margin = 12
+
+    local read_inventory_signal_label = read_inventory_signal_flow.add{
+        type = "label",
+        caption = { "cargo-drone-gui-control-behavior-modes.inventory" }
+    }
+
+    local read_inventory_signal_filler = read_inventory_signal_flow.add{
+        type = "empty-widget",
+    }
+
+    read_inventory_signal_filler.style.horizontally_stretchable = true
+
+    local read_inventory_signal_choose_elem_button = read_inventory_signal_flow.add{
+        type = "choose-elem-button",
+        name = gui_prefix .. "read-inventory-signal-choose-elem-button",
+        elem_type = "signal"
+    }
+
+    player_data.elements.read_inventory_checkbox = read_inventory_checkbox
+    player_data.elements.read_inventory_signal_label = read_inventory_signal_label
+    player_data.elements.read_inventory_signal_choose_elem_button = read_inventory_signal_choose_elem_button
 end
 
 local function build_gui(player, mooring, mooring_name)

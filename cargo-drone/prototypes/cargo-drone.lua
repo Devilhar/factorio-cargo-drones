@@ -32,7 +32,8 @@ cargo_drone.allow_passengers = false
 cargo_drone.guns = {}
 cargo_drone.terrain_friction_modifier = 0
 cargo_drone.friction = 0.002
-cargo_drone.energy_source.fuel_inventory_size = 2
+cargo_drone.energy_source.fuel_inventory_size = settings.startup["cargo-drone-fuel-inventory-size"].value
+cargo_drone.energy_source.burnt_inventory_size = settings.startup["cargo-drone-burnt-result-inventory-size"].value
 cargo_drone.energy_source.effectivity = 0.25
 cargo_drone.energy_source.smoke = {
 	{
