@@ -106,9 +106,9 @@ local function try_setup_mooring(mooring)
 		ep.add_cargo_drone_refuel_mooring(mooring)
 	end
 
-	mh.clean_settings(mooring)
-
 	ep.set_entity_property(mooring, "proxy_container", proxy_container)
+
+	mh.clean_settings(mooring)
 end
 
 local function migrate_state()

@@ -8,4 +8,22 @@ data:extend{
         maximum_value = 300,
         order = "a",
     },
+    {
+        type = "int-setting",
+        name = "cargo-drone-fuel-inventory-size",
+        setting_type = "startup",
+        default_value = 2,
+        minimum_value = 0,
+        maximum_value = 100,
+        order = "b",
+    },
+    {
+        type = "int-setting",
+        name = "cargo-drone-burnt-result-inventory-size",
+        setting_type = "startup",
+        default_value = 0,
+        minimum_value = 0,
+        maximum_value = 100,
+        order = "c",
+    },
 }

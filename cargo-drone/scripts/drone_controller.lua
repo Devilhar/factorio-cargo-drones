@@ -20,6 +20,8 @@ local drones_tickrates = {
 
 local max_actions = 10
 
+local drone_has_burnt_result = prototypes.entity["cargo-drone"].burner_prototype.burnt_inventory_size > 0
+
 -- Shamelessly stolen from AAI Programmable Vehicles, because I couldn't be bothered doing it myself
 -- Begin steal mode
 local function vector_to_orientation_xy(x, y)
@@ -186,7 +188,7 @@ local function complete_task(drone, task_id)
     dt.destroy(task_id)
 end
 
-local function check_refuel(drone)
+local function check_refuel(drone, state)
     local fuel_inventory = drone.get_inventory(defines.inventory.fuel)
 
     if fuel_inventory.count_empty_stacks() == 0 then
@@ -200,6 +202,7 @@ local function check_refuel(drone)
     end
 
     dt.assign_refuel(drone, refueler)
+    state.tickrate = drones_tickrates.every
 
     return true
 end
@@ -265,7 +268,7 @@ local function perform_task_none(drone, state, game_tick)
         end
 
         if drone.burner.remaining_burning_fuel > 0 or not drone.burner.inventory.is_empty() then
-            check_refuel(drone)
+            check_refuel(drone, state)
         end
     end
 end
@@ -301,7 +304,7 @@ local function perform_task_cargo(drone, state, task, game_tick)
     end
 
     if game_tick % random_tick_interval == drone.unit_number % random_tick_interval then
-        if check_refuel(drone) then
+        if check_refuel(drone, state) then
             return false
         end
     end
@@ -331,9 +334,19 @@ local function perform_task_refuel(drone, state, task, game_tick)
         return true
     end
 
+    local inventory = defines.inventory.fuel
+
+    if drone_has_burnt_result then
+        local burnt_result_inventory = drone.get_inventory(defines.inventory.burnt_result)
+
+        if not burnt_result_inventory.is_empty() then
+            inventory = defines.inventory.burnt_result
+        end
+    end
+
     local refueler = ep.get_managed_entity(task.refueler_unit_number)
 
-    drone_goto_and_dock_with_mooring(drone, state, refueler, defines.inventory.fuel)
+    drone_goto_and_dock_with_mooring(drone, state, refueler, inventory)
 
     return false
 end
@@ -392,24 +405,30 @@ local function tick_drone(drone, game_tick)
             if proxy_container and proxy_container.valid and proxy_container.proxy_target_entity == drone then
                 proxy_container.proxy_target_entity = nil
             end
+
+            mh.update_fuel_inventory(old_docked_mooring)
         end
 
         ep.set_entity_property(drone, "docked_mooring", nil)
     end
 
     if state.docked_mooring.target_entity then
+        local proxy_container = ep.get_entity_property(state.docked_mooring.target_entity, "proxy_container")
+
         if state.docked_mooring.target_entity ~= old_docked_mooring then
             drone.surface.play_sound({ path = "cargo-drone-sound-docking", position = drone.position })
-            local proxy_container = ep.get_entity_property(state.docked_mooring.target_entity, "proxy_container")
-            
+
             if proxy_container and proxy_container.valid then
                 proxy_container.proxy_target_entity = drone
-                proxy_container.proxy_target_inventory = state.docked_mooring.inventory
             end
             ep.set_entity_property(drone, "docked_mooring", state.docked_mooring.target_entity)
         end
+        
+        proxy_container.proxy_target_inventory = state.docked_mooring.inventory
+
+        mh.update_fuel_inventory(state.docked_mooring.target_entity)
     end
-    
+
     if old_docking_mooring and old_docking_mooring ~= state.docking_mooring then
         if old_docking_mooring.valid and ep.get_entity_property(old_docking_mooring, "docking_drone") == drone then
             ep.set_entity_property(old_docking_mooring, "docking_drone", nil)
@@ -445,6 +464,16 @@ function drone_controller.init()
 end
 
 function drone_controller.drone_destroyed(unit_number)
+    local old_docked_mooring = ep.get_entity_property_from_unit_number(unit_number, "docked_mooring")
+
+    if old_docked_mooring and old_docked_mooring.valid then
+        local proxy_container = ep.get_entity_property(old_docked_mooring, "proxy_container")
+
+        proxy_container.proxy_target_entity = nil
+
+        mh.update_fuel_inventory(old_docked_mooring)
+    end
+
     storage.drone_controller.tickrate_buffer[unit_number] = nil
 end
 
