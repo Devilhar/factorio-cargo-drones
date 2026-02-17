@@ -3,12 +3,15 @@ Version: 1.4.0
 Date: 17. 02. 2026
   Minor Features:
     - Added custom GUI to moorings.
+    - Added setting for fuel inventory size.
+    - Added setting for burnt result inventory size.
+    - Added support for the burnt result of fuel.
   Changes:
     - The internal type of the Moorings have been changed, causing wires attached to them in previous versions to detach.
     - Setting Priority and Drone limit via circuits must now be enabled in the mooring GUI.
     - Priority and Drone limit can now be set in the GUI.
   Bugfixes:
-    - Fixed desyncs in multiplayer
+    - Fixed desyncs in multiplayer.
 ---------------------------------------------------------------------------------------------------
 Version: 1.3.3
 Date: 06. 02. 2026
