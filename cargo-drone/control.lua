@@ -112,9 +112,9 @@ local function try_setup_mooring(mooring)
 end
 
 local function migrate_state()
-	log("Migrating cargo-drone state...")
-
 	local old_mod_state = storage.mod_state or 0
+
+	log("Migrating cargo-drone state from " .. old_mod_state .. " to " .. current_mod_state .. "...")
 
 	storage.mod_state = current_mod_state
 
