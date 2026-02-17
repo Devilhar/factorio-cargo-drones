@@ -1,9 +1,10 @@
 
 local ep	= require("scripts.entity_property")
-local dc	= require("scripts.drone_controller")
-local dt	= require("scripts.drone_tasks")
 local rc    = require("scripts.requester_cooldown")
 local mh	= require("scripts.mooring_helper")
+local dt	= require("scripts.drone_tasks")
+local ir	= require("scripts.item_requests")
+local dc	= require("scripts.drone_controller")
 local gm	= require("scripts.gui_mooring")
 local gcd	= require("scripts.gui_cargo_drone")
 
@@ -132,6 +133,11 @@ local function migrate_state()
 	if old_mod_state < 6 then
 		gm.create_player_storage()
 		gcd.create_player_storage()
+
+		ir.init()
+
+		dc.init()
+
 		dt.migration_remove_all_tasks()
 
 		for _, surface in pairs(game.surfaces) do
@@ -155,6 +161,10 @@ end
 function on_init()
 	safe_call(function()
 		ep.init()
+
+		ir.init()
+
+		dc.init()
 
 		gm.create_player_storage()
 		gcd.create_player_storage()

@@ -1,5 +1,5 @@
 
--- If you're here looking for a good way to handle GUI. Go elsewhere. There's nothing for you here
+-- If you're here looking for a good way to handle GUI. Go elsewhere. There's nothing for you here. Naught but despair
 
 local ep = require("scripts.entity_property")
 local dt = require("scripts.drone_tasks")
@@ -14,23 +14,281 @@ local window_gui_name = gui_prefix .. "window-mooring-main"
 
 local not_observed = {}
 
-local gui_local_data = {}
+local function get_drone_limit_signal_element(player_data, element)
+    local signal_id = mh.get_drone_limit_circuit_signal_id(player_data.entity)
 
-local function register_on_click(player, element, callback)
-    gui_local_data[player.index].on_click[element.name] = callback
+    if signal_id == nil then
+        return nil
+    end
+
+    return signal_id[element]
 end
-local function register_on_changed(player, element, callback)
-    gui_local_data[player.index].on_changed[element.name] = callback
+local function get_drone_count_signal_element(player_data, element)
+    local signal_id = mh.get_drone_count_circuit_signal_id(player_data.entity)
+
+    if signal_id == nil then
+        return nil
+    end
+
+    return signal_id[element]
 end
-local function register_data_observer(player, get_data, callable)
-    table.insert(gui_local_data[player.index].data_observers, {
-        get_data = get_data,
-        callable = callable,
-        previous_data = not_observed
-    })
+local function get_priority_signal_element(player_data, element)
+    local signal_id = mh.get_priority_circuit_signal_id(player_data.entity)
+
+    if signal_id == nil then
+        return nil
+    end
+
+    return signal_id[element]
 end
 
-local function handle_event(event, action_type)
+local callbacks = {
+    ---------- Mooring ----------
+    [gui_prefix .. "mooring-close-button"] = function(player_data)
+        if not player_data.player.gui.screen[window_gui_name] then
+            return
+        end
+
+        player_data.player.opened = nil
+    end,
+
+    [gui_prefix .. "drone-limit-checkbox"] = function(player_data)
+        mh.set_drone_limit_enabled(player_data.entity, player_data.elements.drone_limit_checkbox.state)
+    end,
+    [gui_prefix .. "drone-limit-slider"] = function(player_data)
+        mh.set_drone_limit_value(player_data.entity, player_data.elements.drone_limit_slider.slider_value)
+    end,
+    [gui_prefix .. "drone-limit-textfield"] = function(player_data)
+        local limit = tonumber(player_data.elements.drone_limit_field.text)
+
+        if limit == nil then
+            return
+        end
+
+        mh.set_drone_limit_value(player_data.entity, limit)
+    end,
+
+    [gui_prefix .. "priority-slider"] = function(player_data)
+        mh.set_priority_value(player_data.entity, player_data.elements.priority_slider.slider_value)
+    end,
+    [gui_prefix .. "priority-textfield"] = function(player_data)
+        local priority = tonumber(player_data.elements.priority_field.text)
+
+        if priority == nil then
+            return
+        end
+
+        mh.set_priority_value(player_data.entity, priority)
+    end,
+
+    ---------- Circuit ----------
+    [gui_prefix .. "set-drone-limit-checkbox"] = function(player_data)
+        mh.set_drone_limit_circuit(player_data.entity, player_data.elements.drone_limit_circuit_checkbox.state)
+    end,
+    [gui_prefix .. "drone-limit-signal-choose-elem-button"] = function(player_data)
+        mh.set_drone_limit_circuit_signal_id(player_data.entity, player_data.elements.drone_limit_signal_choose_elem_button.elem_value)
+    end,
+
+    [gui_prefix .. "read-drone-count-checkbox"] = function(player_data)
+        mh.set_drone_count_circuit(player_data.entity, player_data.elements.drone_count_circuit_checkbox.state)
+    end,
+    [gui_prefix .. "drone-count-signal-choose-elem-button"] = function(player_data)
+        mh.set_drone_count_circuit_signal_id(player_data.entity, player_data.elements.drone_count_signal_choose_elem_button.elem_value)
+    end,
+
+    [gui_prefix .. "set-priority-checkbox"] = function(player_data)
+        mh.set_priority_circuit(player_data.entity, player_data.elements.priority_circuit_checkbox.state)
+    end,
+    [gui_prefix .. "priority-signal-choose-elem-button"] = function(player_data)
+        mh.set_priority_circuit_signal_id(player_data.entity, player_data.elements.priority_signal_choose_elem_button.elem_value)
+    end,
+}
+local observers = {
+    is_drone_limit_enabled = {
+        get = function(player_data) return mh.is_drone_limit_enabled(player_data.entity) end,
+        updated = function(player_data, data)
+            if mh.is_drone_limit_circuit(player_data.entity) then
+                player_data.elements.drone_limit_checkbox.state = true
+                player_data.elements.drone_limit_checkbox.enabled = false
+                player_data.elements.drone_limit_slider.enabled = false
+                player_data.elements.drone_limit_field.enabled = false
+            else
+                player_data.elements.drone_limit_checkbox.state = data
+                player_data.elements.drone_limit_checkbox.enabled = true
+                player_data.elements.drone_limit_slider.enabled = data
+                player_data.elements.drone_limit_field.enabled = data
+            end
+        end
+    },
+    is_drone_limit_circuit = {
+        get = function(player_data) return mh.is_drone_limit_circuit(player_data.entity) end,
+        updated = function(player_data, data)
+            if data then
+                player_data.elements.drone_limit_checkbox.state = true
+                player_data.elements.drone_limit_checkbox.enabled = false
+                player_data.elements.drone_limit_slider.enabled = false
+                player_data.elements.drone_limit_field.enabled = false
+            else
+                local drone_limit_enabled = mh.is_drone_limit_enabled(player_data.entity)
+
+                player_data.elements.drone_limit_checkbox.state = drone_limit_enabled
+                player_data.elements.drone_limit_checkbox.enabled = true
+                player_data.elements.drone_limit_slider.enabled = drone_limit_enabled
+                player_data.elements.drone_limit_field.enabled = drone_limit_enabled
+            end
+            
+            player_data.elements.drone_limit_circuit_checkbox.state = data
+            player_data.elements.drone_limit_signal_label.enabled = data
+            player_data.elements.drone_limit_signal_choose_elem_button.enabled = data
+        end
+    },
+    get_drone_limit = {
+        get = function(player_data) return mh.get_drone_limit(player_data.entity) end,
+        updated = function(player_data, data)
+            if data == nil then
+                data = 0
+            end
+
+            player_data.elements.drone_limit_slider.slider_value = data
+            player_data.elements.drone_limit_field.text = tostring(data)
+        end
+    },
+
+    is_priority_circuit = {
+        get = function(player_data) return mh.is_priority_circuit(player_data.entity) end,
+        updated = function(player_data, data)
+            player_data.elements.priority_field.enabled = not data
+            player_data.elements.priority_slider.enabled = not data
+
+            player_data.elements.priority_circuit_checkbox.state = data
+            player_data.elements.priority_signal_label.enabled = data
+            player_data.elements.priority_signal_choose_elem_button.enabled = data
+        end
+    },
+    get_priority = {
+        get = function(player_data) return mh.get_priority(player_data.entity) end,
+        updated = function(player_data, data)
+            player_data.elements.priority_field.text = tostring(data)
+            player_data.elements.priority_slider.slider_value = data
+        end
+    },
+
+    get_circuit_network_red_green = {
+        get = function(player_data)
+            return player_data.entity.get_circuit_network(defines.wire_connector_id.circuit_red) ~= nil
+                or player_data.entity.get_circuit_network(defines.wire_connector_id.circuit_green) ~= nil
+        end,
+        updated = function(player_data, data)
+            if data then
+                player_data.elements.connection_label.caption = { "gui-control-behavior.connected-to-network" }
+            else
+                player_data.elements.connection_label.caption = { "gui-control-behavior.not-connected" }
+            end
+        end
+    },
+    get_circuit_network_red = {
+        get = function(player_data)
+            local network = player_data.entity.get_circuit_network(defines.wire_connector_id.circuit_red)
+
+            if network == nil then
+                return nil
+            end
+
+            return network.network_id
+        end,
+        updated = function(player_data, data)
+            player_data.elements.network_red_label.visible = data ~= nil
+            if data ~= nil then
+                player_data.elements.network_red_label.caption = "[color=1.0,0.1,0.1]" .. data .. "[/color]"
+            end
+        end
+    },
+    get_circuit_network_green = {
+        get = function(player_data)
+            local network = player_data.entity.get_circuit_network(defines.wire_connector_id.circuit_green)
+
+            if network == nil then
+                return nil
+            end
+
+            return network.network_id
+        end,
+        updated = function(player_data, data)
+            player_data.elements.network_green_label.visible = data ~= nil
+            if data ~= nil then
+                player_data.elements.network_green_label.caption = "[color=0.1,1.0,0.1]" .. data .. "[/color]"
+            end
+        end
+    },
+    
+    ---------- Circuit ----------
+    get_drone_limit_signal_element_type = {
+        get = function(player_data) return get_drone_limit_signal_element(player_data, "type") end,
+        updated = function(player_data, data)
+            player_data.elements.drone_limit_signal_choose_elem_button.elem_value = mh.get_drone_limit_circuit_signal_id(player_data.entity)
+        end
+    },
+    get_drone_limit_signal_element_name = {
+        get = function(player_data) return get_drone_limit_signal_element(player_data, "name") end,
+        updated = function(player_data, data)
+            player_data.elements.drone_limit_signal_choose_elem_button.elem_value = mh.get_drone_limit_circuit_signal_id(player_data.entity)
+        end
+    },
+    get_drone_limit_signal_element_quality = {
+        get = function(player_data) return get_drone_limit_signal_element(player_data, "quality") end,
+        updated = function(player_data, data)
+            player_data.elements.drone_limit_signal_choose_elem_button.elem_value = mh.get_drone_limit_circuit_signal_id(player_data.entity)
+        end
+    },
+
+    is_drone_count_circuit = {
+        get = function(player_data) return mh.is_drone_count_circuit(player_data.entity) end,
+        updated = function(player_data, data)
+            player_data.elements.drone_count_circuit_checkbox.state = data
+            player_data.elements.drone_count_signal_label.enabled = data
+            player_data.elements.drone_count_signal_choose_elem_button.enabled = data
+        end
+    },
+    get_drone_count_signal_element_type = {
+        get = function(player_data) return get_drone_count_signal_element(player_data, "type") end,
+        updated = function(player_data, data)
+            player_data.elements.drone_count_signal_choose_elem_button.elem_value = mh.get_drone_count_circuit_signal_id(player_data.entity)
+        end
+    },
+    get_drone_count_signal_element_name = {
+        get = function(player_data) return get_drone_count_signal_element(player_data, "name") end,
+        updated = function(player_data, data)
+            player_data.elements.drone_count_signal_choose_elem_button.elem_value = mh.get_drone_count_circuit_signal_id(player_data.entity)
+        end
+    },
+    get_drone_count_signal_element_quality = {
+        get = function(player_data) return get_drone_count_signal_element(player_data, "quality") end,
+        updated = function(player_data, data)
+            player_data.elements.drone_count_signal_choose_elem_button.elem_value = mh.get_drone_count_circuit_signal_id(player_data.entity)
+        end
+    },
+
+    get_priority_signal_element_type = {
+        get = function(player_data) return get_priority_signal_element(player_data, "type") end,
+        updated = function(player_data, data)
+            player_data.elements.priority_signal_choose_elem_button.elem_value = mh.get_priority_circuit_signal_id(player_data.entity)
+        end
+    },
+    get_priority_signal_element_name = {
+        get = function(player_data) return get_priority_signal_element(player_data, "name") end,
+        updated = function(player_data, data)
+            player_data.elements.priority_signal_choose_elem_button.elem_value = mh.get_priority_circuit_signal_id(player_data.entity)
+        end
+    },
+    get_priority_signal_element_quality = {
+        get = function(player_data) return get_priority_signal_element(player_data, "quality") end,
+        updated = function(player_data, data)
+            player_data.elements.priority_signal_choose_elem_button.elem_value = mh.get_priority_circuit_signal_id(player_data.entity)
+        end
+    },
+}
+
+local function handle_event(event)
     local element = event.element
 
     if not element or not element.valid then
@@ -39,20 +297,215 @@ local function handle_event(event, action_type)
 
     local player = game.get_player(event.player_index)
 
-    if not gui_local_data[player.index] then
+    if not storage.gui_mooring_player[player.index] then
         return
     end
 
-    local callable = gui_local_data[player.index][action_type][element.name]
+    local callable = callbacks[element.name]
 
     if not callable then
         return
     end
 
-    callable()
+    callable(storage.gui_mooring_player[player.index])
 end
 
-local function build_gui_mooring(player, mooring, parent)
+local function update_item_signals(player_data)
+    local mooring_signals = player_data.entity.get_signals(defines.wire_connector_id.circuit_red, defines.wire_connector_id.circuit_green)
+
+    local current_index = 1
+
+    local function update_item_element(index, item)
+        local item_sprite = player_data.elements.signal_item_indices[index]
+
+        if not item_sprite then
+            item_sprite = player_data.elements.items_table.add{
+                type = "sprite-button",
+                style = "transparent_slot"
+            }
+
+            player_data.elements.signal_item_indices[index] = item_sprite
+        end
+
+        item_sprite.sprite = "item/" .. item.signal.name
+        item_sprite.quality = item.signal.quality
+        item_sprite.number = item.count
+        item_sprite.tooltip = prototypes.item[item.signal.name].localised_name
+        item_sprite.visible = true
+    end
+
+    if mooring_signals then
+        for i, item in ipairs(mooring_signals) do
+            if item.signal.type ~= nil then
+                goto continue
+            end
+            if item.count <= 0 then
+                goto continue
+            end
+
+            update_item_element(i, item)
+
+            current_index = current_index + 1
+
+            ::continue::
+        end
+    end
+
+    for i = current_index, #player_data.elements.signal_item_indices do
+        player_data.elements.signal_item_indices[i].visible = false
+    end
+end
+
+local function update_drone_list(player_data)
+    local task_ids = dt.get_entity_task_ids(player_data.entity)
+
+    local index = 1
+
+    if task_ids then
+        local function update_elements(drone, minimap, task_label)
+            local task = dt.get(dt.get_current_drone_task_id(drone))
+            local loc_id = nil
+            local target_mooring = nil
+
+            if task.type == dt.task_types.cargo then
+                if task.provider_unit_number then
+                    loc_id = "cargo-drone-status.heading-to-provider"
+                    target_mooring = ep.get_managed_entity(task.provider_unit_number)
+                else
+                    loc_id = "cargo-drone-status.heading-to-requester"
+                    target_mooring = ep.get_managed_entity(task.requester_unit_number)
+                end
+            else
+                loc_id = "cargo-drone-status.heading-to-refueler"
+                target_mooring = ep.get_managed_entity(task.refueler_unit_number)
+            end
+
+            minimap.entity = drone
+            task_label.caption = { loc_id, math.floor(util.distance(drone.position, target_mooring.position)) }
+        end
+
+        local function create_drone_element(index, drone, task)
+            local minimap_border = player_data.elements.drone_table.add{
+                type = "frame",
+                name = mooring_drone_prefix .. index,
+                style = "shallow_frame",
+                direction = "vertical",
+            }
+
+            local minimap_frame = minimap_border.add{
+                type = "frame",
+                name = gui_prefix .. "minimap-frame",
+                style = "inside_deep_frame",
+                direction = "vertical"
+            }
+
+            minimap_frame.style.margin = 4
+
+            local minimap_flow = minimap_frame.add{
+                type = "flow",
+                name = gui_prefix .. "minimap-flow",
+                direction = "horizontal",
+            }
+
+            local minimap = minimap_flow.add{
+                type = "minimap",
+                name = minimap_name
+            }
+
+            minimap.entity = drone
+            minimap.style.horizontally_stretchable = true
+            minimap.style.height = 120
+
+            local task_frame = minimap_border.add{
+                type = "frame",
+                name = gui_prefix .. "task-frame",
+                style = "inside_deep_frame",
+                direction = "vertical"
+            }
+
+            task_frame.style.margin = 4
+
+            local task_header_frame = task_frame.add{
+                type = "frame",
+                name = gui_prefix .. "task-header-frame",
+                style = "subheader_frame"
+            }
+
+            task_header_frame.style.horizontally_stretchable = true
+            task_header_frame.style.vertical_align = "center"
+
+            local task_label = task_header_frame.add{
+                type = "label",
+                name = gui_prefix .. "task-label",
+                style = "subheader_label"
+            }
+
+            update_elements(drone, minimap, task_label)
+
+            if not task.items then
+                return
+            end
+
+            local items_frame = minimap_border.add{
+                type = "frame",
+                style = "inside_deep_frame",
+                direction = "horizontal"
+            }
+
+            items_frame.style.margin = 4
+            items_frame.style.horizontally_stretchable = true
+
+            local items_table = items_frame.add{
+                type = "table",
+                column_count = 7
+            }
+
+            items_table.style.padding = 4
+
+            for _, item in ipairs(task.items) do
+                local item_sprite = items_table.add{
+                    type = "sprite-button",
+                    style = "transparent_slot",
+                    sprite = "item/" .. item.name,
+                    quality = item.quality,
+                    number = item.count,
+                    tooltip = prototypes.item[item.name].localised_name
+                }
+            end
+        end
+
+        for task_id, _ in pairs(task_ids) do
+            local task = dt.get(task_id)
+            
+            local element = player_data.elements.drone_table[mooring_drone_prefix .. index]
+            local drone = ep.get_managed_entity(task.drone_unit_number)
+
+            if element then
+                local minimap = element[gui_prefix .. "minimap-frame"][gui_prefix .. "minimap-flow"][minimap_name]
+                local task_label = element[gui_prefix .. "task-frame"][gui_prefix .. "task-header-frame"][gui_prefix .. "task-label"]
+
+                update_elements(drone, minimap, task_label)
+            else
+                create_drone_element(index, drone, task)
+            end
+
+            index = index + 1
+        end
+    end
+
+    while true do
+        local element = player_data.elements.drone_table[mooring_drone_prefix .. index]
+
+        if not element then
+            break
+        end
+
+        index = index + 1
+        element.destroy()
+    end
+end
+
+local function build_gui_mooring(player_data, mooring, parent)
     local mooring_frame = parent.add{
         type = "frame",
         style = "inside_shallow_frame",
@@ -79,6 +532,8 @@ local function build_gui_mooring(player, mooring, parent)
     preview.entity = mooring
     preview.style.width = 400
     preview.style.height = 150
+
+    player_data.elements.preview = preview
 
     ---------- Drone limit ----------
     local drone_limit_flow = mooring_frame.add{
@@ -121,64 +576,9 @@ local function build_gui_mooring(player, mooring, parent)
 
     drone_limit_field.style.maximal_width = 40
 
-    register_on_changed(player, drone_limit_checkbox, function()
-        mh.set_drone_limit_enabled(mooring, drone_limit_checkbox.state)
-    end)
-    register_on_changed(player, drone_limit_slider, function()
-        mh.set_drone_limit_value(mooring, drone_limit_slider.slider_value)
-    end)
-    register_on_changed(player, drone_limit_field, function()
-        local limit = tonumber(drone_limit_field.text)
-
-        if limit == nil then
-            return
-        end
-
-        mh.set_drone_limit_value(mooring, limit)
-    end)
-
-    register_data_observer(player,
-        function() return mh.is_drone_limit_enabled(mooring) end,
-        function(data)
-            if mh.is_drone_limit_circuit(mooring) then
-                drone_limit_checkbox.state = true
-                drone_limit_checkbox.enabled = false
-                drone_limit_slider.enabled = false
-                drone_limit_field.enabled = false
-            else
-                drone_limit_checkbox.state = data
-                drone_limit_checkbox.enabled = true
-                drone_limit_slider.enabled = data
-                drone_limit_field.enabled = data
-            end
-        end)
-    register_data_observer(player,
-        function() return mh.is_drone_limit_circuit(mooring) end,
-        function(data)
-            if data then
-                drone_limit_checkbox.state = true
-                drone_limit_checkbox.enabled = false
-                drone_limit_slider.enabled = false
-                drone_limit_field.enabled = false
-            else
-                local drone_limit_enabled = mh.is_drone_limit_enabled(mooring)
-
-                drone_limit_checkbox.state = drone_limit_enabled
-                drone_limit_checkbox.enabled = true
-                drone_limit_slider.enabled = drone_limit_enabled
-                drone_limit_field.enabled = drone_limit_enabled
-            end
-        end)
-    register_data_observer(player,
-        function() return mh.get_drone_limit(mooring) end,
-        function(data)
-            if data == nil then
-                data = 0
-            end
-
-            drone_limit_slider.slider_value = data
-            drone_limit_field.text = tostring(data)
-        end)
+    player_data.elements.drone_limit_checkbox = drone_limit_checkbox
+    player_data.elements.drone_limit_slider = drone_limit_slider
+    player_data.elements.drone_limit_field = drone_limit_field
 
     drone_limit_slider.enabled = drone_limit_checkbox.state
     drone_limit_field.enabled = drone_limit_checkbox.state
@@ -224,31 +624,8 @@ local function build_gui_mooring(player, mooring, parent)
 
     priority_field.style.maximal_width = 40
 
-    register_on_changed(player, priority_slider, function()
-        mh.set_priority_value(mooring, priority_slider.slider_value)
-    end)
-    register_on_changed(player, priority_field, function()
-        local priority = tonumber(priority_field.text)
-
-        if priority == nil then
-            return
-        end
-
-        mh.set_priority_value(mooring, priority)
-    end)
-
-    register_data_observer(player,
-        function() return mh.is_priority_circuit(mooring) end,
-        function(data)
-            priority_field.enabled = not data
-            priority_slider.enabled = not data
-        end)
-    register_data_observer(player,
-        function() return mh.get_priority(mooring) end,
-        function(data)
-            priority_field.text = tostring(data)
-            priority_slider.slider_value = data
-        end)
+    player_data.elements.priority_slider = priority_slider
+    player_data.elements.priority_field = priority_field
 
     ---------- Item Signals ----------
 
@@ -280,60 +657,14 @@ local function build_gui_mooring(player, mooring, parent)
             type = "table",
             column_count = 11
         }
-        local item_indices = {}
+
+        player_data.elements.items_table = items_table
+        player_data.elements.signal_item_indices = {}
 
         items_table.style.minimal_height = 40
         items_table.style.padding = 4
 
-        local function update_item_element(index, item)
-            local item_sprite = item_indices[index]
-
-            if not item_sprite then
-                item_sprite = items_table.add{
-                    type = "sprite-button",
-                    style = "transparent_slot"
-                }
-
-                item_indices[index] = item_sprite
-            end
-
-            item_sprite.sprite = "item/" .. item.signal.name
-            item_sprite.quality = item.signal.quality
-            item_sprite.number = item.count
-            item_sprite.tooltip = prototypes.item[item.signal.name].localised_name
-            item_sprite.visible = true
-        end
-
-        local function update_item_signals()
-            local mooring_signals = mooring.get_signals(defines.wire_connector_id.circuit_red, defines.wire_connector_id.circuit_green)
-
-            local current_index = 1
-
-            if mooring_signals then
-                for i, item in ipairs(mooring_signals) do
-                    if item.signal.type ~= nil then
-                        goto continue
-                    end
-                    if item.count <= 0 then
-                        goto continue
-                    end
-
-                    update_item_element(i, item)
-
-                    current_index = current_index + 1
-
-                    ::continue::
-                end
-            end
-
-            for i = current_index, #item_indices do
-                item_indices[i].visible = false
-            end
-        end
-
-        update_item_signals()
-
-        gui_local_data[player.index].item_signal_update = update_item_signals
+        update_item_signals(player_data)
     end
 
     ---------- Filler ----------
@@ -345,7 +676,7 @@ local function build_gui_mooring(player, mooring, parent)
     mooring_filler.style.vertically_stretchable = true
 end
 
-local function build_gui_drones(player, mooring, parent)
+local function build_gui_drones(player_data, parent)
     local drones_frame = parent.add{
         type = "frame",
         style = "inside_shallow_frame",
@@ -386,157 +717,10 @@ local function build_gui_drones(player, mooring, parent)
     drone_table.style.horizontally_stretchable = true
     drone_table.style.margin = 0
 
-    local function update_elements(drone, minimap, task_label)
-        local task = dt.get(dt.get_current_drone_task_id(drone))
-        local loc_id = nil
-        local target_mooring = nil
-
-        if task.type == dt.task_types.cargo then
-            if task.provider_unit_number then
-                loc_id = "cargo-drone-status.heading-to-provider"
-                target_mooring = ep.get_managed_entity(task.provider_unit_number)
-            else
-                loc_id = "cargo-drone-status.heading-to-requester"
-                target_mooring = ep.get_managed_entity(task.requester_unit_number)
-            end
-        else
-            loc_id = "cargo-drone-status.heading-to-refueler"
-            target_mooring = ep.get_managed_entity(task.refueler_unit_number)
-        end
-
-        minimap.entity = drone
-        task_label.caption = { loc_id, math.floor(util.distance(drone.position, target_mooring.position)) }
-    end
-
-    local function create_drone_element(index, drone, task)
-        local minimap_border = drone_table.add{
-            type = "frame",
-            name = mooring_drone_prefix .. index,
-            style = "shallow_frame",
-            direction = "vertical",
-        }
-
-        local minimap_frame = minimap_border.add{
-            type = "frame",
-            name = gui_prefix .. "minimap-frame",
-            style = "inside_deep_frame",
-            direction = "vertical"
-        }
-
-        minimap_frame.style.margin = 4
-
-        local minimap_flow = minimap_frame.add{
-            type = "flow",
-            name = gui_prefix .. "minimap-flow",
-            direction = "horizontal",
-        }
-
-        local minimap = minimap_flow.add{
-            type = "minimap",
-            name = minimap_name
-        }
-
-        minimap.entity = drone
-        minimap.style.horizontally_stretchable = true
-        minimap.style.height = 120
-
-        local task_frame = minimap_border.add{
-            type = "frame",
-            name = gui_prefix .. "task-frame",
-            style = "inside_deep_frame",
-            direction = "vertical"
-        }
-
-        task_frame.style.margin = 4
-
-        local task_header_frame = task_frame.add{
-            type = "frame",
-            name = gui_prefix .. "task-header-frame",
-            style = "subheader_frame"
-        }
-
-        task_header_frame.style.horizontally_stretchable = true
-        task_header_frame.style.vertical_align = "center"
-
-        local task_label = task_header_frame.add{
-            type = "label",
-            name = gui_prefix .. "task-label",
-            style = "subheader_label"
-        }
-
-        update_elements(drone, minimap, task_label)
-
-        if not task.items then
-            return
-        end
-
-        local items_frame = minimap_border.add{
-            type = "frame",
-            style = "inside_deep_frame",
-            direction = "horizontal"
-        }
-
-        items_frame.style.margin = 4
-        items_frame.style.horizontally_stretchable = true
-
-        local items_table = items_frame.add{
-            type = "table",
-            column_count = 7
-        }
-
-        items_table.style.padding = 4
-
-        for _, item in ipairs(task.items) do
-            local item_sprite = items_table.add{
-                type = "sprite-button",
-                style = "transparent_slot",
-                sprite = "item/" .. item.name,
-                quality = item.quality,
-                number = item.count,
-                tooltip = prototypes.item[item.name].localised_name
-            }
-        end
-    end
-
-    gui_local_data[player.index].drone_update = function()
-        local task_ids = dt.get_entity_task_ids(mooring)
-
-        local index = 1
-
-        if task_ids then
-            for task_id, _ in pairs(task_ids) do
-                local task = dt.get(task_id)
-                
-                local element = drone_table[mooring_drone_prefix .. index]
-                local drone = ep.get_managed_entity(task.drone_unit_number)
-
-                if element then
-                    local minimap = element[gui_prefix .. "minimap-frame"][gui_prefix .. "minimap-flow"][minimap_name]
-                    local task_label = element[gui_prefix .. "task-frame"][gui_prefix .. "task-header-frame"][gui_prefix .. "task-label"]
-
-                    update_elements(drone, minimap, task_label)
-                else
-                    create_drone_element(index, drone, task)
-                end
-
-                index = index + 1
-            end
-        end
-
-        while true do
-            local element = drone_table[mooring_drone_prefix .. index]
-
-            if not element then
-                break
-            end
-
-            index = index + 1
-            element.destroy()
-        end
-    end
+    player_data.elements.drone_table = drone_table
 end
 
-local function build_gui_circuit_connection_status(player, mooring, parent)
+local function build_gui_circuit_connection_status(player_data, mooring, parent)
     local frame = parent.add{
         type = "frame",
         style = "subheader_frame",
@@ -548,62 +732,15 @@ local function build_gui_circuit_connection_status(player, mooring, parent)
     frame.style.padding = 12
     frame.style.bottom_margin = 8
 
-    local label_loc_not_connected = { "gui-control-behavior.not-connected" }
-    local label_loc_connected_to_network = { "gui-control-behavior.connected-to-network" }
-
     local connection_label = frame.add{ type = "label" }
-
-    register_data_observer(player,
-        function()
-            return mooring.get_circuit_network(defines.wire_connector_id.circuit_red) ~= nil
-                or mooring.get_circuit_network(defines.wire_connector_id.circuit_green) ~= nil
-        end,
-        function(data)
-            if data then
-                connection_label.caption = label_loc_connected_to_network
-            else
-                connection_label.caption = label_loc_not_connected
-            end
-        end)
-
     local network_red_label = frame.add{ type = "label" }
     local network_green_label = frame.add{ type = "label" }
 
-    register_data_observer(player,
-        function()
-            local network = mooring.get_circuit_network(defines.wire_connector_id.circuit_red)
-
-            if network == nil then
-                return nil
-            end
-
-            return network.network_id
-        end,
-        function(data)
-            network_red_label.visible = data ~= nil
-            if data ~= nil then
-                network_red_label.caption = "[color=1.0,0.1,0.1]" .. data .. "[/color]"
-            end
-        end)
-    register_data_observer(player,
-        function()
-            local network = mooring.get_circuit_network(defines.wire_connector_id.circuit_green)
-
-            if network == nil then
-                return nil
-            end
-
-            return network.network_id
-        end,
-        function(data)
-            network_green_label.visible = data ~= nil
-            if data ~= nil then
-                network_green_label.caption = "[color=0.1,1.0,0.1]" .. data .. "[/color]"
-            end
-        end)
-
+    player_data.elements.connection_label = connection_label
+    player_data.elements.network_red_label = network_red_label
+    player_data.elements.network_green_label = network_green_label
 end
-local function build_gui_circuit(player, mooring, parent)
+local function build_gui_circuit(player_data, mooring, parent)
     local frame = parent.add{
         type = "frame",
         direction = "vertical",
@@ -617,7 +754,7 @@ local function build_gui_circuit(player, mooring, parent)
 
     main_frame.style.bottom_padding = 4
 
-    build_gui_circuit_connection_status(player, mooring, main_frame)
+    build_gui_circuit_connection_status(player_data, mooring, main_frame)
 
     ---------- Drone Limit ----------
 
@@ -663,42 +800,9 @@ local function build_gui_circuit(player, mooring, parent)
         elem_type = "signal"
     }
 
-    register_on_changed(player, drone_limit_circuit_checkbox, function()
-        mh.set_drone_limit_circuit(mooring, drone_limit_circuit_checkbox.state)
-    end)
-    register_data_observer(player,
-        function() return mh.is_drone_limit_circuit(mooring) end,
-        function(data)
-            drone_limit_circuit_checkbox.state = data
-            drone_limit_signal_label.enabled = data
-            drone_limit_signal_choose_elem_button.enabled = data
-        end)
-
-    local function drone_limit_signal_changed(_)
-        drone_limit_signal_choose_elem_button.elem_value = mh.get_drone_limit_circuit_signal_id(mooring)
-    end
-    local function get_drone_limit_signal_element(element)
-        local signal_id = mh.get_drone_limit_circuit_signal_id(mooring)
-
-        if signal_id == nil then
-            return nil
-        end
-
-        return signal_id[element]
-    end
-
-    register_on_changed(player, drone_limit_signal_choose_elem_button, function()
-        mh.set_drone_limit_circuit_signal_id(mooring, drone_limit_signal_choose_elem_button.elem_value)
-    end)
-    register_data_observer(player,
-        function() return get_drone_limit_signal_element("type") end,
-        drone_limit_signal_changed)
-    register_data_observer(player,
-        function() return get_drone_limit_signal_element("name") end,
-        drone_limit_signal_changed)
-    register_data_observer(player,
-        function() return get_drone_limit_signal_element("quality") end,
-        drone_limit_signal_changed)
+    player_data.elements.drone_limit_circuit_checkbox = drone_limit_circuit_checkbox
+    player_data.elements.drone_limit_signal_label = drone_limit_signal_label
+    player_data.elements.drone_limit_signal_choose_elem_button = drone_limit_signal_choose_elem_button
 
     main_frame.add{
         type = "line",
@@ -748,42 +852,9 @@ local function build_gui_circuit(player, mooring, parent)
         elem_type = "signal"
     }
 
-    register_on_changed(player, drone_count_circuit_checkbox, function()
-        mh.set_drone_count_circuit(mooring, drone_count_circuit_checkbox.state)
-    end)
-    register_data_observer(player,
-        function() return mh.is_drone_count_circuit(mooring) end,
-        function(data)
-            drone_count_circuit_checkbox.state = data
-            drone_count_signal_label.enabled = data
-            drone_count_signal_choose_elem_button.enabled = data
-        end)
-
-    local function drone_count_signal_changed(_)
-        drone_count_signal_choose_elem_button.elem_value = mh.get_drone_count_circuit_signal_id(mooring)
-    end
-    local function get_drone_count_signal_element(element)
-        local signal_id = mh.get_drone_count_circuit_signal_id(mooring)
-
-        if signal_id == nil then
-            return nil
-        end
-
-        return signal_id[element]
-    end
-
-    register_on_changed(player, drone_count_signal_choose_elem_button, function()
-        mh.set_drone_count_circuit_signal_id(mooring, drone_count_signal_choose_elem_button.elem_value)
-    end)
-    register_data_observer(player,
-        function() return get_drone_count_signal_element("type") end,
-        drone_count_signal_changed)
-    register_data_observer(player,
-        function() return get_drone_count_signal_element("name") end,
-        drone_count_signal_changed)
-    register_data_observer(player,
-        function() return get_drone_count_signal_element("quality") end,
-        drone_count_signal_changed)
+    player_data.elements.drone_count_circuit_checkbox = drone_count_circuit_checkbox
+    player_data.elements.drone_count_signal_label = drone_count_signal_label
+    player_data.elements.drone_count_signal_choose_elem_button = drone_count_signal_choose_elem_button
 
     main_frame.add{
         type = "line",
@@ -833,50 +904,28 @@ local function build_gui_circuit(player, mooring, parent)
         elem_type = "signal"
     }
 
-    register_on_changed(player, priority_circuit_checkbox, function()
-        mh.set_priority_circuit(mooring, priority_circuit_checkbox.state)
-    end)
-    register_data_observer(player,
-        function() return mh.is_priority_circuit(mooring) end,
-        function(data)
-            priority_circuit_checkbox.state = data
-            priority_signal_label.enabled = data
-            priority_signal_choose_elem_button.enabled = data
-        end)
-
-    local function priority_signal_changed(_)
-        priority_signal_choose_elem_button.elem_value = mh.get_priority_circuit_signal_id(mooring)
-    end
-    local function get_priority_signal_element(element)
-        local signal_id = mh.get_priority_circuit_signal_id(mooring)
-
-        if signal_id == nil then
-            return nil
-        end
-
-        return signal_id[element]
-    end
-
-    register_on_changed(player, priority_signal_choose_elem_button, function()
-        mh.set_priority_circuit_signal_id(mooring, priority_signal_choose_elem_button.elem_value)
-    end)
-    register_data_observer(player,
-        function() return get_priority_signal_element("type") end,
-        priority_signal_changed)
-    register_data_observer(player,
-        function() return get_priority_signal_element("name") end,
-        priority_signal_changed)
-    register_data_observer(player,
-        function() return get_priority_signal_element("quality") end,
-        priority_signal_changed)
+    player_data.elements.priority_circuit_checkbox = priority_circuit_checkbox
+    player_data.elements.priority_signal_label = priority_signal_label
+    player_data.elements.priority_signal_choose_elem_button = priority_signal_choose_elem_button
 end
 
-local function build_gui(player, mooring)
-    gui_local_data[player.index] = {
-        on_click = {},
-        on_changed = {},
-        data_observers = {}
+local function build_gui(player, mooring, mooring_name)
+    local player_data = {
+        player = player,
+        entity = mooring,
+        entity_unit_number = mooring.unit_number,
+        entity_name = mooring_name,
+        surface_index = mooring.surface.index,
+        position = mooring.position,
+        elements = {},
+        observer_data = {}
     }
+
+    for key, _ in pairs(observers) do
+        player_data.observer_data[key] = not_observed
+    end
+
+    storage.gui_mooring_player[player.index] = player_data
 
     local frame = player.gui.screen.add{
         type = "frame",
@@ -931,14 +980,6 @@ local function build_gui(player, mooring)
 
     button_close.style.left_margin = 4
 
-    register_on_click(player, button_close, function()
-        if not player.gui.screen[window_gui_name] then
-            return
-        end
-
-        player.opened = nil
-    end)
-
     local main_flow = frame.add{
         type = "flow",
         direction = "horizontal",
@@ -946,11 +987,11 @@ local function build_gui(player, mooring)
 
     main_flow.style.horizontal_spacing = 8
 
-    build_gui_mooring(player, mooring, main_flow)
+    build_gui_mooring(player_data, mooring, main_flow)
 
-    build_gui_drones(player, mooring, main_flow)
+    build_gui_drones(player_data, main_flow)
 
-    build_gui_circuit(player, mooring, main_flow)
+    build_gui_circuit(player_data, mooring, main_flow)
 
     player.opened = frame
 end
@@ -987,13 +1028,11 @@ function gui_mooring.tick()
     local removed = nil
 
     for player_index, player_data in pairs(storage.gui_mooring_player) do
-        local local_data = gui_local_data[player_index]
-
         if not player_data.player.connected then
             goto continue
         end
 
-        if not local_data or not player_data.entity or not player_data.entity.valid then
+        if not player_data.entity or not player_data.entity.valid then
             local surface = game.get_surface(player_data.surface_index)
 
             if not surface then
@@ -1022,49 +1061,44 @@ function gui_mooring.tick()
 
             player_data.entity = entity
             player_data.entity_unit_number = entity.unit_number
+            player_data.elements.preview.entity = entity
 
             add_to_lookup(player_index, entity.unit_number)
-
-            player_data.player.gui.screen[window_gui_name].destroy()
-
-            player_data.player.opened = nil
-
-            build_gui(player_data.player, entity)
-
-            local_data = gui_local_data[player_index]
         end
 
-        for _, observer in ipairs(local_data.data_observers) do
-            local data = observer.get_data()
+        for key, observer in pairs(observers) do
+            local data = observer.get(player_data)
 
-            if data ~= observer.previous_data then
-                observer.callable(data)
+            if data ~= player_data.observer_data[key] then
+                observer.updated(player_data, data)
 
-                observer.previous_data = data
+                player_data.observer_data[key] = data
             end
         end
-        if local_data.item_signal_update then
-            local_data.item_signal_update()
+
+        if player_data.elements.items_table ~= nil then
+            update_item_signals(player_data)
         end
-        local_data.drone_update()
+        update_drone_list(player_data)
 
         ::continue::
     end
 
     if removed ~= nil then
         for _, player_index in ipairs(removed) do
-            local window = storage.gui_mooring_player[player_index].player.gui.screen[window_gui_name]
-
-            if window then
-                window.destroy()
-            end
-
             local player_data = storage.gui_mooring_player[player_index]
+
+            if player_data.player.valid then
+               local window = player_data.player.gui.screen[window_gui_name]
+
+                if window then
+                    window.destroy()
+                end
+            end
 
             remove_from_lookup(player_index, player_data.entity_unit_number)
             
             storage.gui_mooring_player[player_index] = nil
-            gui_local_data[player_index] = nil
         end
     end
 end
@@ -1079,7 +1113,6 @@ function gui_mooring.on_player_removed(event)
     remove_from_lookup(event.player_index, player_data.entity_unit_number)
 
     storage.gui_mooring_player[event.player_index] = nil
-    gui_local_data[event.player_index] = nil
 end
 
 function gui_mooring.on_gui_opened(event)
@@ -1109,18 +1142,9 @@ function gui_mooring.on_gui_opened(event)
 
     player.opened = nil
 
-    storage.gui_mooring_player[player.index] = {
-        player = player,
-        entity = entity,
-        entity_unit_number = entity.unit_number,
-        entity_name = entity_name,
-        surface_index = entity.surface.index,
-        position = entity.position
-    }
-
     add_to_lookup(player.index, entity.unit_number)
 
-    build_gui(player, entity)
+    build_gui(player, entity, entity_name)
 end
 function gui_mooring.on_gui_closed(event)
 	if event.gui_type ~= defines.gui_type.custom then
@@ -1144,19 +1168,13 @@ function gui_mooring.on_gui_closed(event)
     remove_from_lookup(event.player_index, entity_unit_number)
 
     storage.gui_mooring_player[event.player_index] = nil
-    gui_local_data[player.index] = nil
 
     player.opened = nil
 end
 function gui_mooring.on_gui_click(event)
-    handle_event(event, "on_click")
+    handle_event(event)
 
     local player = game.get_player(event.player_index)
-
-    if not gui_local_data[player.index] then
-        return
-    end
-
     local element = event.element
 
     if not element or not element.valid then
@@ -1170,16 +1188,16 @@ function gui_mooring.on_gui_click(event)
     player.opened = element.entity
 end
 function gui_mooring.on_gui_checked_state_changed(event)
-    handle_event(event, "on_changed")
+    handle_event(event)
 end
 function gui_mooring.on_gui_value_changed(event)
-    handle_event(event, "on_changed")
+    handle_event(event)
 end
 function gui_mooring.on_gui_text_changed(event)
-    handle_event(event, "on_changed")
+    handle_event(event)
 end
 function gui_mooring.on_gui_elem_changed(event)
-    handle_event(event, "on_changed")
+    handle_event(event)
 end
 
 function gui_mooring.on_destroyed_entity(event)
