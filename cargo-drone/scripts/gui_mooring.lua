@@ -1256,15 +1256,15 @@ function gui_mooring.on_gui_closed(event)
 
 	local player = game.get_player(event.player_index)
 
-    if event.element ~= player.gui.screen[window_gui_name] then
-        return
-    end
-
-    if not storage.gui_mooring_player[event.player_index] then
+    if event.element.name ~= window_gui_name then
         return
     end
 
     player.gui.screen[window_gui_name].destroy()
+
+    if not storage.gui_mooring_player[event.player_index] then
+        return
+    end
 
     local entity_unit_number = storage.gui_mooring_player[event.player_index].entity_unit_number
 
