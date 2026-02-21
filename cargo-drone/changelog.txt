@@ -1,6 +1,6 @@
 ---------------------------------------------------------------------------------------------------
 Version: 1.4.0
-Date: 17. 02. 2026
+Date: 21. 02. 2026
   Minor Features:
     - Added custom GUI to moorings.
     - Added setting for fuel inventory size.
