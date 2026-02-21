@@ -250,10 +250,6 @@ end
 local function get_fuel_inventory(mooring)
     local proxy_container = ep.get_entity_property(mooring, "proxy_container")
 
-    if not proxy_container.proxy_target_entity or not proxy_container.proxy_target_entity.valid then
-        return 0
-    end
-
     return inventory_number[proxy_container.proxy_target_inventory] or 0
 end
 

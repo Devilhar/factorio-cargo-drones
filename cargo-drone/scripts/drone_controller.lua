@@ -402,7 +402,7 @@ local function tick_drone(drone, game_tick)
         if old_docked_mooring.valid then
             local proxy_container = ep.get_entity_property(old_docked_mooring, "proxy_container")
 
-            if proxy_container and proxy_container.valid and proxy_container.proxy_target_entity == drone then
+            if proxy_container.proxy_target_entity == drone then
                 proxy_container.proxy_target_entity = nil
             end
 
@@ -418,9 +418,7 @@ local function tick_drone(drone, game_tick)
         if state.docked_mooring.target_entity ~= old_docked_mooring then
             drone.surface.play_sound({ path = "cargo-drone-sound-docking", position = drone.position })
 
-            if proxy_container and proxy_container.valid then
-                proxy_container.proxy_target_entity = drone
-            end
+            proxy_container.proxy_target_entity = drone
             ep.set_entity_property(drone, "docked_mooring", state.docked_mooring.target_entity)
         end
         
