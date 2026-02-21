@@ -90,6 +90,7 @@ local mooring_entity_pc = {
 	collision_mask = { layers = {} },
 	collision_box = {{-1.35, -1.35}, {1.35, 1.35}},
 	selection_box = {{-1.5, -1.5}, {1.5, 1.5}},
+	selection_priority = selection_priorities.editor_only,
 	damaged_trigger_effect = hit_effects.entity(),
 	picture = util.empty_sprite(),
 }
