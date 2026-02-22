@@ -4,6 +4,7 @@
 local ep = require("scripts.entity_property")
 local dt = require("scripts.drone_tasks")
 local mh = require("scripts.mooring_helper")
+local dh = require("scripts.drone_helper")
 
 local gui_prefix = "cargo-drone-"
 
@@ -323,24 +324,47 @@ local function update_drone_list(player_data)
     if task_ids then
         local function update_elements(drone, minimap, task_label)
             local task = dt.get(dt.get_current_drone_task_id(drone))
-            local loc_id = nil
+            local mooring_type = 0
             local target_mooring = nil
 
-            if task.type == dt.task_types.cargo then
-                if task.provider_unit_number then
-                    loc_id = "cargo-drone-status.heading-to-provider"
-                    target_mooring = ep.get_managed_entity(task.provider_unit_number)
-                else
-                    loc_id = "cargo-drone-status.heading-to-requester"
-                    target_mooring = ep.get_managed_entity(task.requester_unit_number)
-                end
+            if task.provider_unit_number ~= nil then
+                mooring_type = 1
+                target_mooring = ep.get_managed_entity(task.provider_unit_number)
+            elseif task.requester_unit_number then
+                mooring_type = 2
+                target_mooring = ep.get_managed_entity(task.requester_unit_number)
             else
-                loc_id = "cargo-drone-status.heading-to-refueler"
+                mooring_type = 3
                 target_mooring = ep.get_managed_entity(task.refueler_unit_number)
             end
 
+            if dh.get_docked_mooring(drone) == target_mooring then
+                if mooring_type == 1 then
+                    task_label.caption = { "cargo-drone-status.docked-with-provider" }
+                elseif mooring_type == 2 then
+                    task_label.caption = { "cargo-drone-status.docked-with-requester" }
+                else
+                    task_label.caption = { "cargo-drone-status.docked-with-refueler" }
+                end
+            elseif dh.get_queuing_mooring(drone) == target_mooring then
+                if mooring_type == 1 then
+                    task_label.caption = { "cargo-drone-status.queuing-at-provider", math.floor(util.distance(drone.position, target_mooring.position)) }
+                elseif mooring_type == 2 then
+                    task_label.caption = { "cargo-drone-status.queuing-at-requester", math.floor(util.distance(drone.position, target_mooring.position)) }
+                else
+                    task_label.caption = { "cargo-drone-status.queuing-at-refueler", math.floor(util.distance(drone.position, target_mooring.position)) }
+                end
+            else
+                if mooring_type == 1 then
+                    task_label.caption = { "cargo-drone-status.heading-to-provider", math.floor(util.distance(drone.position, target_mooring.position)) }
+                elseif mooring_type == 2 then
+                    task_label.caption = { "cargo-drone-status.heading-to-requester", math.floor(util.distance(drone.position, target_mooring.position)) }
+                else
+                    task_label.caption = { "cargo-drone-status.heading-to-refueler", math.floor(util.distance(drone.position, target_mooring.position)) }
+                end
+            end
+
             minimap.entity = drone
-            task_label.caption = { loc_id, math.floor(util.distance(drone.position, target_mooring.position)) }
         end
 
         local function create_drone_element(index, drone, task)

@@ -1,6 +1,7 @@
 
 local ep = require("scripts.entity_property")
 local dt = require("scripts.drone_tasks")
+local dh = require("scripts.drone_helper")
 
 local gui_prefix = "cargo-drone-"
 
@@ -19,10 +20,26 @@ local function update_gui(player, drone)
 
         mooring_frame.visible = true
         mooring_frame[gui_prefix .. "minimap-frame"][gui_prefix .. "minimap-flow"][minimap_name].entity = mooring
-        
+
         local label = mooring_frame[gui_prefix .. "task-frame"][gui_prefix .. "task-header-frame"][gui_prefix .. "task-label"]
 
-        if current_mooring_index == 1 then
+        if dh.get_docked_mooring(drone) == mooring then
+            if mooring_type == 1 then
+                label.caption = { "cargo-drone-status.docked-with-provider" }
+            elseif mooring_type == 2 then
+                label.caption = { "cargo-drone-status.docked-with-requester" }
+            else
+                label.caption = { "cargo-drone-status.docked-with-refueler" }
+            end
+        elseif dh.get_queuing_mooring(drone) == mooring then
+            if mooring_type == 1 then
+                label.caption = { "cargo-drone-status.queuing-at-provider", math.floor(util.distance(drone.position, mooring.position)) }
+            elseif mooring_type == 2 then
+                label.caption = { "cargo-drone-status.queuing-at-requester", math.floor(util.distance(drone.position, mooring.position)) }
+            else
+                label.caption = { "cargo-drone-status.queuing-at-refueler", math.floor(util.distance(drone.position, mooring.position)) }
+            end
+        elseif current_mooring_index == 1 then
             if mooring_type == 1 then
                 label.caption = { "cargo-drone-status.heading-to-provider", math.floor(util.distance(drone.position, mooring.position)) }
             elseif mooring_type == 2 then

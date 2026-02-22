@@ -235,6 +235,7 @@ local function drone_goto_and_dock_with_mooring(drone, state, mooring, inventory
 
         if docking_drone and docking_drone.valid and docking_drone ~= drone then
             state.tickrate = drones_tickrates.reduced
+            state.queuing_mooring = mooring
 
             return
         else
@@ -365,7 +366,8 @@ local state = {
     tickrate = drones_tickrates.every,
     riding_state = { acceleration = defines.riding.acceleration.braking, direction = defines.riding.direction.straight },
     docked_mooring = { target_entity = nil, inventory = nil },
-    docking_mooring = nil
+    docking_mooring = nil,
+    queuing_mooring = nil
 }
 
 local function tick_drone(drone, game_tick)
@@ -376,6 +378,7 @@ local function tick_drone(drone, game_tick)
     state.docked_mooring.target_entity = nil
     state.docked_mooring.inventory = nil
     state.docking_mooring = nil
+    state.queuing_mooring = nil
 
     if not current_task then
         perform_task_none(drone, state, game_tick)
@@ -439,6 +442,8 @@ local function tick_drone(drone, game_tick)
         ep.set_entity_property(drone, "docking_mooring", state.docking_mooring)
         ep.set_entity_property(state.docking_mooring, "docking_drone", drone)
     end
+
+    ep.set_entity_property(drone, "queuing_mooring", state.queuing_mooring)
 
     return state.tickrate
 end
