@@ -243,6 +243,8 @@ function gui_cargo_drone.on_gui_opened(event)
     create_mooring_element(1)
     create_mooring_element(2)
     create_mooring_element(3)
+
+    update_gui(player, entity)
 end
 function gui_cargo_drone.on_gui_closed(event)
 	if event.gui_type ~= defines.gui_type.entity then

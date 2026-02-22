@@ -53,74 +53,6 @@ local function get_fuel_inventory_signal_element(player_data, element)
     return signal_id[element]
 end
 
-local callbacks = {
-    ---------- Mooring ----------
-    [gui_prefix .. "mooring-close-button"] = function(player_data)
-        if not player_data.player.gui.screen[window_gui_name] then
-            return
-        end
-
-        player_data.player.opened = nil
-    end,
-
-    [gui_prefix .. "drone-limit-checkbox"] = function(player_data)
-        mh.set_drone_limit_enabled(player_data.entity, player_data.elements.drone_limit_checkbox.state)
-    end,
-    [gui_prefix .. "drone-limit-slider"] = function(player_data)
-        mh.set_drone_limit_value(player_data.entity, player_data.elements.drone_limit_slider.slider_value)
-    end,
-    [gui_prefix .. "drone-limit-textfield"] = function(player_data)
-        local limit = tonumber(player_data.elements.drone_limit_field.text)
-
-        if limit == nil then
-            return
-        end
-
-        mh.set_drone_limit_value(player_data.entity, limit)
-    end,
-
-    [gui_prefix .. "priority-slider"] = function(player_data)
-        mh.set_priority_value(player_data.entity, player_data.elements.priority_slider.slider_value)
-    end,
-    [gui_prefix .. "priority-textfield"] = function(player_data)
-        local priority = tonumber(player_data.elements.priority_field.text)
-
-        if priority == nil then
-            return
-        end
-
-        mh.set_priority_value(player_data.entity, priority)
-    end,
-
-    ---------- Circuit ----------
-    [gui_prefix .. "set-drone-limit-checkbox"] = function(player_data)
-        mh.set_drone_limit_circuit(player_data.entity, player_data.elements.drone_limit_circuit_checkbox.state)
-    end,
-    [gui_prefix .. "drone-limit-signal-choose-elem-button"] = function(player_data)
-        mh.set_drone_limit_circuit_signal_id(player_data.entity, player_data.elements.drone_limit_signal_choose_elem_button.elem_value)
-    end,
-
-    [gui_prefix .. "read-drone-count-checkbox"] = function(player_data)
-        mh.set_drone_count_circuit(player_data.entity, player_data.elements.drone_count_circuit_checkbox.state)
-    end,
-    [gui_prefix .. "drone-count-signal-choose-elem-button"] = function(player_data)
-        mh.set_drone_count_circuit_signal_id(player_data.entity, player_data.elements.drone_count_signal_choose_elem_button.elem_value)
-    end,
-
-    [gui_prefix .. "set-priority-checkbox"] = function(player_data)
-        mh.set_priority_circuit(player_data.entity, player_data.elements.priority_circuit_checkbox.state)
-    end,
-    [gui_prefix .. "priority-signal-choose-elem-button"] = function(player_data)
-        mh.set_priority_circuit_signal_id(player_data.entity, player_data.elements.priority_signal_choose_elem_button.elem_value)
-    end,
-
-    [gui_prefix .. "read-inventory-checkbox"] = function(player_data)
-        mh.set_fuel_inventory_output(player_data.entity, player_data.elements.read_inventory_checkbox.state)
-    end,
-    [gui_prefix .. "read-inventory-signal-choose-elem-button"] = function(player_data)
-        mh.set_fuel_inventory_circuit_signal_id(player_data.entity, player_data.elements.read_inventory_signal_choose_elem_button.elem_value)
-    end,
-}
 local observers = {
     is_drone_limit_enabled = {
         get = function(player_data) return mh.is_drone_limit_enabled(player_data.entity) end,
@@ -168,7 +100,9 @@ local observers = {
             end
 
             player_data.elements.drone_limit_slider.slider_value = data
-            player_data.elements.drone_limit_field.text = tostring(data)
+            if player_data.elements.drone_limit_field.text ~= tostring(data) then
+                player_data.elements.drone_limit_field.text = tostring(data)
+            end
         end
     },
 
@@ -186,7 +120,9 @@ local observers = {
     get_priority = {
         get = function(player_data) return mh.get_priority(player_data.entity) end,
         updated = function(player_data, data)
-            player_data.elements.priority_field.text = tostring(data)
+            if player_data.elements.priority_field.text ~= tostring(data) then
+                player_data.elements.priority_field.text = tostring(data)
+            end
             player_data.elements.priority_slider.slider_value = data
         end
     },
@@ -332,28 +268,6 @@ local observers = {
         end
     },
 }
-
-local function handle_event(event)
-    local element = event.element
-
-    if not element or not element.valid then
-        return
-    end
-
-    local player = game.get_player(event.player_index)
-
-    if not storage.gui_mooring_player[player.index] then
-        return
-    end
-
-    local callable = callbacks[element.name]
-
-    if not callable then
-        return
-    end
-
-    callable(storage.gui_mooring_player[player.index])
-end
 
 local function update_item_signals(player_data)
     local mooring_signals = player_data.entity.get_signals(defines.wire_connector_id.circuit_red, defines.wire_connector_id.circuit_green)
@@ -550,6 +464,138 @@ local function update_drone_list(player_data)
     end
 end
 
+local function update_gui(player_data)
+    for key, observer in pairs(observers) do
+        local data = observer.get(player_data)
+
+        if data ~= player_data.observer_data[key] then
+            observer.updated(player_data, data)
+
+            player_data.observer_data[key] = data
+        end
+    end
+
+    if player_data.elements.items_table ~= nil then
+        update_item_signals(player_data)
+    end
+    update_drone_list(player_data)
+end
+
+local callbacks = {
+    ---------- Mooring ----------
+    [gui_prefix .. "mooring-close-button"] = function(player_data)
+        if not player_data.player.gui.screen[window_gui_name] then
+            return
+        end
+
+        player_data.player.opened = nil
+    end,
+
+    [gui_prefix .. "drone-limit-checkbox"] = function(player_data)
+        mh.set_drone_limit_enabled(player_data.entity, player_data.elements.drone_limit_checkbox.state)
+
+        update_gui(player_data)
+    end,
+    [gui_prefix .. "drone-limit-slider"] = function(player_data)
+        mh.set_drone_limit_value(player_data.entity, player_data.elements.drone_limit_slider.slider_value)
+
+        update_gui(player_data)
+    end,
+    [gui_prefix .. "drone-limit-textfield"] = function(player_data)
+        local limit = tonumber(player_data.elements.drone_limit_field.text)
+
+        if limit == nil then
+            return
+        end
+
+        mh.set_drone_limit_value(player_data.entity, limit)
+
+        update_gui(player_data)
+    end,
+
+    [gui_prefix .. "priority-slider"] = function(player_data)
+        mh.set_priority_value(player_data.entity, player_data.elements.priority_slider.slider_value)
+
+        update_gui(player_data)
+    end,
+    [gui_prefix .. "priority-textfield"] = function(player_data)
+        local priority = tonumber(player_data.elements.priority_field.text)
+
+        if priority == nil then
+            return
+        end
+
+        mh.set_priority_value(player_data.entity, priority)
+
+        update_gui(player_data)
+    end,
+
+    ---------- Circuit ----------
+    [gui_prefix .. "set-drone-limit-checkbox"] = function(player_data)
+        mh.set_drone_limit_circuit(player_data.entity, player_data.elements.drone_limit_circuit_checkbox.state)
+
+        if not mh.is_drone_limit_circuit(player_data.entity) then
+            player_data.elements.drone_limit_checkbox.enabled = player_data.elements.drone_limit_checkbox.state
+            player_data.elements.drone_limit_slider.enabled = player_data.elements.drone_limit_checkbox.state
+            player_data.elements.drone_limit_field.enabled = player_data.elements.drone_limit_checkbox.state
+        end
+
+        update_gui(player_data)
+    end,
+    [gui_prefix .. "drone-limit-signal-choose-elem-button"] = function(player_data)
+        mh.set_drone_limit_circuit_signal_id(player_data.entity, player_data.elements.drone_limit_signal_choose_elem_button.elem_value)
+    end,
+
+    [gui_prefix .. "read-drone-count-checkbox"] = function(player_data)
+        mh.set_drone_count_circuit(player_data.entity, player_data.elements.drone_count_circuit_checkbox.state)
+
+        update_gui(player_data)
+    end,
+    [gui_prefix .. "drone-count-signal-choose-elem-button"] = function(player_data)
+        mh.set_drone_count_circuit_signal_id(player_data.entity, player_data.elements.drone_count_signal_choose_elem_button.elem_value)
+    end,
+
+    [gui_prefix .. "set-priority-checkbox"] = function(player_data)
+        mh.set_priority_circuit(player_data.entity, player_data.elements.priority_circuit_checkbox.state)
+
+        update_gui(player_data)
+    end,
+    [gui_prefix .. "priority-signal-choose-elem-button"] = function(player_data)
+        mh.set_priority_circuit_signal_id(player_data.entity, player_data.elements.priority_signal_choose_elem_button.elem_value)
+    end,
+
+    [gui_prefix .. "read-inventory-checkbox"] = function(player_data)
+        mh.set_fuel_inventory_output(player_data.entity, player_data.elements.read_inventory_checkbox.state)
+
+        update_gui(player_data)
+    end,
+    [gui_prefix .. "read-inventory-signal-choose-elem-button"] = function(player_data)
+        mh.set_fuel_inventory_circuit_signal_id(player_data.entity, player_data.elements.read_inventory_signal_choose_elem_button.elem_value)
+    end,
+}
+
+local function handle_event(event)
+    local element = event.element
+
+    if not element or not element.valid then
+        return
+    end
+
+    local player = game.get_player(event.player_index)
+
+    if not storage.gui_mooring_player[player.index] then
+        return
+    end
+
+    local callable = callbacks[element.name]
+
+    if not callable then
+        return
+    end
+
+    callable(storage.gui_mooring_player[player.index])
+end
+
 local function build_gui_mooring(player_data, mooring, parent)
     local mooring_frame = parent.add{
         type = "frame",
@@ -708,8 +754,6 @@ local function build_gui_mooring(player_data, mooring, parent)
 
         items_table.style.minimal_height = 40
         items_table.style.padding = 4
-
-        update_item_signals(player_data)
     end
 
     ---------- Filler ----------
@@ -1097,6 +1141,8 @@ local function build_gui(player, mooring, mooring_name)
     build_gui_circuit(player_data, mooring, main_flow)
 
     player.opened = frame
+
+    update_gui(player_data)
 end
 
 local function add_to_lookup(player_index, entity_unit_number)
@@ -1169,20 +1215,7 @@ function gui_mooring.tick()
             add_to_lookup(player_index, entity.unit_number)
         end
 
-        for key, observer in pairs(observers) do
-            local data = observer.get(player_data)
-
-            if data ~= player_data.observer_data[key] then
-                observer.updated(player_data, data)
-
-                player_data.observer_data[key] = data
-            end
-        end
-
-        if player_data.elements.items_table ~= nil then
-            update_item_signals(player_data)
-        end
-        update_drone_list(player_data)
+        update_gui(player_data)
 
         ::continue::
     end
