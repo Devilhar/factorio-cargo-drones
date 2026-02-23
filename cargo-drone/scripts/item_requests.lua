@@ -1,14 +1,11 @@
 
-local util  = require("util")
+local util      = require("util")
 
-local ep    = require("scripts.entity_property")
-local mh    = require("scripts.mooring_helper")
-local dt    = require("scripts.drone_tasks")
-local rc    = require("scripts.requester_cooldown")
-
-local max_scans_per_tick = 10
-
-local heuristic_target_count_cost = 50
+local constants = require("scripts.constants")
+local ep        = require("scripts.entity_property")
+local mh        = require("scripts.mooring_helper")
+local dt        = require("scripts.drone_tasks")
+local rc        = require("scripts.requester_cooldown")
 
 local function get_item_signals(mooring)
     local mooring_signals = mooring.get_signals(defines.wire_connector_id.circuit_red, defines.wire_connector_id.circuit_green)
@@ -159,7 +156,7 @@ local function get_closest_provider(requester, item_name, item_quality, item_pro
         if item_data.count > 0 and provider.valid and not mh.is_at_drone_limit(provider) then
             if provider.surface.index == requester.surface.index then
                 if highest_priority <= item_data.priority then
-                    local cost = util.distance(provider.position, requester.position) + mh.get_drone_count_value(provider.unit_number) * heuristic_target_count_cost
+                    local cost = util.distance(provider.position, requester.position) + mh.get_drone_count_value(provider.unit_number) * constants.heuristic_target_count_cost
 
                     if highest_priority < item_data.priority or cost < lowest_cost then
                         highest_priority = item_data.priority
@@ -321,7 +318,7 @@ function item_requests.run_update()
             end
 
             scans = scans + 1
-        until scans >= max_scans_per_tick
+        until scans >= constants.max_scans_per_tick
 
         if storage.item_requests.buffer_key == nil then
             storage.item_requests.update_stage = 1
@@ -332,7 +329,7 @@ function item_requests.run_update()
         return false
     end
 
-    if scans >= max_scans_per_tick then
+    if scans >= constants.max_scans_per_tick then
         return false
     end
 
@@ -363,7 +360,7 @@ function item_requests.run_update()
         end
 
         scans = scans + 1
-    until scans >= max_scans_per_tick
+    until scans >= constants.max_scans_per_tick
 
     return storage.item_requests.buffer_key == nil
 end

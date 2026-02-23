@@ -1,15 +1,12 @@
 
-local util  = require("util")
+local util      = require("util")
 
-local ep    = require("scripts.entity_property")
-local mh    = require("scripts.mooring_helper")
-local dt    = require("scripts.drone_tasks")
-local ir	= require("scripts.item_requests")
-local rc    = require("scripts.requester_cooldown")
-
-local drone_queue_distance = 20
-local random_tick_interval = 60
-local min_task_assign_interval = 60
+local constants = require("scripts.constants")
+local ep        = require("scripts.entity_property")
+local mh        = require("scripts.mooring_helper")
+local dt        = require("scripts.drone_tasks")
+local ir	    = require("scripts.item_requests")
+local rc        = require("scripts.requester_cooldown")
 
 -- Tickrates need to either be divisible by random_tick_interval, or random_tick_interval need to be divisible by the tickrate
 local drones_tickrates = {
@@ -17,10 +14,6 @@ local drones_tickrates = {
     reduced = 60,
     minimal = 60 * 5,
 }
-
-local max_actions = 10
-
-local drone_has_burnt_result = prototypes.entity["cargo-drone"].burner_prototype.burnt_inventory_size > 0
 
 -- Shamelessly stolen from AAI Programmable Vehicles, because I couldn't be bothered doing it myself
 -- Begin steal mode
@@ -230,7 +223,7 @@ local function has_requested_items(inventory, requested_items)
 end
 
 local function drone_goto_and_dock_with_mooring(drone, state, mooring, inventory)
-    if util.distance(drone.position, mooring.position) <= drone_queue_distance then
+    if util.distance(drone.position, mooring.position) <= constants.drone_queue_distance then
         local docking_drone = ep.get_entity_property(mooring, "docking_drone")
 
         if docking_drone and docking_drone.valid and docking_drone ~= drone then
@@ -257,7 +250,7 @@ end
 local function perform_task_none(drone, state, game_tick)
     state.tickrate = drones_tickrates.minimal
 
-    if game_tick % random_tick_interval == drone.unit_number % random_tick_interval then
+    if game_tick % constants.random_tick_interval == drone.unit_number % constants.random_tick_interval then
         local inventory = drone.get_inventory(defines.inventory.car_trunk)
 
         for i = 1, #inventory do
@@ -276,7 +269,7 @@ end
 local function perform_task_cargo(drone, state, task, game_tick)
     local inventory = drone.get_inventory(defines.inventory.car_trunk)
 
-    if game_tick % random_tick_interval == drone.unit_number % random_tick_interval then
+    if game_tick % constants.random_tick_interval == drone.unit_number % constants.random_tick_interval then
         if drone.burner.remaining_burning_fuel <= 0 and drone.burner.inventory.is_empty() then
             send_alert(drone, "signal-fuel", "cargo-drone-alerts.no-fuel")
         end
@@ -304,7 +297,7 @@ local function perform_task_cargo(drone, state, task, game_tick)
         return true
     end
 
-    if game_tick % random_tick_interval == drone.unit_number % random_tick_interval then
+    if game_tick % constants.random_tick_interval == drone.unit_number % constants.random_tick_interval then
         if check_refuel(drone, state) then
             return false
         end
@@ -323,7 +316,7 @@ local function perform_task_cargo(drone, state, task, game_tick)
     return false
 end
 local function perform_task_refuel(drone, state, task, game_tick)
-    if game_tick % random_tick_interval == drone.unit_number % random_tick_interval then
+    if game_tick % constants.random_tick_interval == drone.unit_number % constants.random_tick_interval then
         if drone.burner.remaining_burning_fuel <= 0 and drone.burner.inventory.is_empty() then
             send_alert(drone, "signal-fuel", "cargo-drone-alerts.no-fuel")
         end
@@ -337,7 +330,7 @@ local function perform_task_refuel(drone, state, task, game_tick)
 
     local inventory = defines.inventory.fuel
 
-    if drone_has_burnt_result then
+    if constants.drone_has_burnt_result then
         local burnt_result_inventory = drone.get_inventory(defines.inventory.burnt_result)
 
         if not burnt_result_inventory.is_empty() then
@@ -517,7 +510,7 @@ function drone_controller.tick(game_tick)
 
                 current_action = current_action + 1
 
-                if current_action >= max_actions then
+                if current_action >= constants.max_actions then
                     goto max_action_reached
                 end
             end
@@ -544,7 +537,7 @@ function drone_controller.tick(game_tick)
         end
     end
 
-    if storage.drone_controller.update_state == 3 and game_tick >= storage.drone_controller.last_assign_tick + min_task_assign_interval then
+    if storage.drone_controller.update_state == 3 and game_tick >= storage.drone_controller.last_assign_tick + constants.min_task_assign_interval then
         while storage.drone_controller.key_surface ~= nil do
             local idle_drones = storage.drone_controller.idling_cargo_drones_with_cargo[storage.drone_controller.key_surface]
 
@@ -560,7 +553,7 @@ function drone_controller.tick(game_tick)
                 
                 current_action = current_action + 1
 
-                if current_action >= max_actions then
+                if current_action >= constants.max_actions then
                     goto max_action_reached
                 end
             end
@@ -601,7 +594,7 @@ function drone_controller.tick(game_tick)
 
                 current_action = current_action + 1
                 
-                if current_action >= max_actions then
+                if current_action >= constants.max_actions then
                     goto max_action_reached
                 end
             end
