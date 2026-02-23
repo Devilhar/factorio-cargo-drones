@@ -111,6 +111,8 @@ local function move_to_position(car_entity, state, target_position)
         elseif distance_to_target >= 200 then
             state.tickrate = constants.drones_tickrates.minimal
         end
+    elseif math.abs(orientation_delta) > 0.1 then
+        state.tickrate = constants.drones_tickrates.reduced
     end
 
     return false
