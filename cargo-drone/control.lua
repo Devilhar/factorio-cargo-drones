@@ -8,6 +8,7 @@ local ir		= require("scripts.item_requests")
 local dc		= require("scripts.drone_controller")
 local gm		= require("scripts.gui_mooring")
 local gcd		= require("scripts.gui_cargo_drone")
+local scheduler	= require("scripts.scheduler")
 
 local mooring_type = {
 	provider = 1,
@@ -45,6 +46,8 @@ local function unmanage_entity(unit_number)
 		dc.drone_destroyed(unit_number)
 
 		dt.drone_destroyed(unit_number)
+
+		scheduler.drone_destroyed(unit_number)
 	elseif ep.is_provider_mooring(unit_number)
 		or ep.is_requester_mooring(unit_number)
 		or ep.is_refueler_mooring(unit_number) then
@@ -135,8 +138,6 @@ local function migrate_state()
 
 		ir.init()
 
-		dc.init()
-
 		dt.migration_remove_all_tasks()
 
 		for _, surface in pairs(game.surfaces) do
@@ -154,6 +155,11 @@ local function migrate_state()
 		game.print("Warning. Due to a migration issue when updating cargo-drone from a version prior to 1.4.0, all circuit wires connected to moorings have been removed and will need to be replaced. Note that drone limit and priority must now be configured in the moorings. Sorry for the inconvenience.")
 	end
 
+	if old_mod_state < 7 then
+		storage.drone_controller = nil
+		scheduler.init()
+	end
+
 	log("cargo-drone state migration complete")
 end
 
@@ -163,10 +169,10 @@ function on_init()
 
 		ir.init()
 
-		dc.init()
-
 		gm.create_player_storage()
 		gcd.create_player_storage()
+
+		scheduler.init()
 	end)
 end
 function on_configuration_changed(event)
@@ -179,6 +185,8 @@ end
 function on_tick(event)
 	safe_call(function()
 		rc.tick()
+
+		scheduler.tick(event.tick)
 
 		dc.tick(event.tick)
 

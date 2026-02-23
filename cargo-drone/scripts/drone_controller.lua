@@ -8,13 +8,6 @@ local dt        = require("scripts.drone_tasks")
 local ir	    = require("scripts.item_requests")
 local rc        = require("scripts.requester_cooldown")
 
--- Tickrates need to either be divisible by random_tick_interval, or random_tick_interval need to be divisible by the tickrate
-local drones_tickrates = {
-    every = 1,
-    reduced = 60,
-    minimal = 60 * 5,
-}
-
 -- Shamelessly stolen from AAI Programmable Vehicles, because I couldn't be bothered doing it myself
 -- Begin steal mode
 local function vector_to_orientation_xy(x, y)
@@ -114,9 +107,9 @@ local function move_to_position(car_entity, state, target_position)
 
     if direction == defines.riding.direction.straight then
         if distance_to_target >= 50 then
-            state.tickrate = drones_tickrates.reduced
+            state.tickrate = constants.drones_tickrates.reduced
         elseif distance_to_target >= 200 then
-            state.tickrate = drones_tickrates.minimal
+            state.tickrate = constants.drones_tickrates.minimal
         end
     end
 
@@ -153,24 +146,6 @@ local function get_closest_valid_refueler(mooring_table, entity)
     return closest_entity
 end
 
-local function get_closest_drone_to_mooring(drones, mooring)
-    local closest_index = nil
-    local closest_distance = 30000000 -- Longer than moving from one corner to the other, and then multiplied by 10 for good measure
-
-    for i, drone in ipairs(drones) do
-        if drone.valid then
-            local distance = util.distance(drone.position, mooring.position)
-            
-            if distance < closest_distance then
-                closest_index = i
-                closest_distance = distance
-            end
-        end
-    end
-
-    return closest_index
-end
-
 local function complete_task(drone, task_id)
     local properties = ep.get_entity_properties(drone)
 
@@ -195,7 +170,7 @@ local function check_refuel(drone, state)
     end
 
     dt.assign_refuel(drone, refueler)
-    state.tickrate = drones_tickrates.every
+    state.tickrate = constants.drones_tickrates.every
 
     return true
 end
@@ -227,7 +202,7 @@ local function drone_goto_and_dock_with_mooring(drone, state, mooring, inventory
         local docking_drone = ep.get_entity_property(mooring, "docking_drone")
 
         if docking_drone and docking_drone.valid and docking_drone ~= drone then
-            state.tickrate = drones_tickrates.reduced
+            state.tickrate = constants.drones_tickrates.reduced
             state.queuing_mooring = mooring
 
             return
@@ -248,7 +223,7 @@ local function drone_goto_and_dock_with_mooring(drone, state, mooring, inventory
 end
 
 local function perform_task_none(drone, state, game_tick)
-    state.tickrate = drones_tickrates.minimal
+    state.tickrate = constants.drones_tickrates.minimal
 
     if game_tick % constants.random_tick_interval == drone.unit_number % constants.random_tick_interval then
         local inventory = drone.get_inventory(defines.inventory.car_trunk)
@@ -356,7 +331,7 @@ local function get_current_task(drone)
 end
 
 local state = {
-    tickrate = drones_tickrates.every,
+    tickrate = constants.drones_tickrates.every,
     riding_state = { acceleration = defines.riding.acceleration.braking, direction = defines.riding.direction.straight },
     docked_mooring = { target_entity = nil, inventory = nil },
     docking_mooring = nil,
@@ -365,7 +340,7 @@ local state = {
 
 local function tick_drone(drone, game_tick)
     local current_task = get_current_task(drone)
-    state.tickrate = drones_tickrates.every
+    state.tickrate = constants.drones_tickrates.every
     state.riding_state.acceleration = defines.riding.acceleration.braking
     state.riding_state.direction = defines.riding.direction.straight
     state.docked_mooring.target_entity = nil
@@ -443,22 +418,6 @@ end
 
 local drone_controller = {}
 
-function drone_controller.init()
-    storage.drone_controller = {}
-
-    storage.drone_controller.update_state = 0
-    storage.drone_controller.last_assign_tick = 0
-
-    storage.drone_controller.tickrate_buffer = {}
-
-    storage.drone_controller.key_surface = nil
-    storage.drone_controller.key_drone = nil
-
-    storage.drone_controller.idling_cargo_drones = {}
-    storage.drone_controller.idling_cargo_drones_empty = {}
-    storage.drone_controller.idling_cargo_drones_with_cargo = {}
-end
-
 function drone_controller.drone_destroyed(unit_number)
     local old_docked_mooring = ep.get_entity_property_from_unit_number(unit_number, "docked_mooring")
 
@@ -469,191 +428,24 @@ function drone_controller.drone_destroyed(unit_number)
 
         mh.update_fuel_inventory(old_docked_mooring)
     end
-
-    storage.drone_controller.tickrate_buffer[unit_number] = nil
 end
 
 function drone_controller.tick(game_tick)
-    if storage.drone_controller.update_state == 0 then
-        storage.drone_controller.update_state = 1
-        ir.begin_update()
-    end
-
-    local current_action = 0
-
-    if storage.drone_controller.update_state == 2 then
-        while storage.drone_controller.key_surface ~= nil do
-            local idle_drones = storage.drone_controller.idling_cargo_drones[storage.drone_controller.key_surface]
-
-            while storage.drone_controller.key_drone ~= nil do
-                local drone = idle_drones[storage.drone_controller.key_drone]
-
-                if drone.valid then
-                    local inventory = drone.get_inventory(defines.inventory.car_trunk)
-
-                    if inventory.is_empty() then
-                        if not storage.drone_controller.idling_cargo_drones_empty[storage.drone_controller.key_surface] then
-                            storage.drone_controller.idling_cargo_drones_empty[storage.drone_controller.key_surface] = {}
-                        end
-
-                        table.insert(storage.drone_controller.idling_cargo_drones_empty[storage.drone_controller.key_surface], drone)
-                    else
-                        if not storage.drone_controller.idling_cargo_drones_with_cargo[storage.drone_controller.key_surface] then
-                            storage.drone_controller.idling_cargo_drones_with_cargo[storage.drone_controller.key_surface] = {}
-                        end
-
-                        table.insert(storage.drone_controller.idling_cargo_drones_with_cargo[storage.drone_controller.key_surface], drone)
-                    end
-                end
-
-                storage.drone_controller.key_drone, drone = next(idle_drones, storage.drone_controller.key_drone)
-
-                current_action = current_action + 1
-
-                if current_action >= constants.max_actions then
-                    goto max_action_reached
-                end
-            end
-
-            storage.drone_controller.key_surface, idle_drones = next(storage.drone_controller.idling_cargo_drones, storage.drone_controller.key_surface)
-            
-            if storage.drone_controller.key_surface then
-                storage.drone_controller.key_drone = next(idle_drones, storage.drone_controller.key_drone)
-            end
-        end
-
-        ::max_action_reached::
-
-        if storage.drone_controller.key_surface == nil then
-            local idle_drones = nil
-
-            storage.drone_controller.key_surface, idle_drones = next(storage.drone_controller.idling_cargo_drones_with_cargo)
-
-            if idle_drones then
-                storage.drone_controller.key_drone = next(idle_drones)
-            end
-
-            storage.drone_controller.update_state = 3
-        end
-    end
-
-    if storage.drone_controller.update_state == 3 and game_tick >= storage.drone_controller.last_assign_tick + constants.min_task_assign_interval then
-        while storage.drone_controller.key_surface ~= nil do
-            local idle_drones = storage.drone_controller.idling_cargo_drones_with_cargo[storage.drone_controller.key_surface]
-
-            while storage.drone_controller.key_drone ~= nil do
-                local drone = idle_drones[storage.drone_controller.key_drone]
-
-                if drone.valid then
-                    ir.assign_to_request_with_items(drone)
-                    storage.drone_controller.tickrate_buffer[drone.unit_number] = drones_tickrates.every
-                end
-
-                storage.drone_controller.key_drone, drone = next(idle_drones, storage.drone_controller.key_drone)
-                
-                current_action = current_action + 1
-
-                if current_action >= constants.max_actions then
-                    goto max_action_reached
-                end
-            end
-            
-            storage.drone_controller.key_surface, idle_drones = next(storage.drone_controller.idling_cargo_drones_with_cargo, storage.drone_controller.key_surface)
-        end
-
-        ::max_action_reached::
-
-        if storage.drone_controller.key_surface == nil then
-            storage.drone_controller.key_surface = next(storage.drone_controller.idling_cargo_drones_empty)
-
-            storage.drone_controller.update_state = 4
-        end
-    end
-
-    if storage.drone_controller.update_state == 4 then
-        while storage.drone_controller.key_surface ~= nil do
-            local idle_drones = storage.drone_controller.idling_cargo_drones_empty[storage.drone_controller.key_surface]
-
-            while next(idle_drones) ~= nil do
-                local item_request = ir.get_next_item_request(storage.drone_controller.key_surface)
-
-                if not item_request then
-                    break
-                end
-
-                local closest_index = get_closest_drone_to_mooring(idle_drones, item_request.provider)
-
-                if closest_index ~= nil then
-                    local drone = idle_drones[closest_index]
-
-                    table.remove(idle_drones, closest_index)
-
-                    ir.assign_item_request(drone, item_request)
-                    storage.drone_controller.tickrate_buffer[drone.unit_number] = drones_tickrates.every
-                end
-
-                current_action = current_action + 1
-                
-                if current_action >= constants.max_actions then
-                    goto max_action_reached
-                end
-            end
-            
-            storage.drone_controller.key_surface, idle_drones = next(storage.drone_controller.idling_cargo_drones_empty, storage.drone_controller.key_surface)
-        end
-
-        ::max_action_reached::
-
-        if storage.drone_controller.key_surface == nil then
-            storage.drone_controller.last_assign_tick = game_tick
-            storage.drone_controller.update_state = 0
-        end
-    end
-
-    if storage.drone_controller.update_state == 1 then
-        if ir.run_update() then
-            storage.drone_controller.idling_cargo_drones = {}
-            storage.drone_controller.idling_cargo_drones_empty = {}
-            storage.drone_controller.idling_cargo_drones_with_cargo = {}
-
-            for surface_index, drones in pairs(dt.get_idle_drones_per_surface()) do
-                for _, drone in pairs(drones) do
-                    if not storage.drone_controller.idling_cargo_drones[surface_index] then
-                        storage.drone_controller.idling_cargo_drones[surface_index] = {}
-                    end
-
-                    table.insert(storage.drone_controller.idling_cargo_drones[surface_index], drone)
-                end
-            end
-            
-            local idle_drones = nil
-
-            storage.drone_controller.key_surface, idle_drones = next(storage.drone_controller.idling_cargo_drones)
-
-            if idle_drones then
-                storage.drone_controller.key_drone = next(idle_drones)
-            end
-
-            storage.drone_controller.update_state = 2
-        end
-    end
-
     local tickrate_drone = 0
     local tickrate_new = 0
 
     for unit_number, entity_data in pairs(ep.get_cargo_drones()) do
-        tickrate_drone = storage.drone_controller.tickrate_buffer[unit_number] or drones_tickrates.every
+        tickrate_drone = storage.scheduler.tickrate_buffer[unit_number] or constants.drones_tickrates.every
 
         if unit_number % tickrate_drone == game_tick % tickrate_drone then
 
             tickrate_new = tick_drone(entity_data.entity, game_tick)
 
             if tickrate_new ~= tickrate_drone then
-                storage.drone_controller.tickrate_buffer[unit_number] = tickrate_new
+                storage.scheduler.tickrate_buffer[unit_number] = tickrate_new
             end
         end
     end
-
 end
 
 return drone_controller
