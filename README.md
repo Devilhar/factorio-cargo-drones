@@ -33,7 +33,7 @@ You can set any mooring's priority to a number between 0 and 255 (inclusive) by 
 For Signals:
 - The value will be clamped between 0 and 255
 
-Note that Cargo drones already tasked with going to a mooring will change target if there's a new mooring with higher priority.
+Note that Cargo drones already tasked with going to a mooring will not change target if there's a new mooring with higher priority.
 
 ### Special thanks
 Thank you to KeithFromCanada for feedback and help
