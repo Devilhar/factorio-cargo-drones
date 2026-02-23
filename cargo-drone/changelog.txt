@@ -1,8 +1,13 @@
 ---------------------------------------------------------------------------------------------------
+Version: 1.4.4
+Date: 23. 02. 2026
+  Bugfixes:
+    - Fixed loaders not working with moorings.
+---------------------------------------------------------------------------------------------------
 Version: 1.4.3
 Date: 22. 02. 2026
   Minor Features:
-    - Added status for Cargo drones being docked with mooring and queuing at mooring
+    - Added status for Cargo drones being docked with mooring and queuing at mooring.
 ---------------------------------------------------------------------------------------------------
 Version: 1.4.2
 Date: 22. 02. 2026

@@ -82,7 +82,7 @@ local mooring_entity_pc = {
 	type = "proxy-container",
 	name = "cargo-drone-mooring-proxy-container-{NAME}",
 	icon = "__cargo-drone__/graphics/cargo-drone-mooring-{NAME}-icon.png",
-	flags = { "hide-alt-info", "not-upgradable", "not-deconstructable", "not-blueprintable", "not-repairable", "not-in-kill-statistics" },
+	flags = { "hide-alt-info", "not-upgradable", "not-deconstructable", "player-creation", "not-blueprintable", "not-repairable", "not-in-kill-statistics" },
 	hidden = true,
 	selectable_in_game = false,
 	minable = { mining_time = 0.1 },
