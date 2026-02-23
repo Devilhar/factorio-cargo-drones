@@ -298,7 +298,7 @@ local state_procs = {
         return true
     end,
     [states.collect_provider_items] = function()
-        for _ = 1, constants.max_actions do
+        for _ = 1, settings.global["cargo-drone-max-collect-provider-items"].value do
             if collect_provider_items() then
                 storage.scheduler.mooring_key = nil
 
@@ -309,7 +309,7 @@ local state_procs = {
         return false
     end,
     [states.collect_requester_items] = function()
-        for _ = 1, constants.max_actions do
+        for _ = 1, settings.global["cargo-drone-max-collect-requester-items"].value do
             if collect_requester_items() then
                 storage.scheduler.mooring_key = nil
 
@@ -325,7 +325,7 @@ local state_procs = {
         return true
     end,
     [states.sort_idle_drone] = function()
-        for _ = 1, constants.max_actions do
+        for _ = 1, settings.global["cargo-drone-max-sort-idle-drones"].value do
             if sort_idle_drone() then
                 storage.scheduler.key_surface = nil
                 storage.scheduler.key_drone = nil
@@ -337,7 +337,7 @@ local state_procs = {
         return false
     end,
     [states.assign_task_to_drone_with_cargo] = function()
-        for _ = 1, constants.max_actions do
+        for _ = 1, settings.global["cargo-drone-max-assign-task-to-non-empty-drones"].value do
             if assign_task_to_drone_with_cargo() then
                 storage.scheduler.key_surface = nil
                 storage.scheduler.key_drone = nil
@@ -349,7 +349,7 @@ local state_procs = {
         return false
     end,
     [states.process_next_item_request] = function()
-        for _ = 1, constants.max_actions do
+        for _ = 1, settings.global["cargo-drone-max-processed-item-requests"].value do
             if process_next_item_request() then
                 storage.scheduler.key_surface = nil
                 storage.scheduler.key_drone = nil
