@@ -136,8 +136,6 @@ local function migrate_state()
 		gm.create_player_storage()
 		gcd.create_player_storage()
 
-		ir.init()
-
 		dt.migration_remove_all_tasks()
 
 		for _, surface in pairs(game.surfaces) do
@@ -166,8 +164,6 @@ end
 function on_init()
 	safe_call(function()
 		ep.init()
-
-		ir.init()
 
 		gm.create_player_storage()
 		gcd.create_player_storage()

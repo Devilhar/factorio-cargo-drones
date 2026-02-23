@@ -5,7 +5,6 @@ local constants = require("scripts.constants")
 local ep        = require("scripts.entity_property")
 local mh        = require("scripts.mooring_helper")
 local dt        = require("scripts.drone_tasks")
-local rc        = require("scripts.requester_cooldown")
 
 local function get_item_signals(mooring)
     local mooring_signals = mooring.get_signals(defines.wire_connector_id.circuit_red, defines.wire_connector_id.circuit_green)
@@ -201,37 +200,9 @@ local function get_common_items(requester, requester_items, selected_provider_it
     return items
 end
 
-local function try_create_and_get_surface_buffer(surface_index)
-    if not storage.item_requests.surface_buffer[surface_index] then
-        storage.item_requests.surface_buffer[surface_index] = {
-            -- item_name, item_quality, index, { count, priority, mooring }
-            item_provider_lookup = {},
-            -- provider, item_name, item_quality, { count, priority, mooring }
-            provider_items = {},
-
-            -- item_name, item_quality, index, { count, priority, mooring }
-            item_requester_lookup = {},
-            -- requester, item_name, item_quality, { count, priority, mooring }
-            requester_items = {},
-            -- index, { priority, requester }
-            sorted_requesters = {},
-
-            end_of_requests = false,
-            key_index = nil,
-            key_item_name = nil,
-            key_item_quality = nil
-        }
-    end
-
-    return storage.item_requests.surface_buffer[surface_index]
-end
-
-local function transfer_items_in_buffer(provider, requester, items)
-    local sb_provider = try_create_and_get_surface_buffer(provider.surface.index)
-    local sb_requester = try_create_and_get_surface_buffer(requester.surface.index)
-
-    local provider_items = sb_provider.provider_items[provider]
-    local requester_items = sb_requester.requester_items[requester]
+local function transfer_items_in_buffer(surface_buffer, provider, requester, items)
+    local provider_items = surface_buffer.provider_items[provider]
+    local requester_items = surface_buffer.requester_items[requester]
 
     for _, item in ipairs(items) do
         local provider_item_data = provider_items[item.name][item.quality]
@@ -266,111 +237,47 @@ end
 
 local item_requests = {}
 
-function item_requests.init()
-    storage.item_requests = {}
+function item_requests.create_surface_buffer()
+    return {
+        -- item_name, item_quality, index, { count, priority, mooring }
+        item_provider_lookup = {},
+        -- provider, item_name, item_quality, { count, priority, mooring }
+        provider_items = {},
 
-    storage.item_requests.update_stage = 0
+        -- item_name, item_quality, index, { count, priority, mooring }
+        item_requester_lookup = {},
+        -- requester, item_name, item_quality, { count, priority, mooring }
+        requester_items = {},
+        -- index, { priority, requester }
+        sorted_requesters = {},
 
-    storage.item_requests.surface_buffer = {}
-    storage.item_requests.provider_buffer = {}
-    storage.item_requests.requester_buffer = {}
-
-    storage.item_requests.buffer_key = nil
+        end_of_requests = false,
+        key_index = nil,
+        key_item_name = nil,
+        key_item_quality = nil
+    }
 end
 
-function item_requests.begin_update()
-    storage.item_requests.update_stage = 0
-
-    storage.item_requests.surface_buffer = {}
-    storage.item_requests.provider_buffer = {}
-    storage.item_requests.requester_buffer = {}
-
-    storage.item_requests.buffer_key = nil
-
-    local providers = ep.get_cargo_drone_provider_moorings()
-    local requesters = ep.get_cargo_drone_requester_moorings()
-
-    for provider_id, provider_data in pairs(providers) do
-        storage.item_requests.provider_buffer[provider_id] = provider_data.entity
-    end
-    for requester_id, requester_data in pairs(requesters) do
-        storage.item_requests.requester_buffer[requester_id] = requester_data.entity
-    end
+function item_requests.add_items_to_provider(mooring, mooring_items, item_mooring_lookup)
+    add_items(mooring, mooring_items, item_mooring_lookup)
 end
+function item_requests.add_items_to_requester(mooring, mooring_items, item_mooring_lookup, sorted_requesters)
+    local has_items = add_items(mooring, mooring_items, item_mooring_lookup)
 
-function item_requests.run_update()
-    local scans = 0
-
-    if storage.item_requests.update_stage == 0 then
-        local provider = nil
-
-        repeat
-            storage.item_requests.buffer_key, provider = next(storage.item_requests.provider_buffer, storage.item_requests.buffer_key)
-
-            if not storage.item_requests.buffer_key then
-                break
-            end
-
-            if provider.valid then
-                local sb = try_create_and_get_surface_buffer(provider.surface.index)
-
-                add_items(provider, sb.provider_items, sb.item_provider_lookup)
-            end
-
-            scans = scans + 1
-        until scans >= constants.max_scans_per_tick
-
-        if storage.item_requests.buffer_key == nil then
-            storage.item_requests.update_stage = 1
-        end
-    end
-
-    if storage.item_requests.update_stage == 0 then
+    if not has_items then
         return false
     end
 
-    if scans >= constants.max_scans_per_tick then
-        return false
-    end
+    local requester_data = {
+        priority = mh.get_priority(mooring),
+        requester = mooring
+    }
 
-    local requester = nil
-
-    repeat
-        storage.item_requests.buffer_key, requester = next(storage.item_requests.requester_buffer, storage.item_requests.buffer_key)
-
-        if not storage.item_requests.buffer_key then
-            break
-        end
-
-        if requester.valid then
-            if not rc.is_on_cooldown(storage.item_requests.buffer_key) then
-                local sb = try_create_and_get_surface_buffer(requester.surface.index)
-
-                local has_items = add_items(requester, sb.requester_items, sb.item_requester_lookup)
-
-                if has_items then
-                    local requester_data = {
-                        priority = mh.get_priority(requester),
-                        requester = requester
-                    }
-
-                    insert_priority(sb.sorted_requesters, requester_data)
-                end
-            end
-        end
-
-        scans = scans + 1
-    until scans >= constants.max_scans_per_tick
-
-    return storage.item_requests.buffer_key == nil
+    insert_priority(sorted_requesters, requester_data)
 end
 
-function item_requests.get_next_item_request(surface_index)
-    local sb = storage.item_requests.surface_buffer[surface_index]
-
-    if not sb then
-        return nil
-    end
+function item_requests.get_next_item_request(surface_buffer)
+    local sb = surface_buffer
 
     if sb.end_of_requests then
         -- All done. No more. Go away.
@@ -435,7 +342,7 @@ function item_requests.get_next_item_request(surface_index)
     return nil
 end
 
-function item_requests.assign_to_request_with_items(drone)
+function item_requests.assign_to_request_with_items(surface_buffer, drone)
     local inventory = drone.get_inventory(defines.inventory.car_trunk)
 
     local items = inventory.get_contents()
@@ -446,11 +353,7 @@ function item_requests.assign_to_request_with_items(drone)
         return
     end
 
-    local sb = storage.item_requests.surface_buffer[drone.surface.index]
-
-    if not sb then
-        return
-    end
+    local sb = surface_buffer
 
     if not sb.item_requester_lookup[first_item.name]
         or not sb.item_requester_lookup[first_item.name][first_item.quality] then
@@ -488,16 +391,14 @@ function item_requests.assign_to_request_with_items(drone)
 
 	dt.assign_cargo(drone, nil, selected_requester, items, inventory_filters)
 
-    local sb_requester = try_create_and_get_surface_buffer(selected_requester.surface.index)
-
     for _, item in ipairs(items) do
-        local item_data = sb_requester.requester_items[selected_requester][item.name][item.quality]
+        local item_data = surface_buffer.requester_items[selected_requester][item.name][item.quality]
 
         item_data.count = item_data.count - item.count
     end
 end
 
-function item_requests.assign_item_request(drone, item_request)
+function item_requests.assign_item_request(surface_buffer, drone, item_request)
 	local inventory = drone.get_inventory(defines.inventory.car_trunk)
 
 	local slot_count = #inventory
@@ -543,7 +444,7 @@ function item_requests.assign_item_request(drone, item_request)
         inventory.set_filter(i, { name = "red-wire", quality = "normal" })
     end
 
-	transfer_items_in_buffer(item_request.provider, item_request.requester, items_to_fetch)
+	transfer_items_in_buffer(surface_buffer, item_request.provider, item_request.requester, items_to_fetch)
 	dt.assign_cargo(drone, item_request.provider, item_request.requester, items_to_fetch, inventory_filters)
 end
 
