@@ -1,14 +1,13 @@
 
-local ep	= require("scripts.entity_property")
-local rc    = require("scripts.requester_cooldown")
-local mh	= require("scripts.mooring_helper")
-local dt	= require("scripts.drone_tasks")
-local ir	= require("scripts.item_requests")
-local dc	= require("scripts.drone_controller")
-local gm	= require("scripts.gui_mooring")
-local gcd	= require("scripts.gui_cargo_drone")
-
-local current_mod_state = 6
+local constants = require("scripts.constants")
+local ep		= require("scripts.entity_property")
+local rc    	= require("scripts.requester_cooldown")
+local mh		= require("scripts.mooring_helper")
+local dt		= require("scripts.drone_tasks")
+local ir		= require("scripts.item_requests")
+local dc		= require("scripts.drone_controller")
+local gm		= require("scripts.gui_mooring")
+local gcd		= require("scripts.gui_cargo_drone")
 
 local mooring_type = {
 	provider = 1,
@@ -114,9 +113,9 @@ end
 local function migrate_state()
 	local old_mod_state = storage.mod_state or 0
 
-	log("Migrating cargo-drone state from " .. old_mod_state .. " to " .. current_mod_state .. "...")
+	log("Migrating cargo-drone state from " .. old_mod_state .. " to " .. constants.current_mod_state .. "...")
 
-	storage.mod_state = current_mod_state
+	storage.mod_state = constants.current_mod_state
 
 	if old_mod_state < 6 then
 		ep.remove_invalid_entities()
@@ -171,7 +170,7 @@ function on_init()
 	end)
 end
 function on_configuration_changed(event)
-	if storage.mod_state == current_mod_state then
+	if storage.mod_state == constants.current_mod_state then
 		return
 	end
 
@@ -226,7 +225,7 @@ function on_destroyed_entity(event)
 		or ep.is_refueler_mooring(unit_number) then
 		local proxy_container = ep.get_entity_property(entity, "proxy_container")
 
-			proxy_container.destroy({ raise_destroy = true })
+		proxy_container.destroy({ raise_destroy = true })
 	end
 
 	unmanage_entity(unit_number)

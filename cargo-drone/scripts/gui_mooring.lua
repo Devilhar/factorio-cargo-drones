@@ -1,10 +1,11 @@
 
 -- If you're here looking for a good way to handle GUI. Go elsewhere. There's nothing for you here. Naught but despair
 
-local ep = require("scripts.entity_property")
-local dt = require("scripts.drone_tasks")
-local mh = require("scripts.mooring_helper")
-local dh = require("scripts.drone_helper")
+local constants = require("scripts.constants")
+local ep        = require("scripts.entity_property")
+local dt        = require("scripts.drone_tasks")
+local mh        = require("scripts.mooring_helper")
+local dh        = require("scripts.drone_helper")
 
 local gui_prefix = "cargo-drone-"
 
@@ -14,8 +15,6 @@ local minimap_name = gui_prefix .. "drone-minimap"
 local window_gui_name = gui_prefix .. "window-mooring-main"
 
 local not_observed = {}
-
-local drone_has_burnt_result = prototypes.entity["cargo-drone"].burner_prototype.burnt_inventory_size > 0
 
 local function get_drone_limit_signal_element(player_data, element)
     local signal_id = mh.get_drone_limit_circuit_signal_id(player_data.entity)
@@ -1023,7 +1022,7 @@ local function build_gui_circuit(player_data, mooring, parent)
 
     ---------- Read Inventory ----------
 
-    local show_read_inventory = drone_has_burnt_result
+    local show_read_inventory = constants.drone_has_burnt_result
         and player_data.entity_name == "cargo-drone-mooring-constant-combinator-refueler"
 
     main_frame.add{

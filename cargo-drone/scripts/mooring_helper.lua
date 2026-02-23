@@ -1,5 +1,6 @@
 
-local ep = require("scripts.entity_property")
+local constants = require("scripts.constants")
+local ep        = require("scripts.entity_property")
 
 local signal_id_drone_limit     = { type = "virtual", name = "signal-L", quality = "normal" }
 local signal_id_priority        = { type = "virtual", name = "signal-P", quality = "normal" }
@@ -49,8 +50,6 @@ local inventory_number = {
     [defines.inventory.fuel]            = 1,
     [defines.inventory.burnt_result]    = 2,
 }
-
-local drone_has_burnt_result = prototypes.entity["cargo-drone"].burner_prototype.burnt_inventory_size > 0
 
 local function get_settings_section(mooring)
     local cb = mooring.get_control_behavior()
@@ -254,7 +253,7 @@ local function get_fuel_inventory(mooring)
 end
 
 local function get_fuel_inventory_output(mooring)
-    if not drone_has_burnt_result or mooring.name ~= "cargo-drone-mooring-constant-combinator-refueler" then
+    if not constants.drone_has_burnt_result or mooring.name ~= "cargo-drone-mooring-constant-combinator-refueler" then
         return false
     end
 
