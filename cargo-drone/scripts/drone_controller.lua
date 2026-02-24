@@ -53,16 +53,16 @@ local function orientation_delta_from_to(a, b)
 end
 -- End steal mode
 
-local function move_to_position(car_entity, state, target_position)
-    local distance_to_target = util.distance(car_entity.position, target_position)
+local function move_to_position(drone_position, drone_orientation, drone_speed, state, target_position)
+    local distance_to_target = util.distance(drone_position, target_position)
 
     if distance_to_target < 1 then
-        if car_entity.speed == 0 or distance_to_target < 0.2 then
+        if drone_speed == 0 or distance_to_target < 0.2 then
             state.riding_state = { acceleration = defines.riding.acceleration.nothing, direction = defines.riding.direction.straight }
 
             return true
         end
-        
+
         state.riding_state = { acceleration = defines.riding.acceleration.braking, direction = defines.riding.direction.straight }
 
         return false
@@ -73,23 +73,23 @@ local function move_to_position(car_entity, state, target_position)
     end
 
     local target_speed = distance_to_target / 60 / 2.5
-    local target_orientation = orientation_from_to(car_entity.position, target_position)
+    local target_orientation = orientation_from_to(drone_position, target_position)
 
     target_orientation = orientation_closest_64_cardinal(target_orientation)
 
     local direction = defines.riding.direction.straight
     local acceleration = defines.riding.acceleration.nothing
 
-    local orientation_delta = orientation_delta_from_to(car_entity.orientation, target_orientation)
+    local orientation_delta = orientation_delta_from_to(drone_orientation, target_orientation)
     local min_orientation_delta = math.max(math.min(distance_to_target / 2000 , 0.05), 0.01)
 
     min_orientation_delta = orientation_closest_64_cardinal(min_orientation_delta)
     local quater_64_cardinal = 1 / 256
 
     if distance_to_target >= 100 or math.abs(orientation_delta) <= min_orientation_delta + quater_64_cardinal then
-        if car_entity.speed < target_speed then
+        if drone_speed < target_speed then
             acceleration = defines.riding.acceleration.accelerating
-        elseif car_entity.speed > target_speed + (1 / 60) then
+        elseif drone_speed > target_speed + (1 / 60) then
             acceleration = defines.riding.acceleration.braking
         end
     end
@@ -98,7 +98,7 @@ local function move_to_position(car_entity, state, target_position)
         direction = defines.riding.direction.left
     elseif orientation_delta > min_orientation_delta then
         direction = defines.riding.direction.right
-    elseif car_entity.speed == 0 and acceleration == defines.riding.acceleration.accelerating then
+    elseif drone_speed == 0 and acceleration == defines.riding.acceleration.accelerating then
         -- For some reason the drone can't accelerate without ever turning. So just turn for a frame if standing still
         direction = defines.riding.direction.left
     end
@@ -200,7 +200,10 @@ local function has_requested_items(inventory, requested_items)
 end
 
 local function drone_goto_and_dock_with_mooring(drone, state, mooring, inventory)
-    if util.distance(drone.position, mooring.position) <= constants.drone_queue_distance then
+    local drone_position = drone.position
+    local mooring_position = mooring.position
+
+    if util.distance(drone_position, mooring_position) <= constants.drone_queue_distance then
         local docking_drone = ep.get_entity_property(mooring, "docking_drone")
 
         if docking_drone and docking_drone.valid and docking_drone ~= drone then
@@ -213,7 +216,10 @@ local function drone_goto_and_dock_with_mooring(drone, state, mooring, inventory
         end
     end
 
-    local completed = move_to_position(drone, state, mooring.position)
+    local drone_orientation = drone.orientation
+    local drone_speed = drone.speed
+
+    local completed = move_to_position(drone_position, drone_orientation, drone_speed, state, mooring_position)
 
     if not completed then
         return
@@ -250,8 +256,6 @@ local function perform_task_cargo(drone, state, task, game_tick)
         if drone.burner.remaining_burning_fuel <= 0 and drone.burner.inventory.is_empty() then
             send_alert(drone, "signal-fuel", "cargo-drone-alerts.no-fuel")
         end
-
-        local inventory = drone.get_inventory(defines.inventory.car_trunk)
 
         for slot_index = 1, #inventory do
             local filter = task.inventory_filters[slot_index]
@@ -394,7 +398,7 @@ local function tick_drone(drone, game_tick)
             proxy_container.proxy_target_entity = drone
             ep.set_entity_property(drone, "docked_mooring", state.docked_mooring.target_entity)
         end
-        
+
         proxy_container.proxy_target_inventory = state.docked_mooring.inventory
 
         mh.update_fuel_inventory(state.docked_mooring.target_entity)
