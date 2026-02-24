@@ -7,14 +7,19 @@ local rc        = require("scripts.requester_cooldown")
 local dt        = require("scripts.drone_tasks")
 local ir	    = require("scripts.item_requests")
 
+local reset_state = {}
 local states = {
     reset_request_buffers           = 0,
-    collect_provider_moorings       = 1,
+
+    collect_idle_drones             = 1,
     collect_requester_moorings      = 2,
-    collect_provider_items          = 3,
-    collect_requester_items         = 4,
-    collect_idle_drones             = 5,
-    sort_idle_drone                 = 6,
+    collect_provider_moorings       = 3,
+
+    sort_idle_drone                 = 4,
+
+    collect_requester_items         = 5,
+    collect_provider_items          = 6,
+
     assign_task_to_drone_with_cargo = 7,
     process_next_item_request       = 8,
 }
@@ -48,6 +53,10 @@ end
 local function reset_request_buffers()
     storage.scheduler.update_stage = 0
 
+    storage.scheduler.idling_cargo_drones = {}
+    storage.scheduler.idling_cargo_drones_empty = {}
+    storage.scheduler.idling_cargo_drones_with_cargo = {}
+
     storage.scheduler.surface_buffer = {}
     storage.scheduler.provider_buffer = {}
     storage.scheduler.requester_buffer = {}
@@ -55,11 +64,15 @@ local function reset_request_buffers()
     storage.scheduler.mooring_key = nil
 end
 
-local function collect_provider_moorings()
-    local providers = ep.get_cargo_drone_provider_moorings()
+local function collect_idle_drones()
+    for surface_index, drones in pairs(dt.get_idle_drones_per_surface()) do
+        for _, drone in pairs(drones) do
+            if not storage.scheduler.idling_cargo_drones[surface_index] then
+                storage.scheduler.idling_cargo_drones[surface_index] = {}
+            end
 
-    for provider_id, provider_data in pairs(providers) do
-        storage.scheduler.provider_buffer[provider_id] = provider_data.entity
+            table.insert(storage.scheduler.idling_cargo_drones[surface_index], drone)
+        end
     end
 end
 local function collect_requester_moorings()
@@ -69,63 +82,11 @@ local function collect_requester_moorings()
         storage.scheduler.requester_buffer[requester_id] = requester_data.entity
     end
 end
+local function collect_provider_moorings()
+    local providers = ep.get_cargo_drone_provider_moorings()
 
-local function collect_provider_items()
-    local provider = nil
-
-    storage.scheduler.mooring_key, provider = next(storage.scheduler.provider_buffer, storage.scheduler.mooring_key)
-
-    if storage.scheduler.mooring_key == nil then
-        return true
-    end
-
-    if not provider.valid then
-        return false
-    end
-
-    local surface_buffer = try_create_and_get_surface_buffer(provider.surface.index)
-
-    ir.add_items_to_provider(provider, surface_buffer.provider_items, surface_buffer.item_provider_lookup)
-
-    return false
-end
-local function collect_requester_items()
-    local requester = nil
-
-    storage.scheduler.mooring_key, requester = next(storage.scheduler.requester_buffer, storage.scheduler.mooring_key)
-
-    if storage.scheduler.mooring_key == nil then
-        return true
-    end
-
-    if not requester.valid then
-        return false
-    end
-
-    if rc.is_on_cooldown(storage.scheduler.mooring_key) then
-        return false
-    end
-
-    local surface_buffer = try_create_and_get_surface_buffer(requester.surface.index)
-
-    ir.add_items_to_requester(requester, surface_buffer.requester_items, surface_buffer.item_requester_lookup, surface_buffer.sorted_requesters)
-
-    return false
-end
-
-local function collect_idle_drones()
-    storage.scheduler.idling_cargo_drones = {}
-    storage.scheduler.idling_cargo_drones_empty = {}
-    storage.scheduler.idling_cargo_drones_with_cargo = {}
-
-    for surface_index, drones in pairs(dt.get_idle_drones_per_surface()) do
-        for _, drone in pairs(drones) do
-            if not storage.scheduler.idling_cargo_drones[surface_index] then
-                storage.scheduler.idling_cargo_drones[surface_index] = {}
-            end
-
-            table.insert(storage.scheduler.idling_cargo_drones[surface_index], drone)
-        end
+    for provider_id, provider_data in pairs(providers) do
+        storage.scheduler.provider_buffer[provider_id] = provider_data.entity
     end
 end
 
@@ -168,6 +129,48 @@ local function sort_idle_drone()
 
     return false
 end
+local function collect_requester_items()
+    local requester = nil
+
+    storage.scheduler.mooring_key, requester = next(storage.scheduler.requester_buffer, storage.scheduler.mooring_key)
+
+    if storage.scheduler.mooring_key == nil then
+        return true
+    end
+
+    if not requester.valid then
+        return false
+    end
+
+    if rc.is_on_cooldown(storage.scheduler.mooring_key) then
+        return false
+    end
+
+    local surface_buffer = try_create_and_get_surface_buffer(requester.surface.index)
+
+    ir.add_items_to_requester(requester, surface_buffer.requester_items, surface_buffer.item_requester_lookup, surface_buffer.sorted_requesters)
+
+    return false
+end
+local function collect_provider_items()
+    local provider = nil
+
+    storage.scheduler.mooring_key, provider = next(storage.scheduler.provider_buffer, storage.scheduler.mooring_key)
+
+    if storage.scheduler.mooring_key == nil then
+        return true
+    end
+
+    if not provider.valid then
+        return false
+    end
+
+    local surface_buffer = try_create_and_get_surface_buffer(provider.surface.index)
+
+    ir.add_items_to_provider(provider, surface_buffer.provider_items, surface_buffer.item_provider_lookup)
+
+    return false
+end
 
 local function assign_task_to_drone_with_cargo()
     local drones = nil
@@ -201,7 +204,6 @@ local function assign_task_to_drone_with_cargo()
 
     return false
 end
-
 local function process_next_item_request()
     if storage.scheduler.key_surface == nil then
         storage.scheduler.key_surface = next(storage.scheduler.idling_cargo_drones_empty, storage.scheduler.key_surface)
@@ -285,68 +287,87 @@ local state_procs = {
     [states.reset_request_buffers] = function()
         reset_request_buffers()
 
-        return true
+        return states.collect_idle_drones
     end,
-    [states.collect_provider_moorings] = function()
-        collect_provider_moorings()
 
-        return true
+    [states.collect_idle_drones] = function()
+        collect_idle_drones()
+
+        if next(storage.scheduler.idling_cargo_drones) == nil then
+            return reset_state
+        end
+
+        return states.collect_requester_moorings
     end,
     [states.collect_requester_moorings] = function()
         collect_requester_moorings()
 
-        return true
-    end,
-    [states.collect_provider_items] = function()
-        for _ = 1, settings.global["cargo-drone-max-collect-provider-items"].value do
-            if collect_provider_items() then
-                storage.scheduler.mooring_key = nil
-
-                return true
-            end
+        if next(storage.scheduler.requester_buffer) == nil then
+            return reset_state
         end
 
-        return false
+        return states.collect_provider_moorings
     end,
-    [states.collect_requester_items] = function()
-        for _ = 1, settings.global["cargo-drone-max-collect-requester-items"].value do
-            if collect_requester_items() then
-                storage.scheduler.mooring_key = nil
+    [states.collect_provider_moorings] = function()
+        collect_provider_moorings()
 
-                return true
-            end
-        end
-
-        return false
+        return states.sort_idle_drone
     end,
-    [states.collect_idle_drones] = function()
-        collect_idle_drones()
 
-        return true
-    end,
     [states.sort_idle_drone] = function()
         for _ = 1, settings.global["cargo-drone-max-sort-idle-drones"].value do
             if sort_idle_drone() then
                 storage.scheduler.key_surface = nil
                 storage.scheduler.key_drone = nil
 
-                return true
+                return states.collect_requester_items
             end
         end
 
-        return false
+        return nil
     end,
+    [states.collect_requester_items] = function()
+        for _ = 1, settings.global["cargo-drone-max-collect-requester-items"].value do
+            if collect_requester_items() then
+                storage.scheduler.mooring_key = nil
+
+                if next(storage.scheduler.idling_cargo_drones_empty) == nil then
+                    return states.assign_task_to_drone_with_cargo
+                end
+
+                return states.collect_provider_items
+            end
+        end
+
+        return nil
+    end,
+    [states.collect_provider_items] = function()
+        for _ = 1, settings.global["cargo-drone-max-collect-provider-items"].value do
+            if collect_provider_items() then
+                storage.scheduler.mooring_key = nil
+
+                return states.assign_task_to_drone_with_cargo
+            end
+        end
+
+        return nil
+    end,
+
     [states.assign_task_to_drone_with_cargo] = function()
         for _ = 1, settings.global["cargo-drone-max-assign-task-to-non-empty-drones"].value do
             if assign_task_to_drone_with_cargo() then
                 storage.scheduler.key_surface = nil
                 storage.scheduler.key_drone = nil
 
-                return true
+                if next(storage.scheduler.idling_cargo_drones_empty) == nil then
+                    return reset_state
+                end
+
+                return states.process_next_item_request
             end
         end
 
-        return false
+        return nil
     end,
     [states.process_next_item_request] = function()
         for _ = 1, settings.global["cargo-drone-max-processed-item-requests"].value do
@@ -354,11 +375,11 @@ local state_procs = {
                 storage.scheduler.key_surface = nil
                 storage.scheduler.key_drone = nil
 
-                return true
+                return reset_state
             end
         end
 
-        return false
+        return nil
     end,
 }
 
@@ -367,15 +388,15 @@ function scheduler.tick(game_tick)
         return
     end
 
-    local done = state_procs[storage.scheduler.update_state]()
+    local next_state = state_procs[storage.scheduler.update_state]()
 
-    if not done then
+    if next_state == nil then
         return
     end
 
-    storage.scheduler.update_state = storage.scheduler.update_state + 1
+    if next_state ~= reset_state then
+        storage.scheduler.update_state = next_state
 
-    if storage.scheduler.update_state <= states.process_next_item_request then
         return
     end
 
