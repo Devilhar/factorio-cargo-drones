@@ -1,7 +1,6 @@
 
 local util      = require("util")
 
-local constants = require("scripts.constants")
 local ep        = require("scripts.entity_property")
 local mh        = require("scripts.mooring_helper")
 local dt        = require("scripts.drone_tasks")
@@ -138,7 +137,7 @@ local function add_items(mooring, mooring_items, item_mooring_lookup)
     return true
 end
 
-local function get_closest_provider(requester, item_name, item_quality, item_provider_lookup)
+local function get_closest_provider(requester, item_name, item_quality, item_provider_lookup, heuristic_target_count_cost)
     if not item_provider_lookup[item_name] or not item_provider_lookup[item_name][item_quality] then
         return nil
     end
@@ -155,7 +154,7 @@ local function get_closest_provider(requester, item_name, item_quality, item_pro
         if item_data.count > 0 and provider.valid and not mh.is_at_drone_limit(provider) then
             if provider.surface.index == requester.surface.index then
                 if highest_priority <= item_data.priority then
-                    local cost = util.distance(provider.position, requester.position) + mh.get_drone_count_value(provider.unit_number) * constants.heuristic_target_count_cost
+                    local cost = util.distance(provider.position, requester.position) + mh.get_drone_count_value(provider.unit_number) * heuristic_target_count_cost
 
                     if highest_priority < item_data.priority or cost < lowest_cost then
                         highest_priority = item_data.priority
@@ -276,7 +275,7 @@ function item_requests.add_items_to_requester(mooring, mooring_items, item_moori
     insert_priority(sorted_requesters, requester_data)
 end
 
-function item_requests.get_next_item_request(surface_buffer)
+function item_requests.get_next_item_request(surface_buffer, heuristic_target_count_cost)
     local sb = surface_buffer
 
     if sb.end_of_requests then
@@ -310,7 +309,7 @@ function item_requests.get_next_item_request(surface_buffer)
                     local item_data = selected_name[sb.key_item_quality]
 
                     if item_data.count > 0 then
-                        selected_provider = get_closest_provider(selected_requester, sb.key_item_name, sb.key_item_quality, sb.item_provider_lookup)
+                        selected_provider = get_closest_provider(selected_requester, sb.key_item_name, sb.key_item_quality, sb.item_provider_lookup, heuristic_target_count_cost)
 
                         if selected_provider then
                             local request = {}

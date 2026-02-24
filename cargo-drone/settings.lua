@@ -29,12 +29,31 @@ data:extend{
 
     {
         type = "int-setting",
+        name = "cargo-drone-heuristic-target-count-cost",
+        setting_type = "runtime-global",
+        default_value = 50,
+        minimum_value = 0,
+        maximum_value = 10000,
+        order = "b-mooring-a",
+    },
+
+    {
+        type = "int-setting",
+        name = "cargo-drone-min-schedule-interval",
+        setting_type = "runtime-global",
+        default_value = 60,
+        minimum_value = 1,
+        maximum_value = 3600,
+        order = "c-scheduler-a",
+    },
+    {
+        type = "int-setting",
         name = "cargo-drone-max-collect-provider-items",
         setting_type = "runtime-global",
         default_value = 1,
         minimum_value = 1,
         maximum_value = 100,
-        order = "b-scheduler-a",
+        order = "c-scheduler-b",
     },
     {
         type = "int-setting",
@@ -43,7 +62,7 @@ data:extend{
         default_value = 1,
         minimum_value = 1,
         maximum_value = 100,
-        order = "b-scheduler-b",
+        order = "c-scheduler-c",
     },
     {
         type = "int-setting",
@@ -52,7 +71,7 @@ data:extend{
         default_value = 1,
         minimum_value = 1,
         maximum_value = 100,
-        order = "b-scheduler-c",
+        order = "c-scheduler-d",
     },
     {
         type = "int-setting",
@@ -61,7 +80,7 @@ data:extend{
         default_value = 1,
         minimum_value = 1,
         maximum_value = 100,
-        order = "b-scheduler-d",
+        order = "c-scheduler-e",
     },
     {
         type = "int-setting",
@@ -70,6 +89,6 @@ data:extend{
         default_value = 1,
         minimum_value = 1,
         maximum_value = 100,
-        order = "b-scheduler-f",
+        order = "c-scheduler-f",
     },
 }

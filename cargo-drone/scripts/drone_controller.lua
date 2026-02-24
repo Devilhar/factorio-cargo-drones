@@ -5,7 +5,6 @@ local constants = require("scripts.constants")
 local ep        = require("scripts.entity_property")
 local mh        = require("scripts.mooring_helper")
 local dt        = require("scripts.drone_tasks")
-local ir	    = require("scripts.item_requests")
 local rc        = require("scripts.requester_cooldown")
 
 -- Shamelessly stolen from AAI Programmable Vehicles, because I couldn't be bothered doing it myself
