@@ -1,4 +1,13 @@
 ---------------------------------------------------------------------------------------------------
+Version: 1.4.5
+Date: 24. 02. 2026
+  Minor Features:
+    - Added setting for the heuristic cost for moorings.
+    - Added scheduling settings. Can be used to lower lag spikes when applicable.
+  Changes:
+    - Reduced API calls when ticking Cargo drones.
+    - Unnecessary steps in scheduling is now skipped.
+---------------------------------------------------------------------------------------------------
 Version: 1.4.4
 Date: 23. 02. 2026
   Bugfixes:
