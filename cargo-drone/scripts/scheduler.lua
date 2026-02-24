@@ -22,6 +22,8 @@ local states = {
 
     assign_task_to_drone_with_cargo = 7,
     process_next_item_request       = 8,
+
+    wait_for_next_interval          = 9,
 }
 
 local function try_create_and_get_surface_buffer(surface_index)
@@ -386,11 +388,20 @@ local state_procs = {
 }
 
 function scheduler.tick(game_tick)
-    if game_tick < storage.scheduler.last_schedule_tick + settings.global["cargo-drone-min-schedule-interval"].value then
+    local current_state = storage.scheduler.update_state
+
+    if current_state == states.wait_for_next_interval then
+        if game_tick < storage.scheduler.last_schedule_tick + settings.global["cargo-drone-min-schedule-interval"].value then
+            return
+        end
+
+        storage.scheduler.last_schedule_tick = game_tick
+        storage.scheduler.update_state = states.reset_request_buffers
+
         return
     end
 
-    local next_state = state_procs[storage.scheduler.update_state]()
+    local next_state = state_procs[current_state]()
 
     if next_state == nil then
         return
@@ -402,8 +413,7 @@ function scheduler.tick(game_tick)
         return
     end
 
-    storage.scheduler.last_schedule_tick = game_tick
-    storage.scheduler.update_state = states.reset_request_buffers
+    storage.scheduler.update_state = states.wait_for_next_interval
 end
 
 return scheduler
