@@ -33,7 +33,7 @@ function requester_cooldown.flag_for_cooldown(requester_unit_number)
         storage.requester_cooldown = {}
     end
 
-    storage.requester_cooldown[requester_unit_number] = constants.cooldown_ticks
+    storage.requester_cooldown[requester_unit_number] = constants.requester_cooldown_ticks
 end
 function requester_cooldown.is_on_cooldown(requester_unit_number)
     if not storage.requester_cooldown then

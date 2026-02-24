@@ -204,7 +204,7 @@ local function assign_task_to_drone_with_cargo()
 
     return false
 end
-local function process_next_item_request()
+local function process_next_item_request(heuristic_target_count_cost)
     if storage.scheduler.key_surface == nil then
         storage.scheduler.key_surface = next(storage.scheduler.idling_cargo_drones_empty, storage.scheduler.key_surface)
 
@@ -229,7 +229,7 @@ local function process_next_item_request()
         return storage.scheduler.key_surface == nil
     end
 
-    local item_request = ir.get_next_item_request(surface_buffer)
+    local item_request = ir.get_next_item_request(surface_buffer, heuristic_target_count_cost)
 
     if not item_request then
         storage.scheduler.key_surface = next(storage.scheduler.idling_cargo_drones_empty, storage.scheduler.key_surface)
@@ -370,8 +370,10 @@ local state_procs = {
         return nil
     end,
     [states.process_next_item_request] = function()
+        local heuristic_target_count_cost = settings.global["cargo-drone-heuristic-target-count-cost"].value
+
         for _ = 1, settings.global["cargo-drone-max-processed-item-requests"].value do
-            if process_next_item_request() then
+            if process_next_item_request(heuristic_target_count_cost) then
                 storage.scheduler.key_surface = nil
                 storage.scheduler.key_drone = nil
 
@@ -384,7 +386,7 @@ local state_procs = {
 }
 
 function scheduler.tick(game_tick)
-    if game_tick < storage.scheduler.last_schedule_tick + constants.min_schedule_interval then
+    if game_tick < storage.scheduler.last_schedule_tick + settings.global["cargo-drone-min-schedule-interval"].value then
         return
     end
 
