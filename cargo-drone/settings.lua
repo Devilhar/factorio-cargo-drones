@@ -48,7 +48,7 @@ data:extend{
     },
     {
         type = "int-setting",
-        name = "cargo-drone-max-collect-provider-items",
+        name = "cargo-drone-max-scanned-moorings",
         setting_type = "runtime-global",
         default_value = 1,
         minimum_value = 1,
@@ -57,7 +57,7 @@ data:extend{
     },
     {
         type = "int-setting",
-        name = "cargo-drone-max-collect-requester-items",
+        name = "cargo-drone-max-sort-idle-drones",
         setting_type = "runtime-global",
         default_value = 1,
         minimum_value = 1,
@@ -66,7 +66,7 @@ data:extend{
     },
     {
         type = "int-setting",
-        name = "cargo-drone-max-sort-idle-drones",
+        name = "cargo-drone-max-collect-provider-items",
         setting_type = "runtime-global",
         default_value = 1,
         minimum_value = 1,
@@ -75,7 +75,7 @@ data:extend{
     },
     {
         type = "int-setting",
-        name = "cargo-drone-max-assign-task-to-non-empty-drones",
+        name = "cargo-drone-max-collect-requester-items",
         setting_type = "runtime-global",
         default_value = 1,
         minimum_value = 1,
@@ -84,11 +84,20 @@ data:extend{
     },
     {
         type = "int-setting",
-        name = "cargo-drone-max-processed-item-requests",
+        name = "cargo-drone-max-assign-task-to-non-empty-drones",
         setting_type = "runtime-global",
         default_value = 1,
         minimum_value = 1,
         maximum_value = 100,
         order = "c-scheduler-f",
+    },
+    {
+        type = "int-setting",
+        name = "cargo-drone-max-processed-item-requests",
+        setting_type = "runtime-global",
+        default_value = 1,
+        minimum_value = 1,
+        maximum_value = 100,
+        order = "c-scheduler-g",
     },
 }

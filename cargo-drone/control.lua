@@ -154,6 +154,9 @@ local function migrate_state()
 
 	if old_mod_state < 7 then
 		storage.drone_controller = nil
+	end
+
+	if old_mod_state < 8 then
 		scheduler.init()
 	end
 

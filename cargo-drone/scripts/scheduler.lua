@@ -7,13 +7,19 @@ local rc        = require("scripts.requester_cooldown")
 local dt        = require("scripts.drone_tasks")
 local ir	    = require("scripts.item_requests")
 
+local mooring_scan_interval = 300
+
 local reset_state = {}
+-- These values can't change
 local states = {
-    reset_request_buffers           = 0,
+    begin_frame                     = 0,
 
     collect_idle_drones             = 1,
     collect_requester_moorings      = 2,
     collect_provider_moorings       = 3,
+
+    scan_providers                  = 10,
+    scan_requesters                 = 11,
 
     sort_idle_drone                 = 4,
 
@@ -52,8 +58,10 @@ local function get_closest_drone_to_mooring(drones, mooring)
     return closest_index
 end
 
-local function reset_request_buffers()
+local function begin_frame()
     storage.scheduler.update_stage = 0
+
+    storage.scheduler.should_perform_mooring_scan = storage.scheduler.last_mooring_scan_tick + mooring_scan_interval < storage.scheduler.last_schedule_tick
 
     storage.scheduler.idling_cargo_drones = {}
     storage.scheduler.idling_cargo_drones_empty = {}
@@ -64,6 +72,10 @@ local function reset_request_buffers()
     storage.scheduler.requester_buffer = {}
 
     storage.scheduler.mooring_key = nil
+
+    if storage.scheduler.should_perform_mooring_scan then
+        storage.scheduler.last_mooring_scan_tick = storage.scheduler.last_schedule_tick
+    end
 end
 
 local function collect_idle_drones()
@@ -90,6 +102,31 @@ local function collect_provider_moorings()
     for provider_id, provider_data in pairs(providers) do
         storage.scheduler.provider_buffer[provider_id] = provider_data.entity
     end
+end
+
+local function scan_moorings(moorings)
+    local mooring = nil
+
+    storage.scheduler.mooring_key, mooring = next(moorings, storage.scheduler.mooring_key)
+
+    if storage.scheduler.mooring_key == nil then
+        return true
+    end
+
+    if not mooring.valid then
+        return false
+    end
+
+    if mooring.get_circuit_network(defines.wire_connector_id.circuit_red) ~= nil
+        or mooring.get_circuit_network(defines.wire_connector_id.circuit_green) ~= nil then
+        return false
+    end
+
+    for i = 1, #game.players do
+        game.players[i].add_custom_alert(mooring, { type = "virtual", name = "signal-alert" }, { "cargo-drone-alerts.mooring-no-wire-connection" }, true)
+    end
+
+    return false
 end
 
 local function sort_idle_drone()
@@ -131,6 +168,7 @@ local function sort_idle_drone()
 
     return false
 end
+
 local function collect_requester_items()
     local requester = nil
 
@@ -267,6 +305,9 @@ function scheduler.init()
 
     storage.scheduler.tickrate_buffer = storage.scheduler.tickrate_buffer or {}
 
+    storage.scheduler.last_mooring_scan_tick = storage.scheduler.last_mooring_scan_tick or 0
+    storage.scheduler.should_perform_mooring_scan = storage.scheduler.should_perform_mooring_scan or false
+
     storage.scheduler.key_surface = storage.scheduler.key_surface or nil
     storage.scheduler.key_drone = storage.scheduler.key_drone or nil
 
@@ -286,8 +327,8 @@ function scheduler.drone_destroyed(unit_number)
 end
 
 local state_procs = {
-    [states.reset_request_buffers] = function()
-        reset_request_buffers()
+    [states.begin_frame] = function()
+        begin_frame()
 
         return states.collect_idle_drones
     end,
@@ -295,7 +336,7 @@ local state_procs = {
     [states.collect_idle_drones] = function()
         collect_idle_drones()
 
-        if next(storage.scheduler.idling_cargo_drones) == nil then
+        if next(storage.scheduler.idling_cargo_drones) == nil and not storage.scheduler.should_perform_mooring_scan then
             return reset_state
         end
 
@@ -304,7 +345,7 @@ local state_procs = {
     [states.collect_requester_moorings] = function()
         collect_requester_moorings()
 
-        if next(storage.scheduler.requester_buffer) == nil then
+        if next(storage.scheduler.requester_buffer) == nil and not storage.scheduler.should_perform_mooring_scan then
             return reset_state
         end
 
@@ -313,7 +354,36 @@ local state_procs = {
     [states.collect_provider_moorings] = function()
         collect_provider_moorings()
 
+        if storage.scheduler.should_perform_mooring_scan then
+            storage.scheduler.mooring_key = nil
+
+            return states.scan_providers
+        end
+
         return states.sort_idle_drone
+    end,
+
+    [states.scan_providers] = function()
+        for _ = 1, settings.global["cargo-drone-max-scanned-moorings"].value do
+            if scan_moorings(storage.scheduler.provider_buffer) then
+                return states.scan_requesters
+            end
+        end
+
+        return nil
+    end,
+    [states.scan_requesters] = function()
+        for _ = 1, settings.global["cargo-drone-max-scanned-moorings"].value do
+            if scan_moorings(storage.scheduler.requester_buffer) then
+                if next(storage.scheduler.idling_cargo_drones) == nil or next(storage.scheduler.requester_buffer) == nil then
+                    return reset_state
+                end
+
+                return states.sort_idle_drone
+            end
+        end
+
+        return nil
     end,
 
     [states.sort_idle_drone] = function()
@@ -328,6 +398,7 @@ local state_procs = {
 
         return nil
     end,
+
     [states.collect_requester_items] = function()
         for _ = 1, settings.global["cargo-drone-max-collect-requester-items"].value do
             if collect_requester_items() then
@@ -396,7 +467,7 @@ function scheduler.tick(game_tick)
         end
 
         storage.scheduler.last_schedule_tick = game_tick
-        storage.scheduler.update_state = states.reset_request_buffers
+        storage.scheduler.update_state = states.begin_frame
 
         return
     end
