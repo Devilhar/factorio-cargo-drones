@@ -1,0 +1,33 @@
+﻿name: Read Changelog
+
+inputs:
+  changelog-file-path:
+    description: "Path to the changelog file"
+    required: true
+
+outputs:
+  changes:
+    description: "Changes"
+    value: ${{ steps.read-changelog.outputs.content }}
+
+runs:
+  using: "composite"
+  steps:
+    - name: Read Changelog
+      id: read-changelog
+      shell: bash
+      run: |
+        FILE="${{ inputs.changelog-file-path }}"
+        STOP_SEQUENCE="---------------------------------------------------------------------------------------------------"
+
+        CONTENT=$(awk -v stop="$STOP_SEQUENCE" '
+          NR == 1 { next }          # Skip first line
+          index($0, stop) { exit }  # Stop when sequence is found
+          { print }
+        ' "$FILE")
+
+        {
+          echo "content<<EOF"
+          echo "$CONTENT"
+          echo "EOF"
+        } >> "$GITHUB_OUTPUT"

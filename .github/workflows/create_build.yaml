@@ -1,0 +1,33 @@
+name: Create Build
+
+on:
+  workflow_dispatch:
+
+env:
+  version-file: "${{ github.workspace }}/cargo-drone/info.json"
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: "Create build"
+        id: create-build
+        uses: ./.github/actions/create_build
+        with:
+          version-file-path: '${{ env.version-file }}'
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-zip
+          path: ${{ steps.create-build.outputs.build-path }}
+          if-no-files-found: error

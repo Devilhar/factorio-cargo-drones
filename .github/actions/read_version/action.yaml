@@ -1,0 +1,32 @@
+name: Read Version
+
+inputs:
+  version-file-path:
+    description: "Json file to be read from."
+    required: true
+
+outputs:
+  major:
+    description: "Major version"
+    value: ${{ steps.read_version.outputs.major }}
+  minor:
+    description: "Minor version"
+    value: ${{ steps.read_version.outputs.minor }}
+  patch:
+    description: "Patch version"
+    value: ${{ steps.read_version.outputs.patch }}
+
+runs:
+  using: "composite"
+  steps:
+    - name: Read version
+      id: read_version
+      shell: bash
+      run: |
+        VERSION=$(jq -r '.version' '${{ inputs.version-file-path }}')
+
+        IFS='.' read -r MAJOR MINOR PATCH <<< "$VERSION"
+
+        echo "major=$MAJOR" >> "$GITHUB_OUTPUT"
+        echo "minor=$MINOR" >> "$GITHUB_OUTPUT"
+        echo "patch=$PATCH" >> "$GITHUB_OUTPUT"

@@ -1,0 +1,29 @@
+name: Create Build
+
+inputs:
+  version-file-path:
+    description: "Json file to be read from."
+    required: true
+
+outputs:
+  full-version:
+    description: "Full version, example: 1.4.6"
+    value: "${{ steps.read-version.outputs.major }}.${{ steps.read-version.outputs.minor }}.${{ steps.read-version.outputs.patch }}"
+  build-path:
+    description: "Path to the build"
+    value: ${{ steps.build.outputs.build_path }}
+
+runs:
+  using: "composite"
+  steps:
+    - name: "Read version"
+      id: read-version
+      uses: ./.github/actions/read_version
+      with:
+        version-file-path: '${{ inputs.version-file-path }}'
+
+    - name: Build
+      id: build
+      shell: bash
+      run: |
+        echo "build_path=$(python deploy.py out/ --echo_file)" >> $GITHUB_OUTPUT

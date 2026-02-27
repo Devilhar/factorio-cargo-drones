@@ -1,0 +1,41 @@
+name: Build and Release
+
+on:
+  workflow_dispatch:
+
+env:
+  version-file: "${{ github.workspace }}/cargo-drone/info.json"
+  changelog-file: "${{ github.workspace }}/cargo-drone/changelog.txt"
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Create build
+        id: create-build
+        uses: ./.github/actions/create_build
+        with:
+          version-file-path: '${{ env.version-file }}'
+
+      - name: Read changelog
+        id: read-changelog
+        uses: ./.github/actions/read_changelog
+        with:
+          changelog-file-path: '${{ env.changelog-file }}'
+
+      - name: Create release
+        id: create-release
+        uses: ./.github/actions/create_release
+        with:
+          full-version: '${{ steps.create-build.outputs.full-version }}'
+          build-file-path: '${{ steps.create-build.outputs.build-path }}'
+          changelog: '${{ steps.read-changelog.outputs.changes }}'
