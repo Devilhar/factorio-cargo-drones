@@ -185,6 +185,32 @@ function on_destroyed_entity(event)
 
 	unmanage_entity(unit_number)
 end
+function on_player_rotated_entity(event)
+	if not event.entity or not event.entity.valid then
+		return
+	end
+
+	local unit_number = event.entity.unit_number
+
+	if ep.is_provider_mooring(unit_number)
+		or ep.is_requester_mooring(unit_number)
+		or ep.is_refueler_mooring(unit_number) then
+		mh.on_rotate(event.entity)
+	end
+end
+function on_player_flipped_entity(event)
+	if not event.entity or not event.entity.valid then
+		return
+	end
+
+	local unit_number = event.entity.unit_number
+
+	if ep.is_provider_mooring(unit_number)
+		or ep.is_requester_mooring(unit_number)
+		or ep.is_refueler_mooring(unit_number) then
+		mh.on_rotate(event.entity)
+	end
+end
 function on_entity_settings_pasted(event)
 	if not event.destination or not event.destination.valid then
 		return

@@ -391,19 +391,14 @@ local function tick_drone(drone, game_tick)
     end
 
     if state.docked_mooring.target_entity then
-        local proxy_containers = ep.get_entity_property(state.docked_mooring.target_entity, "proxy_containers")
-
         if state.docked_mooring.target_entity ~= old_docked_mooring then
+            local proxy_containers = ep.get_entity_property(state.docked_mooring.target_entity, "proxy_containers")
             drone.surface.play_sound({ path = "cargo-drone-sound-docking", position = drone.position })
 
             for _, proxy_container in ipairs(proxy_containers) do
                 proxy_container.proxy_target_entity = drone
             end
             ep.set_entity_property(drone, "docked_mooring", state.docked_mooring.target_entity)
-        end
-
-        for _, proxy_container in ipairs(proxy_containers) do
-            proxy_container.proxy_target_inventory = state.docked_mooring.inventory
         end
 
         mh.update_fuel_inventory(state.docked_mooring.target_entity)
