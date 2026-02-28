@@ -176,9 +176,11 @@ function on_destroyed_entity(event)
 	if ep.is_provider_mooring(unit_number)
 		or ep.is_requester_mooring(unit_number)
 		or ep.is_refueler_mooring(unit_number) then
-		local proxy_container = ep.get_entity_property(entity, "proxy_container")
+		local proxy_containers = ep.get_entity_property(entity, "proxy_containers")
 
-		proxy_container.destroy({ raise_destroy = true })
+		for _, proxy_container in ipairs(proxy_containers) do
+			proxy_container.destroy({ raise_destroy = true })
+		end
 	end
 
 	unmanage_entity(unit_number)
