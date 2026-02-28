@@ -122,7 +122,7 @@ local function make_mooring(placeholder, name, selection_offset)
 	local selection_name = ""
 
 	if selection_offset then
-		selection_name = (selection_offset[1] + 1) .. "_" .. (selection_offset[2] + 1)
+		selection_name = (selection_offset[1] + 2) .. "_" .. (selection_offset[2] + 2)
 	end
 
 	scan = function(current_table)

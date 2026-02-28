@@ -40,6 +40,7 @@ local section_index = {
     drone_count                     = 4,
     fuel_inventory                  = 5,
     output                          = 6,
+    inventory_targets               = 7,
 }
 local output_index = {
     drone_count                     = 1,
@@ -302,6 +303,50 @@ local function set_fuel_inventory_circuit_signal_id(mooring, signal_id)
     set_signal_id(mooring, section_index.fuel_inventory, signal_id)
 end
 
+local function get_inventory_target(mooring, x, y)
+    local index = x + (y - 1) * 3
+    local section = mooring.get_control_behavior().get_section(section_index.inventory_targets)
+
+    local slot = section.get_slot(index)
+
+    if not slot then
+        return nil
+    end
+
+    return slot.min
+end
+local function set_inventory_target(mooring, x, y, target)
+    local index = x + (y - 1) * 3
+    local section = mooring.get_control_behavior().get_section(section_index.inventory_targets)
+
+    if target ~= nil then
+        section.set_slot(index, {
+            value = {
+                type = "virtual",
+                name = "signal_" .. index,
+                quality = "normal",
+            },
+            min = target
+        })
+    else
+        section.clear_slot(index)
+    end
+end
+
+local function get_rotated_offset(mooring, x, y)
+    local rot = math.floor(mooring.orientation * 4 + 0.05) % 4 + 1
+
+    if rot == 1 then
+        return x, y
+    elseif rot == 2 then
+        return y, -x
+    elseif rot == 3 then
+        return -x, -y
+    end
+
+    return -y, x
+end
+
 local function update_fuel_inventory_output(mooring)
     local cb = mooring.get_control_behavior()
 
@@ -328,17 +373,40 @@ local function update_fuel_inventory_output(mooring)
     })
 end
 
+local function get_pc_offset(index)
+    return ((index - 1) % 3) - 1, math.floor((index - 1) / 3) - 1
+end
+
+local function update_proxy_container_inventories(mooring)
+	local proxy_containers = ep.get_entity_property(mooring, "proxy_containers")
+    local default_target_inventory = defines.inventory.car_trunk
+
+    if ep.is_refueler_mooring(mooring.unit_number) then
+        default_target_inventory = defines.inventory.fuel
+    end
+
+    for i = 1, 9 do
+        local x, y = get_pc_offset(i)
+
+        x, y = get_rotated_offset(mooring, x, y)
+
+        local target_inventory = get_inventory_target(mooring, x + 2, y + 2) or default_target_inventory
+
+        proxy_containers[i].proxy_target_inventory = target_inventory
+    end
+end
+
 local function clean_settings(mooring)
     local cb = mooring.get_control_behavior()
 
-    while cb.sections_count < 6 do
+    while cb.sections_count < 7 do
         cb.add_section()
     end
-    while cb.sections_count > 6 do
+    while cb.sections_count > 7 do
         cb.remove_section(6)
     end
 
-    for i = 1, 6 do
+    for i = 1, 7 do
         local section = cb.get_section(i)
 
         section.active = false
@@ -347,15 +415,9 @@ local function clean_settings(mooring)
 
     update_drone_count_output(mooring)
     update_fuel_inventory_output(mooring)
+    update_proxy_container_inventories(mooring)
 
     cb.get_section(section_index.output).active = true
-end
-
-local function get_pc_offset_x(index)
-    return ((index - 1) % 3) - 1
-end
-local function get_pc_offset_y(index)
-    return math.floor((index - 1) / 3) - 1
 end
 
 local mooring_helper = {}
@@ -371,11 +433,10 @@ function mooring_helper.try_setup_mooring(mooring)
     local proxy_containers = {}
 
     for i = 1, 9 do
-        local x = get_pc_offset_x(i)
-        local y = get_pc_offset_y(i)
+        local x, y = get_pc_offset(i)
 
         proxy_containers[i] = mooring.surface.create_entity({
-            name = mooring_data.proxy_container_name_prefix .. (x + 1) .. "_" .. (y + 1),
+            name = mooring_data.proxy_container_name_prefix .. (x + 2) .. "_" .. (y + 2),
             position = {
                 x = mooring.position.x + x,
                 y = mooring.position.y + y
@@ -413,6 +474,10 @@ function mooring_helper.try_setup_mooring(mooring)
 	clean_settings(mooring)
 
     return true
+end
+
+function mooring_helper.on_rotate(mooring)
+    update_proxy_container_inventories(mooring)
 end
 
 function mooring_helper.clean_settings(mooring)
@@ -599,6 +664,15 @@ function mooring_helper.set_fuel_inventory_circuit_signal_id(mooring, signal_id)
     set_fuel_inventory_circuit_signal_id(mooring, signal_id)
 
     update_fuel_inventory_output(mooring)
+end
+
+function mooring_helper.get_inventory_target(mooring, x, y)
+    return get_inventory_target(mooring, x, y)
+end
+function mooring_helper.set_inventory_target(mooring, x, y, target)
+    set_inventory_target(mooring, x, y, target)
+
+    update_proxy_container_inventories(mooring)
 end
 
 return mooring_helper
