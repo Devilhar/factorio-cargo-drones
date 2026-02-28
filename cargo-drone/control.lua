@@ -9,27 +9,6 @@ local gm		= require("scripts.gui_mooring")
 local gcd		= require("scripts.gui_cargo_drone")
 local scheduler	= require("scripts.scheduler")
 
-local mooring_type = {
-	provider = 1,
-	requester = 2,
-	refueler = 3
-}
-
-local moorings_data = {
-	["cargo-drone-mooring-constant-combinator-provider"] = {
-		type = mooring_type.provider,
-		proxy_container_name = "cargo-drone-mooring-proxy-container-provider"
-	},
-	["cargo-drone-mooring-constant-combinator-requester"] = {
-		type = mooring_type.requester,
-		proxy_container_name = "cargo-drone-mooring-proxy-container-requester"
-	},
-	["cargo-drone-mooring-constant-combinator-refueler"] = {
-		type = mooring_type.refueler,
-		proxy_container_name = "cargo-drone-mooring-proxy-container-refueler"
-	},
-}
-
 local function safe_call(func)
 	local result, err = pcall(func)
 
@@ -72,46 +51,6 @@ local function resetup_object_events()
 	end
 end
 
-local function try_setup_mooring(mooring)
-	local mooring_data = moorings_data[mooring.name]
-
-	if mooring_data == nil then
-		return
-	end
-
-	local proxy_container = mooring.surface.create_entity({
-		name = mooring_data.proxy_container_name,
-		position = mooring.position,
-		force = mooring.force,
-		create_build_effect_smoke = false,
-		raise_built = true,
-	})
-
-	if not proxy_container then
-		mooring.destroy()
-
-		return
-	end
-
-	ep.entity_manage(mooring)
-
-	script.register_on_object_destroyed(mooring)
-
-	if mooring_data.type == mooring_type.provider then
-		ep.add_cargo_drone_provider_mooring(mooring)
-	elseif mooring_data.type == mooring_type.requester then
-		ep.add_cargo_drone_requester_mooring(mooring)
-
-		ep.set_entity_property(mooring, "next_free_gametick", 0)
-	else
-		ep.add_cargo_drone_refuel_mooring(mooring)
-	end
-
-	ep.set_entity_property(mooring, "proxy_container", proxy_container)
-
-	mh.clean_settings(mooring)
-end
-
 local function migrate_state()
 	local old_mod_state = storage.mod_state or 0
 
@@ -139,13 +78,19 @@ local function migrate_state()
 
 		for _, surface in pairs(game.surfaces) do
 			for _, entity in pairs(surface.find_entities_filtered{ name = "cargo-drone-mooring-constant-combinator-provider" }) do
-				try_setup_mooring(entity)
+				if not mh.try_setup_mooring(entity) then
+					entity.destroy()
+				end
 			end
 			for _, entity in pairs(surface.find_entities_filtered{ name = "cargo-drone-mooring-constant-combinator-requester" }) do
-				try_setup_mooring(entity)
+				if not mh.try_setup_mooring(entity) then
+					entity.destroy()
+				end
 			end
 			for _, entity in pairs(surface.find_entities_filtered{ name = "cargo-drone-mooring-constant-combinator-refueler" }) do
-				try_setup_mooring(entity)
+				if not mh.try_setup_mooring(entity) then
+					entity.destroy()
+				end
 			end
 		end
 
@@ -211,7 +156,9 @@ function on_built_entity(event)
 
 			dt.drone_created(entity)
 		else
-			try_setup_mooring(entity)
+			if not mh.try_setup_mooring(entity) then
+				entity.destroy()
+			end
 		end
 	end)
 end

@@ -51,6 +51,27 @@ local inventory_number = {
     [defines.inventory.burnt_result]    = 2,
 }
 
+local mooring_type = {
+	provider = 1,
+	requester = 2,
+	refueler = 3
+}
+
+local moorings_data = {
+	["cargo-drone-mooring-constant-combinator-provider"] = {
+		type = mooring_type.provider,
+		proxy_container_name = "cargo-drone-mooring-proxy-container-provider"
+	},
+	["cargo-drone-mooring-constant-combinator-requester"] = {
+		type = mooring_type.requester,
+		proxy_container_name = "cargo-drone-mooring-proxy-container-requester"
+	},
+	["cargo-drone-mooring-constant-combinator-refueler"] = {
+		type = mooring_type.refueler,
+		proxy_container_name = "cargo-drone-mooring-proxy-container-refueler"
+	},
+}
+
 local function get_settings_section(mooring)
     local cb = mooring.get_control_behavior()
 
@@ -307,9 +328,7 @@ local function update_fuel_inventory_output(mooring)
     })
 end
 
-local mooring_helper = {}
-
-function mooring_helper.clean_settings(mooring)
+local function clean_settings(mooring)
     local cb = mooring.get_control_behavior()
 
     while cb.sections_count < 6 do
@@ -330,6 +349,53 @@ function mooring_helper.clean_settings(mooring)
     update_fuel_inventory_output(mooring)
 
     cb.get_section(section_index.output).active = true
+end
+
+local mooring_helper = {}
+
+function mooring_helper.try_setup_mooring(mooring)
+	local mooring_data = moorings_data[mooring.name]
+
+	if mooring_data == nil then
+        -- Not a mooring, no need to react
+		return true
+	end
+
+	local proxy_container = mooring.surface.create_entity({
+		name = mooring_data.proxy_container_name,
+		position = mooring.position,
+		force = mooring.force,
+		create_build_effect_smoke = false,
+		raise_built = true,
+	})
+
+	if not proxy_container then
+		return false
+	end
+
+	ep.entity_manage(mooring)
+
+	script.register_on_object_destroyed(mooring)
+
+	if mooring_data.type == mooring_type.provider then
+		ep.add_cargo_drone_provider_mooring(mooring)
+	elseif mooring_data.type == mooring_type.requester then
+		ep.add_cargo_drone_requester_mooring(mooring)
+
+		ep.set_entity_property(mooring, "next_free_gametick", 0)
+	else
+		ep.add_cargo_drone_refuel_mooring(mooring)
+	end
+
+	ep.set_entity_property(mooring, "proxy_container", proxy_container)
+
+	clean_settings(mooring)
+
+    return true
+end
+
+function mooring_helper.clean_settings(mooring)
+    clean_settings(mooring)
 end
 
 function mooring_helper.is_drone_limit_enabled(mooring)
