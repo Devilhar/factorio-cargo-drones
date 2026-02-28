@@ -60,15 +60,15 @@ local mooring_type = {
 local moorings_data = {
 	["cargo-drone-mooring-constant-combinator-provider"] = {
 		type = mooring_type.provider,
-		proxy_container_name = "cargo-drone-mooring-proxy-container-provider"
+		proxy_container_name_prefix = "cargo-drone-mooring-proxy-container-provider-"
 	},
 	["cargo-drone-mooring-constant-combinator-requester"] = {
 		type = mooring_type.requester,
-		proxy_container_name = "cargo-drone-mooring-proxy-container-requester"
+		proxy_container_name_prefix = "cargo-drone-mooring-proxy-container-requester-"
 	},
 	["cargo-drone-mooring-constant-combinator-refueler"] = {
 		type = mooring_type.refueler,
-		proxy_container_name = "cargo-drone-mooring-proxy-container-refueler"
+		proxy_container_name_prefix = "cargo-drone-mooring-proxy-container-refueler-"
 	},
 }
 
@@ -268,9 +268,9 @@ local function update_drone_count_output(mooring)
 end
 
 local function get_fuel_inventory(mooring)
-    local proxy_container = ep.get_entity_property(mooring, "proxy_container")
+    local proxy_containers = ep.get_entity_property(mooring, "proxy_containers")
 
-    return inventory_number[proxy_container.proxy_target_inventory] or 0
+    return inventory_number[proxy_containers[1].proxy_target_inventory] or 0
 end
 
 local function get_fuel_inventory_output(mooring)
@@ -351,6 +351,13 @@ local function clean_settings(mooring)
     cb.get_section(section_index.output).active = true
 end
 
+local function get_pc_offset_x(index)
+    return ((index - 1) % 3) - 1
+end
+local function get_pc_offset_y(index)
+    return math.floor((index - 1) / 3) - 1
+end
+
 local mooring_helper = {}
 
 function mooring_helper.try_setup_mooring(mooring)
@@ -361,19 +368,35 @@ function mooring_helper.try_setup_mooring(mooring)
 		return true
 	end
 
-	local proxy_container = mooring.surface.create_entity({
-		name = mooring_data.proxy_container_name,
-		position = mooring.position,
-		force = mooring.force,
-		create_build_effect_smoke = false,
-		raise_built = true,
-	})
+    local proxy_containers = {}
 
-	if not proxy_container then
-		return false
-	end
+    for i = 1, 9 do
+        local x = get_pc_offset_x(i)
+        local y = get_pc_offset_y(i)
+
+        proxy_containers[i] = mooring.surface.create_entity({
+            name = mooring_data.proxy_container_name_prefix .. (x + 1) .. "_" .. (y + 1),
+            position = {
+                x = mooring.position.x + x,
+                y = mooring.position.y + y
+            },
+            force = mooring.force,
+            create_build_effect_smoke = false,
+            raise_built = true,
+        })
+
+        if not proxy_containers[i] then
+            for _, proxy_container in ipairs(proxy_containers) do
+                proxy_container.destroy()
+            end
+
+            return false
+        end
+    end
 
 	ep.entity_manage(mooring)
+
+	ep.set_entity_property(mooring, "proxy_containers", proxy_containers)
 
 	script.register_on_object_destroyed(mooring)
 
@@ -386,8 +409,6 @@ function mooring_helper.try_setup_mooring(mooring)
 	else
 		ep.add_cargo_drone_refuel_mooring(mooring)
 	end
-
-	ep.set_entity_property(mooring, "proxy_container", proxy_container)
 
 	clean_settings(mooring)
 

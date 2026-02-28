@@ -80,7 +80,7 @@ local mooring_entity_cc = merge_tables(table.deepcopy(data.raw["constant-combina
 })
 local mooring_entity_pc = {
 	type = "proxy-container",
-	name = "cargo-drone-mooring-proxy-container-{NAME}",
+	name = "cargo-drone-mooring-proxy-container-{NAME}-{OFFSET}",
 	icon = "__cargo-drone__/graphics/cargo-drone-mooring-{NAME}-icon.png",
 	flags = { "hide-alt-info", "not-upgradable", "not-deconstructable", "player-creation", "not-blueprintable", "not-repairable", "not-in-kill-statistics" },
 	hidden = true,
@@ -88,7 +88,7 @@ local mooring_entity_pc = {
 	minable = { mining_time = 0.1 },
 	max_health = 350,
 	collision_mask = { layers = {} },
-	collision_box = {{-1.35, -1.35}, {1.35, 1.35}},
+	collision_box = {{-0.35, -0.35}, {0.35, 0.35}},
 	selection_box = {{-1.5, -1.5}, {1.5, 1.5}},
 	selection_priority = selection_priorities.editor_only,
 	damaged_trigger_effect = hit_effects.entity(),
@@ -117,13 +117,22 @@ local mooring_recipe = {
 	results = {{type="item", name="cargo-drone-mooring-constant-combinator-{NAME}", amount=1}}
 }
 
-function make_mooring(placeholder, name)
+local function make_mooring(placeholder, name, selection_offset)
 	local scan = nil
+	local selection_name = ""
+
+	if selection_offset then
+		selection_name = (selection_offset[1] + 1) .. "_" .. (selection_offset[2] + 1)
+	end
 
 	scan = function(current_table)
 		for key, element in pairs(current_table) do
 			if type(element) == "string" then
 				current_table[key] = element:gsub("{NAME}", name)
+
+				if selection_offset then
+					current_table[key] = current_table[key]:gsub("{OFFSET}", selection_name)
+				end
 			elseif type(element) == "table" then
 				scan(element)
 			end
@@ -131,6 +140,13 @@ function make_mooring(placeholder, name)
 	end
 
 	local mooring = table.deepcopy(placeholder)
+
+	if selection_offset then
+		mooring.selection_box[1][1] = mooring.selection_box[1][1] - selection_offset[1]
+		mooring.selection_box[1][2] = mooring.selection_box[1][2] - selection_offset[2]
+		mooring.selection_box[2][1] = mooring.selection_box[2][1] - selection_offset[1]
+		mooring.selection_box[2][2] = mooring.selection_box[2][2] - selection_offset[2]
+	end
 
 	scan(mooring)
 
@@ -147,17 +163,24 @@ mooring_item_refuel.order		= mooring_item_refuel.order:gsub("{ORDER_CHAR}", "d")
 
 data:extend({
 	make_mooring(mooring_entity_cc,	"provider"),
-	make_mooring(mooring_entity_pc,	"provider"),
 	mooring_item_provider,
 	make_mooring(mooring_recipe,	"provider"),
 
 	make_mooring(mooring_entity_cc,	"requester"),
-	make_mooring(mooring_entity_pc,	"requester"),
 	mooring_item_requester,
 	make_mooring(mooring_recipe,	"requester"),
 
 	make_mooring(mooring_entity_cc,	"refueler"),
-	make_mooring(mooring_entity_pc,	"refueler"),
 	mooring_item_refuel,
 	make_mooring(mooring_recipe,	"refueler"),
 })
+
+for x = -1, 1 do
+	for y = -1, 1 do
+		data:extend({
+			make_mooring(mooring_entity_pc,	"provider",		{ x, y }),
+			make_mooring(mooring_entity_pc,	"requester",	{ x, y }),
+			make_mooring(mooring_entity_pc,	"refueler",		{ x, y }),
+		})
+	end
+end

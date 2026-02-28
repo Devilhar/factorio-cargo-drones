@@ -376,10 +376,12 @@ local function tick_drone(drone, game_tick)
 
     if old_docked_mooring and old_docked_mooring ~= state.docked_mooring.target_entity then
         if old_docked_mooring.valid then
-            local proxy_container = ep.get_entity_property(old_docked_mooring, "proxy_container")
+            local proxy_containers = ep.get_entity_property(old_docked_mooring, "proxy_containers")
 
-            if proxy_container.proxy_target_entity == drone then
-                proxy_container.proxy_target_entity = nil
+            for _, proxy_container in ipairs(proxy_containers) do
+                if proxy_container.proxy_target_entity == drone then
+                    proxy_container.proxy_target_entity = nil
+                end
             end
 
             mh.update_fuel_inventory(old_docked_mooring)
@@ -389,16 +391,20 @@ local function tick_drone(drone, game_tick)
     end
 
     if state.docked_mooring.target_entity then
-        local proxy_container = ep.get_entity_property(state.docked_mooring.target_entity, "proxy_container")
+        local proxy_containers = ep.get_entity_property(state.docked_mooring.target_entity, "proxy_containers")
 
         if state.docked_mooring.target_entity ~= old_docked_mooring then
             drone.surface.play_sound({ path = "cargo-drone-sound-docking", position = drone.position })
 
-            proxy_container.proxy_target_entity = drone
+            for _, proxy_container in ipairs(proxy_containers) do
+                proxy_container.proxy_target_entity = drone
+            end
             ep.set_entity_property(drone, "docked_mooring", state.docked_mooring.target_entity)
         end
 
-        proxy_container.proxy_target_inventory = state.docked_mooring.inventory
+        for _, proxy_container in ipairs(proxy_containers) do
+            proxy_container.proxy_target_inventory = state.docked_mooring.inventory
+        end
 
         mh.update_fuel_inventory(state.docked_mooring.target_entity)
     end
@@ -427,9 +433,11 @@ function drone_controller.drone_destroyed(unit_number)
     local old_docked_mooring = ep.get_entity_property_from_unit_number(unit_number, "docked_mooring")
 
     if old_docked_mooring and old_docked_mooring.valid then
-        local proxy_container = ep.get_entity_property(old_docked_mooring, "proxy_container")
+        local proxy_containers = ep.get_entity_property(old_docked_mooring, "proxy_containers")
 
-        proxy_container.proxy_target_entity = nil
+        for _, proxy_container in ipairs(proxy_containers) do
+            proxy_container.proxy_target_entity = nil
+        end
 
         mh.update_fuel_inventory(old_docked_mooring)
     end
