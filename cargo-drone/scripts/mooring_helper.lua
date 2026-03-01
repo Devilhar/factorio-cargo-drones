@@ -52,25 +52,16 @@ local inventory_number = {
     [defines.inventory.burnt_result]    = 2,
 }
 
-local mooring_type = {
+local mooring_types = {
 	provider = 1,
 	requester = 2,
 	refueler = 3
 }
 
-local moorings_data = {
-	["cargo-drone-mooring-constant-combinator-provider"] = {
-		type = mooring_type.provider,
-		proxy_container_name_prefix = "cargo-drone-mooring-proxy-container-provider-"
-	},
-	["cargo-drone-mooring-constant-combinator-requester"] = {
-		type = mooring_type.requester,
-		proxy_container_name_prefix = "cargo-drone-mooring-proxy-container-requester-"
-	},
-	["cargo-drone-mooring-constant-combinator-refueler"] = {
-		type = mooring_type.refueler,
-		proxy_container_name_prefix = "cargo-drone-mooring-proxy-container-refueler-"
-	},
+local mooring_type_lookup = {
+	["cargo-drone-mooring-constant-combinator-provider"]    = mooring_types.provider,
+	["cargo-drone-mooring-constant-combinator-requester"]   = mooring_types.requester,
+	["cargo-drone-mooring-constant-combinator-refueler"]    = mooring_types.refueler,
 }
 
 local function get_settings_section(mooring)
@@ -323,7 +314,7 @@ local function set_inventory_target(mooring, x, y, target)
         section.set_slot(index, {
             value = {
                 type = "virtual",
-                name = "signal_" .. index,
+                name = "signal-" .. index,
                 quality = "normal",
             },
             min = target
@@ -334,17 +325,28 @@ local function set_inventory_target(mooring, x, y, target)
 end
 
 local function get_rotated_offset(mooring, x, y)
-    local rot = math.floor(mooring.orientation * 4 + 0.05) % 4 + 1
+    local rot = math.floor(mooring.orientation * 4 + 0.05) % 4
+
+    x = x - 2
+    y = y - 2
+
+    local tmp = x
 
     if rot == 1 then
-        return x, y
+        x = y
+        y = -tmp
     elseif rot == 2 then
-        return y, -x
+        x = -x
+        y = -y
     elseif rot == 3 then
-        return -x, -y
+        x = -y
+        y = tmp
     end
 
-    return -y, x
+    x = x + 2
+    y = y + 2
+
+    return x, y
 end
 
 local function update_fuel_inventory_output(mooring)
@@ -373,24 +375,28 @@ local function update_fuel_inventory_output(mooring)
     })
 end
 
-local function get_pc_offset(index)
-    return ((index - 1) % 3) - 1, math.floor((index - 1) / 3) - 1
+local function get_proxy_container_offset(index)
+    return ((index - 1) % 3) + 1, math.floor((index - 1) / 3) + 1
+end
+
+local function get_default_inventory_target(mooring)
+    if ep.is_refueler_mooring(mooring.unit_number) then
+        return defines.inventory.fuel
+    end
+
+    return defines.inventory.car_trunk
 end
 
 local function update_proxy_container_inventories(mooring)
 	local proxy_containers = ep.get_entity_property(mooring, "proxy_containers")
-    local default_target_inventory = defines.inventory.car_trunk
-
-    if ep.is_refueler_mooring(mooring.unit_number) then
-        default_target_inventory = defines.inventory.fuel
-    end
+    local default_target_inventory = get_default_inventory_target(mooring)
 
     for i = 1, 9 do
-        local x, y = get_pc_offset(i)
+        local x, y = get_proxy_container_offset(i)
 
         x, y = get_rotated_offset(mooring, x, y)
 
-        local target_inventory = get_inventory_target(mooring, x + 2, y + 2) or default_target_inventory
+        local target_inventory = get_inventory_target(mooring, x, y) or default_target_inventory
 
         proxy_containers[i].proxy_target_inventory = target_inventory
     end
@@ -423,9 +429,9 @@ end
 local mooring_helper = {}
 
 function mooring_helper.try_setup_mooring(mooring)
-	local mooring_data = moorings_data[mooring.name]
+	local mooring_type = mooring_type_lookup[mooring.name]
 
-	if mooring_data == nil then
+	if mooring_type == nil then
         -- Not a mooring, no need to react
 		return true
 	end
@@ -433,13 +439,13 @@ function mooring_helper.try_setup_mooring(mooring)
     local proxy_containers = {}
 
     for i = 1, 9 do
-        local x, y = get_pc_offset(i)
+        local x, y = get_proxy_container_offset(i)
 
         proxy_containers[i] = mooring.surface.create_entity({
-            name = mooring_data.proxy_container_name_prefix .. (x + 2) .. "_" .. (y + 2),
+            name = "cargo-drone-mooring-proxy-container-" .. x .. "_" .. y,
             position = {
-                x = mooring.position.x + x,
-                y = mooring.position.y + y
+                x = mooring.position.x + x - 2,
+                y = mooring.position.y + y - 2
             },
             force = mooring.force,
             create_build_effect_smoke = false,
@@ -461,9 +467,9 @@ function mooring_helper.try_setup_mooring(mooring)
 
 	script.register_on_object_destroyed(mooring)
 
-	if mooring_data.type == mooring_type.provider then
+	if mooring_type == mooring_types.provider then
 		ep.add_cargo_drone_provider_mooring(mooring)
-	elseif mooring_data.type == mooring_type.requester then
+	elseif mooring_type == mooring_types.requester then
 		ep.add_cargo_drone_requester_mooring(mooring)
 
 		ep.set_entity_property(mooring, "next_free_gametick", 0)
@@ -667,9 +673,13 @@ function mooring_helper.set_fuel_inventory_circuit_signal_id(mooring, signal_id)
 end
 
 function mooring_helper.get_inventory_target(mooring, x, y)
-    return get_inventory_target(mooring, x, y)
+    x, y = get_rotated_offset(mooring, x, y)
+
+    return get_inventory_target(mooring, x, y) or get_default_inventory_target(mooring)
 end
 function mooring_helper.set_inventory_target(mooring, x, y, target)
+    x, y = get_rotated_offset(mooring, x, y)
+
     set_inventory_target(mooring, x, y, target)
 
     update_proxy_container_inventories(mooring)
