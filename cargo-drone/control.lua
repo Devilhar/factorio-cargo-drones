@@ -9,16 +9,6 @@ local gm		= require("scripts.gui_mooring")
 local gcd		= require("scripts.gui_cargo_drone")
 local scheduler	= require("scripts.scheduler")
 
-local function safe_call(func)
-	local result, err = pcall(func)
-
-	if result then
-		return
-	end
-
-	game.print(err)
-end
-
 local function unmanage_entity(unit_number)
 	if ep.is_cargo_drone(unit_number) then
 		dc.drone_destroyed(unit_number)
@@ -109,14 +99,12 @@ local function migrate_state()
 end
 
 function on_init()
-	safe_call(function()
-		ep.init()
+	ep.init()
 
-		gm.create_player_storage()
-		gcd.create_player_storage()
+	gm.create_player_storage()
+	gcd.create_player_storage()
 
-		scheduler.init()
-	end)
+	scheduler.init()
 end
 function on_configuration_changed(event)
 	if storage.mod_state == constants.current_mod_state then
@@ -126,16 +114,14 @@ function on_configuration_changed(event)
 	migrate_state()
 end
 function on_tick(event)
-	safe_call(function()
-		rc.tick()
+	rc.tick()
 
-		scheduler.tick(event.tick)
+	scheduler.tick(event.tick)
 
-		dc.tick(event.tick)
+	dc.tick(event.tick)
 
-		gm.tick()
-		gcd.tick()
-	end)
+	gm.tick()
+	gcd.tick()
 end
 
 function on_player_removed(event)
@@ -144,23 +130,21 @@ function on_player_removed(event)
 end
 
 function on_built_entity(event)
-	safe_call(function()
-		local entity = event.entity
+	local entity = event.entity
 
-		if entity.name == "cargo-drone" then
-			ep.entity_manage(entity)
+	if entity.name == "cargo-drone" then
+		ep.entity_manage(entity)
 
-			script.register_on_object_destroyed(entity)
+		script.register_on_object_destroyed(entity)
 
-			ep.add_cargo_drone(entity)
+		ep.add_cargo_drone(entity)
 
-			dt.drone_created(entity)
-		else
-			if not mh.try_setup_mooring(entity) then
-				entity.destroy()
-			end
+		dt.drone_created(entity)
+	else
+		if not mh.try_setup_mooring(entity) then
+			entity.destroy()
 		end
-	end)
+	end
 end
 function on_destroyed_entity(event)
 	gm.on_destroyed_entity(event)
