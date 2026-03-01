@@ -198,7 +198,7 @@ local function has_requested_items(inventory, requested_items)
     return true
 end
 
-local function drone_goto_and_dock_with_mooring(drone, state, mooring, inventory)
+local function drone_goto_and_dock_with_mooring(drone, state, mooring)
     local drone_position = drone.position
     local mooring_position = mooring.position
 
@@ -225,8 +225,7 @@ local function drone_goto_and_dock_with_mooring(drone, state, mooring, inventory
     end
 
     drone.speed = 0
-    state.docked_mooring.target_entity = mooring
-    state.docked_mooring.inventory = inventory
+    state.docked_mooring = mooring
 end
 
 local function perform_task_none(drone, state, game_tick)
@@ -291,7 +290,7 @@ local function perform_task_cargo(drone, state, task, game_tick)
         mooring_target = ep.get_managed_entity(task.requester_unit_number)
     end
 
-    drone_goto_and_dock_with_mooring(drone, state, mooring_target, defines.inventory.car_trunk)
+    drone_goto_and_dock_with_mooring(drone, state, mooring_target)
 
     return false
 end
@@ -305,22 +304,20 @@ local function perform_task_refuel(drone, state, task, game_tick)
     local fuel_inventory = drone.get_inventory(defines.inventory.fuel)
 
     if fuel_inventory.is_full() then
-        return true
-    end
-
-    local inventory = defines.inventory.fuel
-
-    if constants.drone_has_burnt_result then
+        if not constants.drone_has_burnt_result then
+            return true
+        end
+        
         local burnt_result_inventory = drone.get_inventory(defines.inventory.burnt_result)
 
-        if not burnt_result_inventory.is_empty() then
-            inventory = defines.inventory.burnt_result
+        if burnt_result_inventory.is_empty() then
+            return true
         end
     end
 
     local refueler = ep.get_managed_entity(task.refueler_unit_number)
 
-    drone_goto_and_dock_with_mooring(drone, state, refueler, inventory)
+    drone_goto_and_dock_with_mooring(drone, state, refueler)
 
     return false
 end
@@ -338,7 +335,7 @@ end
 local state = {
     tickrate = constants.drones_tickrates.every,
     riding_state = { acceleration = defines.riding.acceleration.braking, direction = defines.riding.direction.straight },
-    docked_mooring = { target_entity = nil, inventory = nil },
+    docked_mooring = nil,
     docking_mooring = nil,
     queuing_mooring = nil
 }
@@ -348,8 +345,7 @@ local function tick_drone(drone, game_tick)
     state.tickrate = constants.drones_tickrates.every
     state.riding_state.acceleration = defines.riding.acceleration.braking
     state.riding_state.direction = defines.riding.direction.straight
-    state.docked_mooring.target_entity = nil
-    state.docked_mooring.inventory = nil
+    state.docked_mooring = nil
     state.docking_mooring = nil
     state.queuing_mooring = nil
 
@@ -374,7 +370,7 @@ local function tick_drone(drone, game_tick)
     local old_docked_mooring = ep.get_entity_property(drone, "docked_mooring")
     local old_docking_mooring = ep.get_entity_property(drone, "docking_mooring")
 
-    if old_docked_mooring and old_docked_mooring ~= state.docked_mooring.target_entity then
+    if old_docked_mooring and old_docked_mooring ~= state.docked_mooring then
         if old_docked_mooring.valid then
             local proxy_containers = ep.get_entity_property(old_docked_mooring, "proxy_containers")
 
@@ -388,14 +384,14 @@ local function tick_drone(drone, game_tick)
         ep.set_entity_property(drone, "docked_mooring", nil)
     end
 
-    if state.docked_mooring.target_entity and state.docked_mooring.target_entity ~= old_docked_mooring then
-        local proxy_containers = ep.get_entity_property(state.docked_mooring.target_entity, "proxy_containers")
+    if state.docked_mooring and state.docked_mooring ~= old_docked_mooring then
+        local proxy_containers = ep.get_entity_property(state.docked_mooring, "proxy_containers")
         drone.surface.play_sound({ path = "cargo-drone-sound-docking", position = drone.position })
 
         for _, proxy_container in ipairs(proxy_containers) do
             proxy_container.proxy_target_entity = drone
         end
-        ep.set_entity_property(drone, "docked_mooring", state.docked_mooring.target_entity)
+        ep.set_entity_property(drone, "docked_mooring", state.docked_mooring)
     end
 
     if old_docking_mooring and old_docking_mooring ~= state.docking_mooring then
