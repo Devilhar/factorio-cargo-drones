@@ -80,8 +80,7 @@ local mooring_entity_cc = merge_tables(table.deepcopy(data.raw["constant-combina
 })
 local mooring_entity_pc = {
 	type = "proxy-container",
-	name = "cargo-drone-mooring-proxy-container-{NAME}-{OFFSET}",
-	icon = "__cargo-drone__/graphics/cargo-drone-mooring-{NAME}-icon.png",
+	icon = "__cargo-drone__/graphics/cargo-drone-mooring-provider-icon.png",
 	flags = { "hide-alt-info", "not-upgradable", "not-deconstructable", "player-creation", "not-blueprintable", "not-repairable", "not-in-kill-statistics" },
 	hidden = true,
 	selectable_in_game = false,
@@ -117,22 +116,13 @@ local mooring_recipe = {
 	results = {{type="item", name="cargo-drone-mooring-constant-combinator-{NAME}", amount=1}}
 }
 
-local function make_mooring(placeholder, name, selection_offset)
+local function make_mooring(placeholder, name)
 	local scan = nil
-	local selection_name = ""
-
-	if selection_offset then
-		selection_name = (selection_offset[1] + 2) .. "_" .. (selection_offset[2] + 2)
-	end
-
+	
 	scan = function(current_table)
 		for key, element in pairs(current_table) do
 			if type(element) == "string" then
 				current_table[key] = element:gsub("{NAME}", name)
-
-				if selection_offset then
-					current_table[key] = current_table[key]:gsub("{OFFSET}", selection_name)
-				end
 			elseif type(element) == "table" then
 				scan(element)
 			end
@@ -141,16 +131,20 @@ local function make_mooring(placeholder, name, selection_offset)
 
 	local mooring = table.deepcopy(placeholder)
 
-	if selection_offset then
-		mooring.selection_box[1][1] = mooring.selection_box[1][1] - selection_offset[1]
-		mooring.selection_box[1][2] = mooring.selection_box[1][2] - selection_offset[2]
-		mooring.selection_box[2][1] = mooring.selection_box[2][1] - selection_offset[1]
-		mooring.selection_box[2][2] = mooring.selection_box[2][2] - selection_offset[2]
-	end
-
 	scan(mooring)
 
 	return mooring
+end
+local function make_proxy_container(placeholder, selection_offset)
+	local pc = table.deepcopy(placeholder)
+
+	pc.name = "cargo-drone-mooring-proxy-container-" .. (selection_offset[1]) .. "_" .. (selection_offset[2])
+	pc.selection_box[1][1] = pc.selection_box[1][1] - selection_offset[1] + 2
+	pc.selection_box[1][2] = pc.selection_box[1][2] - selection_offset[2] + 2
+	pc.selection_box[2][1] = pc.selection_box[2][1] - selection_offset[1] + 2
+	pc.selection_box[2][2] = pc.selection_box[2][2] - selection_offset[2] + 2
+
+	return pc
 end
 
 local mooring_item_provider		= make_mooring(mooring_item, "provider")
@@ -175,12 +169,12 @@ data:extend({
 	make_mooring(mooring_recipe,	"refueler"),
 })
 
-for x = -1, 1 do
-	for y = -1, 1 do
-		data:extend({
-			make_mooring(mooring_entity_pc,	"provider",		{ x, y }),
-			make_mooring(mooring_entity_pc,	"requester",	{ x, y }),
-			make_mooring(mooring_entity_pc,	"refueler",		{ x, y }),
-		})
+local proxy_containers = {}
+
+for x = 1, 3 do
+	for y = 1, 3 do
+		table.insert(proxy_containers, make_proxy_container(mooring_entity_pc, { x, y }))
 	end
 end
+
+data:extend(proxy_containers)

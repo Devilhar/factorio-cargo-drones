@@ -278,6 +278,8 @@ script.on_event(defines.events.on_player_joined_game, on_player_removed)
 
 script.on_event(build_events, on_built_entity)
 script.on_event(destroy_events, on_destroyed_entity)
+script.on_event(defines.events.on_player_rotated_entity, on_player_rotated_entity)
+script.on_event(defines.events.on_player_flipped_entity, on_player_flipped_entity)
 script.on_event(defines.events.on_entity_settings_pasted, on_entity_settings_pasted)
 
 script.on_event(defines.events.on_gui_opened, on_gui_opened)
