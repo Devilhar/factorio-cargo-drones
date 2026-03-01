@@ -5,7 +5,6 @@ local ep        = require("scripts.entity_property")
 local signal_id_drone_limit     = { type = "virtual", name = "signal-L", quality = "normal" }
 local signal_id_priority        = { type = "virtual", name = "signal-P", quality = "normal" }
 local signal_id_drone_count     = { type = "virtual", name = "signal-C", quality = "normal" }
-local signal_id_fuel_inventory  = { type = "virtual", name = "signal-F", quality = "normal" }
 
 local settings_index = {
     drone_limit                     = 1,
@@ -16,9 +15,10 @@ local settings_index = {
     priority_circuit_signal_id      = 6,
     drone_count_circuit             = 7,
     drone_count_signal_id           = 8,
-    fuel_inventory                  = 9,
-    fuel_inventory_output           = 10,
-    fuel_inventory_signal_id        = 11,
+-- Deprecated
+--  fuel_inventory                  = 9,
+--  fuel_inventory_output           = 10,
+--  fuel_inventory_signal_id        = 11,
 }
 local settings_filter_name = {
     drone_limit                     = "signal-A",
@@ -29,27 +29,24 @@ local settings_filter_name = {
     priority_circuit_signal_id      = "signal-F",
     drone_count_circuit             = "signal-G",
     drone_count_signal_id           = "signal-H",
-    fuel_inventory                  = "signal-I",
-    fuel_inventory_output           = "signal-J",
-    fuel_inventory_signal_id        = "signal-K",
+-- Deprecated
+--  fuel_inventory                  = "signal-I",
+--  fuel_inventory_output           = "signal-J",
+--  fuel_inventory_signal_id        = "signal-K",
 }
 local section_index = {
     settings                        = 1,
     drone_limit                     = 2,
     priority_circuit                = 3,
     drone_count                     = 4,
-    fuel_inventory                  = 5,
+-- Deprecated
+--  fuel_inventory                  = 5,
     output                          = 6,
     inventory_targets               = 7,
 }
 local output_index = {
     drone_count                     = 1,
     fuel_inventory                  = 2,
-}
-
-local inventory_number = {
-    [defines.inventory.fuel]            = 1,
-    [defines.inventory.burnt_result]    = 2,
 }
 
 local mooring_types = {
@@ -259,41 +256,6 @@ local function update_drone_count_output(mooring)
     })
 end
 
-local function get_fuel_inventory(mooring)
-    local proxy_containers = ep.get_entity_property(mooring, "proxy_containers")
-
-    return inventory_number[proxy_containers[1].proxy_target_inventory] or 0
-end
-
-local function get_fuel_inventory_output(mooring)
-    if not constants.drone_has_burnt_result or mooring.name ~= "cargo-drone-mooring-constant-combinator-refueler" then
-        return false
-    end
-
-    return get_filter_value(settings_index.fuel_inventory_output, mooring) == nil
-end
-local function set_fuel_inventory_output(mooring, flag)
-    if flag then
-        set_filter_value(settings_index.fuel_inventory_output, settings_filter_name.fuel_inventory_output, mooring, nil)
-    else
-        set_filter_value(settings_index.fuel_inventory_output, settings_filter_name.fuel_inventory_output, mooring, 0)
-    end
-end
-
-local function get_fuel_inventory_circuit_signal_id(mooring)
-    if get_filter_value(settings_index.fuel_inventory_signal_id, mooring) == nil then
-        return signal_id_fuel_inventory
-    end
-
-    local section = mooring.get_control_behavior().get_section(section_index.fuel_inventory)
-
-    return section.get_slot(1).value
-end
-local function set_fuel_inventory_circuit_signal_id(mooring, signal_id)
-    set_filter_value(settings_index.fuel_inventory_signal_id, settings_filter_name.fuel_inventory_signal_id, mooring, 0)
-    set_signal_id(mooring, section_index.fuel_inventory, signal_id)
-end
-
 local function get_inventory_target(mooring, x, y)
     local index = x + (y - 1) * 3
     local section = mooring.get_control_behavior().get_section(section_index.inventory_targets)
@@ -349,30 +311,12 @@ local function get_rotated_offset(mooring, x, y)
     return x, y
 end
 
-local function update_fuel_inventory_output(mooring)
+local function clear_fuel_inventory_output(mooring)
     local cb = mooring.get_control_behavior()
 
     local section = cb.get_section(section_index.output)
 
-    if not get_fuel_inventory_output(mooring) then
-        section.clear_slot(output_index.fuel_inventory)
-
-        return
-    end
-
-    local signal_id = get_fuel_inventory_circuit_signal_id(mooring)
-    local inventory_number = get_fuel_inventory(mooring)
-
-    if signal_id == nil or inventory_number == 0 then
-        section.clear_slot(output_index.fuel_inventory)
-
-        return
-    end
-
-    section.set_slot(output_index.fuel_inventory, {
-        value = signal_id,
-        min = inventory_number
-    })
+    section.clear_slot(output_index.fuel_inventory)
 end
 
 local function get_proxy_container_offset(index)
@@ -420,7 +364,7 @@ local function clean_settings(mooring)
     end
 
     update_drone_count_output(mooring)
-    update_fuel_inventory_output(mooring)
+    clear_fuel_inventory_output(mooring)
     update_proxy_container_inventories(mooring)
 
     cb.get_section(section_index.output).active = true
@@ -442,16 +386,7 @@ local function flip_horizontal(mooring)
     set_inventory_target(mooring, 3, 3, c1)
 end
 
-local mooring_helper = {}
-
-function mooring_helper.try_setup_mooring(mooring)
-	local mooring_type = mooring_type_lookup[mooring.name]
-
-	if mooring_type == nil then
-        -- Not a mooring, no need to react
-		return true
-	end
-
+local function create_proxy_containers(mooring)
     local proxy_containers = {}
 
     for i = 1, 9 do
@@ -473,8 +408,31 @@ function mooring_helper.try_setup_mooring(mooring)
                 proxy_container.destroy()
             end
 
-            return false
+            return nil
         end
+    end
+
+    return proxy_containers
+end
+
+local mooring_helper = {}
+
+function mooring_helper.clear_deprecated_values(mooring)
+	clear_fuel_inventory_output(mooring)
+end
+
+function mooring_helper.try_setup_mooring(mooring)
+	local mooring_type = mooring_type_lookup[mooring.name]
+
+	if mooring_type == nil then
+        -- Not a mooring, no need to react
+		return true
+	end
+
+    local proxy_containers = create_proxy_containers(mooring)
+
+    if proxy_containers == nil then
+        return false
     end
 
 	ep.entity_manage(mooring)
@@ -496,6 +454,16 @@ function mooring_helper.try_setup_mooring(mooring)
 	clean_settings(mooring)
 
     return true
+end
+
+function mooring_helper.migration_create_proxy_containers(mooring)
+    local proxy_containers = create_proxy_containers(mooring)
+
+    if proxy_containers == nil then
+        error("Cargo drone mooring failed to create proxy containers")
+    end
+
+	ep.set_entity_property(mooring, "proxy_containers", proxy_containers)
 end
 
 function mooring_helper.on_rotate(mooring)
@@ -666,32 +634,6 @@ function mooring_helper.is_at_drone_limit(mooring)
     local target_count = get_drone_count(mooring.unit_number)
 
     return target_count >= drone_limit
-end
-
-function mooring_helper.update_fuel_inventory(mooring)
-    update_fuel_inventory_output(mooring)
-end
-
-function mooring_helper.get_fuel_inventory_value(mooring)
-    return get_fuel_inventory(mooring)
-end
-
-function mooring_helper.get_fuel_inventory_output(mooring)
-    return get_fuel_inventory_output(mooring)
-end
-function mooring_helper.set_fuel_inventory_output(mooring, flag)
-    set_fuel_inventory_output(mooring, flag)
-
-    update_fuel_inventory_output(mooring)
-end
-
-function mooring_helper.get_fuel_inventory_circuit_signal_id(mooring)
-    return get_fuel_inventory_circuit_signal_id(mooring)
-end
-function mooring_helper.set_fuel_inventory_circuit_signal_id(mooring, signal_id)
-    set_fuel_inventory_circuit_signal_id(mooring, signal_id)
-
-    update_fuel_inventory_output(mooring)
 end
 
 function mooring_helper.get_inventory_target(mooring, x, y)

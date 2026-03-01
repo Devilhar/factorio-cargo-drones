@@ -95,6 +95,30 @@ local function migrate_state()
 		scheduler.init()
 	end
 
+	if old_mod_state < 9 then
+		local function migrate_proxy_containers(mooring)
+			ep.set_entity_property(mooring, "proxy_container", nil)
+			if ep.get_entity_property(mooring, "proxy_containers") == nil then
+				mh.migration_create_proxy_containers(mooring)
+			end
+			mh.clean_settings(mooring)
+		end
+
+		for _, entity_data in pairs(ep.get_cargo_drones()) do
+			ep.set_entity_property(entity_data.entity, "docked_mooring", nil)
+		end
+		for _, entity_data in pairs(ep.get_cargo_drone_provider_moorings()) do
+			migrate_proxy_containers(entity_data.entity)
+		end
+		for _, entity_data in pairs(ep.get_cargo_drone_requester_moorings()) do
+			migrate_proxy_containers(entity_data.entity)
+		end
+		for _, entity_data in pairs(ep.get_cargo_drone_refuel_moorings()) do
+			migrate_proxy_containers(entity_data.entity)
+			mh.clear_deprecated_values(entity_data.entity)
+		end
+	end
+
 	log("cargo-drone state migration complete")
 end
 
