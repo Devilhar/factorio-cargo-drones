@@ -192,7 +192,7 @@ function on_player_flipped_entity(event)
 	if ep.is_provider_mooring(unit_number)
 		or ep.is_requester_mooring(unit_number)
 		or ep.is_refueler_mooring(unit_number) then
-		mh.on_rotate(event.entity)
+		mh.on_flip(event.entity)
 	end
 end
 function on_entity_settings_pasted(event)

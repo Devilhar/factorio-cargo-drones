@@ -426,6 +426,22 @@ local function clean_settings(mooring)
     cb.get_section(section_index.output).active = true
 end
 
+local function flip_horizontal(mooring)
+    local a1 = get_inventory_target(mooring, 1, 1)
+    local b1 = get_inventory_target(mooring, 1, 2)
+    local c1 = get_inventory_target(mooring, 1, 3)
+    local a3 = get_inventory_target(mooring, 3, 1)
+    local b3 = get_inventory_target(mooring, 3, 2)
+    local c3 = get_inventory_target(mooring, 3, 3)
+
+    set_inventory_target(mooring, 1, 1, a3)
+    set_inventory_target(mooring, 1, 2, b3)
+    set_inventory_target(mooring, 1, 3, c3)
+    set_inventory_target(mooring, 3, 1, a1)
+    set_inventory_target(mooring, 3, 2, b1)
+    set_inventory_target(mooring, 3, 3, c1)
+end
+
 local mooring_helper = {}
 
 function mooring_helper.try_setup_mooring(mooring)
@@ -483,6 +499,12 @@ function mooring_helper.try_setup_mooring(mooring)
 end
 
 function mooring_helper.on_rotate(mooring)
+    update_proxy_container_inventories(mooring)
+end
+
+function mooring_helper.on_flip(mooring)
+    flip_horizontal(mooring)
+
     update_proxy_container_inventories(mooring)
 end
 
