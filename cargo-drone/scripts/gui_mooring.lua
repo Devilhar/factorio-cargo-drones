@@ -53,6 +53,18 @@ local function get_fuel_inventory_signal_element(player_data, element)
     return signal_id[element]
 end
 
+local function get_inventory_target_icon(inventory_target)
+    if inventory_target == defines.inventory.fuel then
+        return "item/rocket-fuel"
+    elseif inventory_target == defines.inventory.car_trunk then
+        return "item/steel-chest"
+    elseif inventory_target == defines.inventory.burnt_result then
+        return "item/heat-exchanger"
+    end
+
+    return "utility/questionmark"
+end
+
 local observers = {
     is_drone_limit_enabled = {
         get = function(player_data) return mh.is_drone_limit_enabled(player_data.entity) end,
@@ -268,6 +280,17 @@ local observers = {
         end
     },
 }
+
+for x = 1, 3 do
+    for y = 1, 3 do
+        observers["get_inventory_target_button_" .. x .. "_" .. y] = {
+            get = function(player_data) return mh.get_inventory_target(player_data.entity, x, y) end,
+            updated = function(player_data, data)
+                player_data.elements["inventory_target_button_" .. x .. "_" .. y].sprite = get_inventory_target_icon(mh.get_inventory_target(player_data.entity, x, y))
+            end
+        }
+    end
+end
 
 local function update_item_signals(player_data)
     local mooring_signals = player_data.entity.get_signals(defines.wire_connector_id.circuit_red, defines.wire_connector_id.circuit_green)
@@ -506,7 +529,7 @@ end
 
 local callbacks = {
     ---------- Mooring ----------
-    [gui_prefix .. "mooring-close-button"] = function(player_data)
+    [gui_prefix .. "mooring-close-button"] = function(player_data, event)
         if not player_data.player.gui.screen[window_gui_name] then
             return
         end
@@ -514,17 +537,17 @@ local callbacks = {
         player_data.player.opened = nil
     end,
 
-    [gui_prefix .. "drone-limit-checkbox"] = function(player_data)
+    [gui_prefix .. "drone-limit-checkbox"] = function(player_data, event)
         mh.set_drone_limit_enabled(player_data.entity, player_data.elements.drone_limit_checkbox.state)
 
         update_gui(player_data)
     end,
-    [gui_prefix .. "drone-limit-slider"] = function(player_data)
+    [gui_prefix .. "drone-limit-slider"] = function(player_data, event)
         mh.set_drone_limit_value(player_data.entity, player_data.elements.drone_limit_slider.slider_value)
 
         update_gui(player_data)
     end,
-    [gui_prefix .. "drone-limit-textfield"] = function(player_data)
+    [gui_prefix .. "drone-limit-textfield"] = function(player_data, event)
         local limit = tonumber(player_data.elements.drone_limit_field.text)
 
         if limit == nil then
@@ -536,12 +559,12 @@ local callbacks = {
         update_gui(player_data)
     end,
 
-    [gui_prefix .. "priority-slider"] = function(player_data)
+    [gui_prefix .. "priority-slider"] = function(player_data, event)
         mh.set_priority_value(player_data.entity, player_data.elements.priority_slider.slider_value)
 
         update_gui(player_data)
     end,
-    [gui_prefix .. "priority-textfield"] = function(player_data)
+    [gui_prefix .. "priority-textfield"] = function(player_data, event)
         local priority = tonumber(player_data.elements.priority_field.text)
 
         if priority == nil then
@@ -554,7 +577,7 @@ local callbacks = {
     end,
 
     ---------- Circuit ----------
-    [gui_prefix .. "set-drone-limit-checkbox"] = function(player_data)
+    [gui_prefix .. "set-drone-limit-checkbox"] = function(player_data, event)
         mh.set_drone_limit_circuit(player_data.entity, player_data.elements.drone_limit_circuit_checkbox.state)
 
         if not mh.is_drone_limit_circuit(player_data.entity) then
@@ -565,37 +588,69 @@ local callbacks = {
 
         update_gui(player_data)
     end,
-    [gui_prefix .. "drone-limit-signal-choose-elem-button"] = function(player_data)
+    [gui_prefix .. "drone-limit-signal-choose-elem-button"] = function(player_data, event)
         mh.set_drone_limit_circuit_signal_id(player_data.entity, player_data.elements.drone_limit_signal_choose_elem_button.elem_value)
     end,
 
-    [gui_prefix .. "read-drone-count-checkbox"] = function(player_data)
+    [gui_prefix .. "read-drone-count-checkbox"] = function(player_data, event)
         mh.set_drone_count_circuit(player_data.entity, player_data.elements.drone_count_circuit_checkbox.state)
 
         update_gui(player_data)
     end,
-    [gui_prefix .. "drone-count-signal-choose-elem-button"] = function(player_data)
+    [gui_prefix .. "drone-count-signal-choose-elem-button"] = function(player_data, event)
         mh.set_drone_count_circuit_signal_id(player_data.entity, player_data.elements.drone_count_signal_choose_elem_button.elem_value)
     end,
 
-    [gui_prefix .. "set-priority-checkbox"] = function(player_data)
+    [gui_prefix .. "set-priority-checkbox"] = function(player_data, event)
         mh.set_priority_circuit(player_data.entity, player_data.elements.priority_circuit_checkbox.state)
 
         update_gui(player_data)
     end,
-    [gui_prefix .. "priority-signal-choose-elem-button"] = function(player_data)
+    [gui_prefix .. "priority-signal-choose-elem-button"] = function(player_data, event)
         mh.set_priority_circuit_signal_id(player_data.entity, player_data.elements.priority_signal_choose_elem_button.elem_value)
     end,
 
-    [gui_prefix .. "read-inventory-checkbox"] = function(player_data)
+    [gui_prefix .. "read-inventory-checkbox"] = function(player_data, event)
         mh.set_fuel_inventory_output(player_data.entity, player_data.elements.read_inventory_checkbox.state)
 
         update_gui(player_data)
     end,
-    [gui_prefix .. "read-inventory-signal-choose-elem-button"] = function(player_data)
+    [gui_prefix .. "read-inventory-signal-choose-elem-button"] = function(player_data, event)
         mh.set_fuel_inventory_circuit_signal_id(player_data.entity, player_data.elements.read_inventory_signal_choose_elem_button.elem_value)
     end,
 }
+
+for x = 1, 3 do
+    for y = 1, 3 do
+        callbacks[gui_prefix .. "inventory-target-button-" .. x .. "_" .. y] = function(player_data, event)
+            local target = mh.get_inventory_target(player_data.entity, x, y)
+
+            if event.button == defines.mouse_button_type.left then
+                if target == defines.inventory.car_trunk then
+                    target = defines.inventory.fuel
+                elseif constants.drone_has_burnt_result and target == defines.inventory.fuel then
+                    target = defines.inventory.burnt_result
+                else
+                    target = defines.inventory.car_trunk
+                end
+            elseif event.button == defines.mouse_button_type.right then
+                if target == defines.inventory.fuel then
+                    target = defines.inventory.car_trunk
+                elseif constants.drone_has_burnt_result and target == defines.inventory.car_trunk then
+                    target = defines.inventory.burnt_result
+                else
+                    target = defines.inventory.fuel
+                end
+            else
+                return
+            end
+
+            mh.set_inventory_target(player_data.entity, x, y, target)
+
+            update_gui(player_data)
+        end
+    end
+end
 
 local function handle_event(event)
     local element = event.element
@@ -616,7 +671,7 @@ local function handle_event(event)
         return
     end
 
-    callable(storage.gui_mooring_player[player.index])
+    callable(storage.gui_mooring_player[player.index], event)
 end
 
 local function build_gui_mooring(player_data, mooring, parent)
@@ -778,6 +833,52 @@ local function build_gui_mooring(player_data, mooring, parent)
         items_table.style.minimal_height = 40
         items_table.style.padding = 4
     end
+
+    ---------- Item Signals ----------
+
+    local inventory_target_flow = mooring_frame.add{
+        type = "flow",
+        direction = "vertical",
+    }
+
+    inventory_target_flow.style.horizontal_align = "center"
+
+    local inventory_target_row_flow = mooring_frame.add{
+        type = "flow",
+        direction = "horizontal",
+    }
+
+    local function create_inventory_target_button(x, y)
+        local inventory_target_button = inventory_target_row_flow.add{
+            type = "sprite-button",
+            name = gui_prefix .. "inventory-target-button-" .. x .. "_" .. y,
+            sprite = get_inventory_target_icon(mh.get_inventory_target(mooring, x, y)),
+        }
+
+        player_data.elements["inventory_target_button_" .. x .. "_" .. y] = inventory_target_button
+    end
+
+    create_inventory_target_button(1, 1)
+    create_inventory_target_button(2, 1)
+    create_inventory_target_button(3, 1)
+
+    inventory_target_row_flow = mooring_frame.add{
+        type = "flow",
+        direction = "horizontal",
+    }
+
+    create_inventory_target_button(1, 2)
+    create_inventory_target_button(2, 2)
+    create_inventory_target_button(3, 2)
+
+    inventory_target_row_flow = mooring_frame.add{
+        type = "flow",
+        direction = "horizontal",
+    }
+
+    create_inventory_target_button(1, 3)
+    create_inventory_target_button(2, 3)
+    create_inventory_target_button(3, 3)
 
     ---------- Filler ----------
     local mooring_filler = mooring_frame.add{
