@@ -1,5 +1,4 @@
 
-local constants = require("scripts.constants")
 local ep        = require("scripts.entity_property")
 
 local signal_id_drone_limit     = { type = "virtual", name = "signal-L", quality = "normal" }
@@ -287,20 +286,19 @@ local function set_inventory_target(mooring, x, y, target)
 end
 
 local function get_rotated_offset(mooring, x, y)
-    local rot = math.floor(mooring.orientation * 4 + 0.05) % 4
-
     x = x - 2
     y = y - 2
 
     local tmp = x
+    local direction = mooring.direction
 
-    if rot == 1 then
+    if direction == defines.direction.east then
         x = y
         y = -tmp
-    elseif rot == 2 then
+    elseif direction == defines.direction.south then
         x = -x
         y = -y
-    elseif rot == 3 then
+    elseif direction == defines.direction.west then
         x = -y
         y = tmp
     end
