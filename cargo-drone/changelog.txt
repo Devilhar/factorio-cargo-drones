@@ -1,3 +1,5 @@
+  Minor Features:
+    - Added inventory target selection to moorings, allowing different tiles of moorings to target different inventories inside Cargo drones.
 ---------------------------------------------------------------------------------------------------
 Version: 1.4.6
 Date: 25. 02. 2026
