@@ -646,5 +646,13 @@ function mooring_helper.set_inventory_target(mooring, x, y, target)
 
     update_proxy_container_inventories(mooring)
 end
+function mooring_helper.get_inventory_target_absolute(mooring, x, y)
+    return get_inventory_target(mooring, x, y) or get_default_inventory_target(mooring)
+end
+function mooring_helper.set_inventory_target_absolute(mooring, x, y, target)
+    set_inventory_target(mooring, x, y, target)
+
+    update_proxy_container_inventories(mooring)
+end
 
 return mooring_helper
