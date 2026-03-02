@@ -1,3 +1,6 @@
+---------------------------------------------------------------------------------------------------
+Version: 1.5.0
+Date: 02. 03. 2026
   Minor Features:
     - Added alert for Cargo drones that has spent too long docked to a Refueler mooring. Defaults to 120 seconds.
     - Added inventory target selection to moorings, allowing different tiles of moorings to target different inventories inside Cargo drones.
