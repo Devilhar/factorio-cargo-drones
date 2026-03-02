@@ -307,7 +307,7 @@ local function perform_task_refuel(drone, state, task, game_tick)
         if not constants.drone_has_burnt_result then
             return true
         end
-        
+
         local burnt_result_inventory = drone.get_inventory(defines.inventory.burnt_result)
 
         if burnt_result_inventory.is_empty() then
@@ -318,6 +318,18 @@ local function perform_task_refuel(drone, state, task, game_tick)
     local refueler = ep.get_managed_entity(task.refueler_unit_number)
 
     drone_goto_and_dock_with_mooring(drone, state, refueler)
+
+    if game_tick % constants.random_tick_interval == drone.unit_number % constants.random_tick_interval then
+        local docked_game_tick = ep.get_entity_property(drone, "docked_game_tick")
+
+        if docked_game_tick ~= nil then
+            local timeout = settings.global["cargo-drone-stuck-at-refueler-seconds-alert"].value * 60
+
+            if timeout ~= 0 and docked_game_tick + timeout < game_tick then
+                send_alert(drone, "signal-alert", "cargo-drone-alerts.stuck-at-refueler")
+            end
+        end
+    end
 
     return false
 end
@@ -382,6 +394,7 @@ local function tick_drone(drone, game_tick)
         end
 
         ep.set_entity_property(drone, "docked_mooring", nil)
+        ep.set_entity_property(drone, "docked_game_tick", nil)
     end
 
     if state.docked_mooring and state.docked_mooring ~= old_docked_mooring then
@@ -392,6 +405,7 @@ local function tick_drone(drone, game_tick)
             proxy_container.proxy_target_entity = drone
         end
         ep.set_entity_property(drone, "docked_mooring", state.docked_mooring)
+        ep.set_entity_property(drone, "docked_game_tick", game_tick)
     end
 
     if old_docking_mooring and old_docking_mooring ~= state.docking_mooring then
