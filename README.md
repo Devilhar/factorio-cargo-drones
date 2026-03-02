@@ -35,5 +35,11 @@ For Signals:
 
 Note that Cargo drones already tasked with going to a mooring will not change target if there's a new mooring with higher priority.
 
+### Mooring inventory targeting
+You can set which inventory each tile of the mooring should target. This is primarily intended for removing burnt results, but can be used to refuel Cargo drones at any mooring.
+
+Limitation:
+- Mirroring moorings when pasting them will not mirror the inventory targets inside the mooring. But it is possible to mirror them once they have been placed.
+
 ### Special thanks
 Thank you to KeithFromCanada for feedback and help
