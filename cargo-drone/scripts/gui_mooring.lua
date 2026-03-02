@@ -55,6 +55,17 @@ local function get_inventory_target_icon(inventory_target)
 
     return "utility/questionmark"
 end
+local function get_inventory_target_tooltip(inventory_target)
+    if inventory_target == defines.inventory.fuel then
+        return { "cargo-drone-gui-mooring.inventory-target-tooltip-fuel" }
+    elseif inventory_target == defines.inventory.car_trunk then
+        return { "cargo-drone-gui-mooring.inventory-target-tooltip-trunk" }
+    elseif inventory_target == defines.inventory.burnt_result then
+        return { "cargo-drone-gui-mooring.inventory-target-tooltip-burnt-results" }
+    end
+
+    return { "cargo-drone-gui-mooring.inventory-target-tooltip-unknown" }
+end
 
 local observers = {
     is_drone_limit_enabled = {
@@ -250,7 +261,11 @@ for x = 1, 3 do
         observers["get_inventory_target_button_" .. x .. "_" .. y] = {
             get = function(player_data) return mh.get_inventory_target(player_data.entity, x, y) end,
             updated = function(player_data, data)
-                player_data.elements["inventory_target_button_" .. x .. "_" .. y].sprite = get_inventory_target_icon(mh.get_inventory_target(player_data.entity, x, y))
+                local element = player_data.elements["inventory_target_button_" .. x .. "_" .. y]
+                local inventory_target = mh.get_inventory_target(player_data.entity, x, y)
+
+                element.sprite = get_inventory_target_icon(inventory_target)
+                element.tooltip = get_inventory_target_tooltip(inventory_target)
             end
         }
     end
@@ -820,10 +835,13 @@ local function build_gui_mooring(player_data, mooring, parent)
     local inventory_targets_row_flow = nil
 
     local function create_inventory_target_button(x, y)
+        local inventory_target = mh.get_inventory_target(mooring, x, y)
+
         local inventory_target_button = inventory_targets_row_flow.add{
             type = "sprite-button",
             name = gui_prefix .. "inventory-target-button-" .. x .. "_" .. y,
-            sprite = get_inventory_target_icon(mh.get_inventory_target(mooring, x, y)),
+            sprite = get_inventory_target_icon(inventory_target),
+            tooltip = get_inventory_target_tooltip(inventory_target)
         }
 
         player_data.elements["inventory_target_button_" .. x .. "_" .. y] = inventory_target_button
