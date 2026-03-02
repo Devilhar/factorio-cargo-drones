@@ -230,6 +230,14 @@ function on_entity_settings_pasted(event)
 		or ep.is_requester_mooring(unit_number)
 		or ep.is_refueler_mooring(unit_number) then
 		mh.clean_settings(event.destination)
+
+		if ep.is_refueler_mooring(unit_number) ~= ep.is_refueler_mooring(event.source.unit_number) then
+			for x = 1, 3 do
+				for y = 1, 3 do
+					mh.set_inventory_target_absolute(event.destination, x, y, mh.get_inventory_target_absolute(event.source, x, y))
+				end
+			end
+		end
 	end
 end
 
