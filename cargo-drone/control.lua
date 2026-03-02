@@ -84,7 +84,7 @@ local function migrate_state()
 			end
 		end
 
-		game.print("Warning. Due to a migration issue when updating cargo-drone from a version prior to 1.4.0, all circuit wires connected to moorings have been removed and will need to be replaced. Note that drone limit and priority must now be configured in the moorings. Sorry for the inconvenience.")
+		game.print({ "cargo-drone-migration.warning-wires-removed" })
 	end
 
 	if old_mod_state < 7 then
@@ -116,6 +116,10 @@ local function migrate_state()
 		for _, entity_data in pairs(ep.get_cargo_drone_refuel_moorings()) do
 			migrate_proxy_containers(entity_data.entity)
 			mh.clear_deprecated_values(entity_data.entity)
+		end
+
+		if constants.drone_has_burnt_result then
+			game.print({ "cargo-drone-migration.warning-read-inventory-output-removed" })
 		end
 	end
 
