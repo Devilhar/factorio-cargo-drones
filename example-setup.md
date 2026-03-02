@@ -69,18 +69,6 @@ Refuelers require no signals, so the easiest setup is to simply insert fuel into
 
 <img src="https://raw.githubusercontent.com/devilhar/factorio-cargo-drones/main/images/refueler-setup.png">
 
-Note that this setup does not work if the Cargo drones have a burnt results inventory size greater than 0 and are carrying burnt results. This is because the Refueler mooring will target the burnt results slots until they are empty. Once empty, the Refueler mooring will now target the fuel slots instead.
-
-However, it's not enough to simply have an inserter insert fuel, and one taking burnt results out. This is due to burnt result slots accepting all items. To fix this, Refueler moorings now output a signal that can be used to enable or disable inserters as needed. This signal can be configured in the mooring GUI.
-
-The value of the signal is based on what inventory is targeted.
-- 1 = Fuel inventory
-- 2 = Burnt result inventory
-
-The simplest setup is to have a fuel inserter that is enabled when the signal is equal to 1, and an inserter that takes out burnt results when the signal is equal to 2.
-
-<img src="https://raw.githubusercontent.com/devilhar/factorio-cargo-drones/main/images/refueler-setup-burnt-result.png">
-
 ### Drones
 
 Once the moorings are setup, simply place a Cargo drone, give it a bit of starting fuel, and watch it automatically start ferrying cargo.
