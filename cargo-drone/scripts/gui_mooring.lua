@@ -791,20 +791,36 @@ local function build_gui_mooring(player_data, mooring, parent)
 
     ---------- Item Signals ----------
 
-    local inventory_target_flow = mooring_frame.add{
-        type = "flow",
-        direction = "vertical",
-    }
-
-    inventory_target_flow.style.horizontal_align = "center"
-
-    local inventory_target_row_flow = mooring_frame.add{
+    local footer_flow = mooring_frame.add{
         type = "flow",
         direction = "horizontal",
     }
 
+    local inventory_targets_flow = footer_flow.add{
+        type = "flow",
+        direction = "vertical",
+    }
+
+    inventory_targets_flow.style.margin = 4
+
+    local inventory_targets_header = inventory_targets_flow.add{
+        type = "label",
+        style = "subheader_label",
+        caption = { "cargo-drone-gui-mooring.inventory-targets" }
+    }
+
+    inventory_targets_header.style.margin = 4
+
+    local inventory_targets_rows_flow = inventory_targets_flow.add{
+        type = "frame",
+        style = "inside_deep_frame",
+        direction = "vertical",
+    }
+
+    local inventory_targets_row_flow = nil
+
     local function create_inventory_target_button(x, y)
-        local inventory_target_button = inventory_target_row_flow.add{
+        local inventory_target_button = inventory_targets_row_flow.add{
             type = "sprite-button",
             name = gui_prefix .. "inventory-target-button-" .. x .. "_" .. y,
             sprite = get_inventory_target_icon(mh.get_inventory_target(mooring, x, y)),
@@ -813,11 +829,16 @@ local function build_gui_mooring(player_data, mooring, parent)
         player_data.elements["inventory_target_button_" .. x .. "_" .. y] = inventory_target_button
     end
 
+    inventory_targets_row_flow = inventory_targets_rows_flow.add{
+        type = "flow",
+        direction = "horizontal",
+    }
+
     create_inventory_target_button(1, 1)
     create_inventory_target_button(2, 1)
     create_inventory_target_button(3, 1)
 
-    inventory_target_row_flow = mooring_frame.add{
+    inventory_targets_row_flow = inventory_targets_rows_flow.add{
         type = "flow",
         direction = "horizontal",
     }
@@ -826,7 +847,7 @@ local function build_gui_mooring(player_data, mooring, parent)
     create_inventory_target_button(2, 2)
     create_inventory_target_button(3, 2)
 
-    inventory_target_row_flow = mooring_frame.add{
+    inventory_targets_row_flow = inventory_targets_rows_flow.add{
         type = "flow",
         direction = "horizontal",
     }
@@ -836,11 +857,14 @@ local function build_gui_mooring(player_data, mooring, parent)
     create_inventory_target_button(3, 3)
 
     ---------- Filler ----------
-    local mooring_filler = mooring_frame.add{
+    local mooring_filler = footer_flow.add{
         type = "empty-widget",
         style = "entity_frame_filler"
     }
 
+    mooring_filler.style.top_margin = 8
+    mooring_filler.style.bottom_margin = 8
+    mooring_filler.style.left_margin = 8
     mooring_filler.style.vertically_stretchable = true
 end
 
@@ -852,6 +876,7 @@ local function build_gui_drones(player_data, parent)
     }
 
     drones_frame.style.width = 310
+    drones_frame.style.vertically_stretchable = true
 
     local subheader_frame = drones_frame.add{
         type = "frame",
@@ -875,7 +900,8 @@ local function build_gui_drones(player_data, parent)
     }
 
     drones_scroll.style.margin = 4
-    drones_scroll.style.height = 416
+    drones_scroll.style.minimal_height = 416
+    drones_scroll.style.vertically_stretchable = true
 
     local drone_table = drones_scroll.add{
         type = "table",
