@@ -1,3 +1,6 @@
+---------------------------------------------------------------------------------------------------
+Version: 1.5.1
+Date: 03. 03. 2026
   Minor Features:
     - Changed the Cargo drone refuel interrupt behavior to be based on percentage fuel items left.
     - Added a setting for the percentage fuel required to trigger a refuel interrupt. Defaults to 20%.
