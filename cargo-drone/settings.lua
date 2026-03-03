@@ -29,12 +29,22 @@ data:extend{
 
     {
         type = "int-setting",
+        name = "cargo-drone-fuel-interrupt-percentage",
+        setting_type = "runtime-global",
+        default_value = 20,
+        minimum_value = 0,
+        maximum_value = 100,
+        order = "b-cargo-drone-a",
+    },
+
+    {
+        type = "int-setting",
         name = "cargo-drone-stuck-at-refueler-seconds-alert",
         setting_type = "runtime-global",
         default_value = 120,
         minimum_value = 0,
         maximum_value = 3600,
-        order = "b-mooring-a",
+        order = "c-mooring-a",
     },
     {
         type = "int-setting",
@@ -43,7 +53,7 @@ data:extend{
         default_value = 50,
         minimum_value = 0,
         maximum_value = 10000,
-        order = "b-mooring-b",
+        order = "c-mooring-b",
     },
 
     {
@@ -53,7 +63,7 @@ data:extend{
         default_value = 60,
         minimum_value = 1,
         maximum_value = 3600,
-        order = "c-scheduler-a",
+        order = "d-scheduler-a",
     },
     {
         type = "int-setting",
@@ -62,7 +72,7 @@ data:extend{
         default_value = 1,
         minimum_value = 1,
         maximum_value = 100,
-        order = "c-scheduler-b",
+        order = "d-scheduler-b",
     },
     {
         type = "int-setting",
@@ -71,7 +81,7 @@ data:extend{
         default_value = 1,
         minimum_value = 1,
         maximum_value = 100,
-        order = "c-scheduler-c",
+        order = "d-scheduler-c",
     },
     {
         type = "int-setting",
@@ -80,7 +90,7 @@ data:extend{
         default_value = 1,
         minimum_value = 1,
         maximum_value = 100,
-        order = "c-scheduler-d",
+        order = "d-scheduler-d",
     },
     {
         type = "int-setting",
@@ -89,7 +99,7 @@ data:extend{
         default_value = 1,
         minimum_value = 1,
         maximum_value = 100,
-        order = "c-scheduler-e",
+        order = "d-scheduler-e",
     },
     {
         type = "int-setting",
@@ -98,7 +108,7 @@ data:extend{
         default_value = 1,
         minimum_value = 1,
         maximum_value = 100,
-        order = "c-scheduler-f",
+        order = "d-scheduler-f",
     },
     {
         type = "int-setting",
@@ -107,6 +117,6 @@ data:extend{
         default_value = 1,
         minimum_value = 1,
         maximum_value = 100,
-        order = "c-scheduler-g",
+        order = "d-scheduler-g",
     },
 }

@@ -160,7 +160,19 @@ end
 local function check_refuel(drone, state)
     local fuel_inventory = drone.get_inventory(defines.inventory.fuel)
 
-    if fuel_inventory.count_empty_stacks() == 0 then
+    local fuel_inventory_size = #fuel_inventory
+
+    local fuel_level = 0
+
+    for i = 1, fuel_inventory_size do
+        local stack = fuel_inventory[i]
+
+        if stack.valid_for_read then
+            fuel_level = fuel_level + stack.count / stack.prototype.stack_size
+        end
+    end
+
+    if fuel_level > fuel_inventory_size * (settings.global["cargo-drone-fuel-interrupt-percentage"].value / 100) then
         return false
     end
 
