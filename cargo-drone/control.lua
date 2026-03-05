@@ -123,11 +123,15 @@ local function migrate_state()
 		end
 	end
 
+	mh.init()
+
 	log("cargo-drone state migration complete")
 end
 
 function on_init()
 	ep.init()
+
+	mh.init()
 
 	gm.create_player_storage()
 	gcd.create_player_storage()
@@ -188,11 +192,7 @@ function on_destroyed_entity(event)
 	if ep.is_provider_mooring(unit_number)
 		or ep.is_requester_mooring(unit_number)
 		or ep.is_refueler_mooring(unit_number) then
-		local proxy_containers = ep.get_entity_property(entity, "proxy_containers")
-
-		for _, proxy_container in ipairs(proxy_containers) do
-			proxy_container.destroy({ raise_destroy = true })
-		end
+		mh.mooring_destroyed(entity)
 	end
 
 	unmanage_entity(unit_number)

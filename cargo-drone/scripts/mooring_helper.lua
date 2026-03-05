@@ -294,11 +294,42 @@ local function set_inventory_target(mooring, x, y, target)
     end
 end
 
+local function add_depot(mooring)
+    local surface_buffer = storage.depots[mooring.surface.index]
+
+    if not surface_buffer then
+        surface_buffer = {}
+
+        storage.depots[mooring.surface.index] = surface_buffer
+    end
+
+    surface_buffer[mooring.unit_number] = mooring
+end
+local function remove_depot(mooring)
+    local surface_buffer = storage.depots[mooring.surface.index]
+
+    if not surface_buffer then
+        return
+    end
+
+    surface_buffer[mooring.unit_number] = nil
+
+    if next(surface_buffer) == nil then
+        storage.depots[mooring.surface.index] = nil
+    end
+end
+
 local function set_depot(mooring, flag)
-    set_filter_value(settings_index.depot, settings_filter_name.depot, mooring, flag)
+    if flag then
+        set_filter_value(settings_index.depot, settings_filter_name.depot, mooring, 0)
+        add_depot(mooring)
+    else
+        set_filter_value(settings_index.depot, settings_filter_name.depot, mooring, nil)
+        remove_depot(mooring)
+    end
 end
 local function get_depot(mooring)
-    return get_filter_value(settings_index.depot, mooring)
+    return get_filter_value(settings_index.depot, mooring) ~= nil
 end
 
 local function get_rotated_offset(mooring, x, y)
@@ -398,6 +429,9 @@ local function clean_settings(mooring)
     update_drone_count_output(mooring)
     clear_fuel_inventory_output(mooring)
     update_proxy_container_inventories(mooring)
+    if get_depot(mooring) then
+        add_depot(mooring)
+    end
 
     cb.get_section(section_index.output).active = true
 end
@@ -418,6 +452,10 @@ local function flip_horizontal(mooring)
 end
 
 local mooring_helper = {}
+
+function mooring_helper.init()
+    storage.depots = storage.depots or {}
+end
 
 function mooring_helper.clear_deprecated_values(mooring)
 	clear_fuel_inventory_output(mooring)
@@ -457,6 +495,15 @@ function mooring_helper.try_setup_mooring(mooring)
 
     return true
 end
+function mooring_helper.mooring_destroyed(mooring)
+    local proxy_containers = ep.get_entity_property(mooring, "proxy_containers")
+
+    for _, proxy_container in ipairs(proxy_containers) do
+        proxy_container.destroy({ raise_destroy = true })
+    end
+
+    remove_depot(mooring)
+end
 
 function mooring_helper.migration_create_proxy_containers(mooring)
     local proxy_containers = create_proxy_containers(mooring)
@@ -480,6 +527,10 @@ end
 
 function mooring_helper.clean_settings(mooring)
     clean_settings(mooring)
+end
+
+function mooring_helper.get_depots(surface_index)
+	return storage.depots[surface_index]
 end
 
 function mooring_helper.is_drone_limit_enabled(mooring)
@@ -660,14 +711,10 @@ function mooring_helper.set_inventory_target_absolute(mooring, x, y, target)
 end
 
 function mooring_helper.is_depot_enabled(mooring)
-    return get_depot(mooring) ~= nil
+    return get_depot(mooring)
 end
 function mooring_helper.set_depot_enabled(mooring, flag)
-    if flag then
-        set_depot(mooring, 0)
-    else
-        set_depot(mooring, nil)
-    end
+    set_depot(mooring, flag)
 end
 
 return mooring_helper
