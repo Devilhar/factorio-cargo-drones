@@ -4,7 +4,8 @@ local mh    = require("scripts.mooring_helper")
 
 local task_types = {
     cargo   = 1,
-    refuel  = 2
+    refuel  = 2,
+    depot   = 3,
 }
 
 local function generate_next_id()
@@ -47,7 +48,7 @@ local function reset_drone_as_idle(drone_unit_number, surface_index)
     end
 end
 
-local function assign_task_drone(drone_unit_number, surface_index, task_id)
+local function assign_task_drone(drone_unit_number, task_id)
     local properties = ep.get_entity_properties_from_unit_number(drone_unit_number)
 
     if not properties.task_ids then
@@ -55,9 +56,8 @@ local function assign_task_drone(drone_unit_number, surface_index, task_id)
     end
 
     table.insert(properties.task_ids, 1, task_id)
-    reset_drone_as_idle(drone_unit_number, surface_index)
 end
-local function unassign_task_drone(drone_unit_number, task_id)
+local function unassign_task_drone(drone_unit_number, task_id, mark_as_idle)
     local properties = ep.get_entity_properties_from_unit_number(drone_unit_number)
 
     if not properties.task_ids then
@@ -74,7 +74,7 @@ local function unassign_task_drone(drone_unit_number, task_id)
         index = index - 1
     end
 
-    if not properties.task_ids[1] then
+    if mark_as_idle and not properties.task_ids[1] then
         properties.task_ids = nil
 
         local entity = ep.get_managed_entity(drone_unit_number)
@@ -85,7 +85,20 @@ local function unassign_task_drone(drone_unit_number, task_id)
     end
 end
 
-local function assign_task_mooring(mooring, task_id)
+local function get_drone_count(task_ids)
+    local drone_count = 0
+    local tasks = get_tasks()
+
+    for task_id, _ in pairs(task_ids) do
+        if tasks[task_id].type ~= task_types.depot then
+            drone_count = drone_count + 1
+        end
+    end
+
+    return drone_count
+end
+
+local function assign_task_mooring(mooring, task_id, is_counted)
     local properties = ep.get_entity_properties(mooring)
 
     if not properties.task_ids then
@@ -94,15 +107,13 @@ local function assign_task_mooring(mooring, task_id)
 
     properties.task_ids[task_id] = true
 
-    local drone_count = 0
+    if is_counted then
+        local drone_count = get_drone_count(properties.task_ids)
 
-    for _, _ in pairs(properties.task_ids) do
-        drone_count = drone_count + 1
+        mh.set_drone_count_value(mooring, drone_count)
     end
-
-    mh.set_drone_count_value(mooring, drone_count)
 end
-local function unassign_task_mooring(mooring, task_id)
+local function unassign_task_mooring(mooring, task_id, is_counted)
     local properties = ep.get_entity_properties(mooring)
 
     if not properties.task_ids then
@@ -113,13 +124,11 @@ local function unassign_task_mooring(mooring, task_id)
 
     if next(properties.task_ids) == nil then
         properties.task_ids = nil
-        mh.set_drone_count_value(mooring, 0)
-    else
-        local drone_count = 0
-
-        for _, _ in pairs(properties.task_ids) do
-            drone_count = drone_count + 1
+        if is_counted then
+            mh.set_drone_count_value(mooring, 0)
         end
+    elseif is_counted then
+        local drone_count = get_drone_count(properties.task_ids)
 
         mh.set_drone_count_value(mooring, drone_count)
     end
@@ -136,28 +145,37 @@ local function remove_and_cleanup_task(task_id)
 
     tasks[task_id] = nil
 
+    local mark_drone_as_idle = task.type ~= task_types.depot
+
     if task.drone_unit_number ~= nil then
-        unassign_task_drone(task.drone_unit_number, task_id)
+        unassign_task_drone(task.drone_unit_number, task_id, mark_drone_as_idle)
     end
     if task.provider_unit_number ~= nil then
         local mooring = ep.get_managed_entity(task.provider_unit_number)
 
         if mooring then
-            unassign_task_mooring(mooring, task_id)
+            unassign_task_mooring(mooring, task_id, true)
         end
     end
     if task.requester_unit_number ~= nil then
         local mooring = ep.get_managed_entity(task.requester_unit_number)
 
         if mooring then
-            unassign_task_mooring(mooring, task_id)
+            unassign_task_mooring(mooring, task_id, true)
         end
     end
     if task.refueler_unit_number ~= nil then
         local mooring = ep.get_managed_entity(task.refueler_unit_number)
 
         if mooring then
-            unassign_task_mooring(mooring, task_id)
+            unassign_task_mooring(mooring, task_id, true)
+        end
+    end
+    if task.depot_unit_number ~= nil then
+        local mooring = ep.get_managed_entity(task.depot_unit_number)
+
+        if mooring then
+            unassign_task_mooring(mooring, task_id, false)
         end
     end
 end
@@ -168,9 +186,9 @@ drone_tasks.task_types = task_types
 
 function drone_tasks.migration_remove_all_tasks()
     storage.idle_drones = nil
-    
+
     for _, drone_data in pairs(ep.get_cargo_drones()) do
-        local task_ids = ep.set_entity_property(drone_data.entity, "task_ids", nil)
+        ep.set_entity_property(drone_data.entity, "task_ids", nil)
 
         set_drone_as_idle(drone_data.entity)
     end
@@ -203,11 +221,13 @@ function drone_tasks.assign_cargo(drone, provider, requester, items, inventory_f
         inventory_filters = inventory_filters
     }
 
-    assign_task_drone(drone.unit_number, drone.surface.index, id)
+    assign_task_drone(drone.unit_number, id)
     if provider then
-        assign_task_mooring(provider, id)
+        assign_task_mooring(provider, id, true)
     end
-    assign_task_mooring(requester, id)
+    assign_task_mooring(requester, id, true)
+
+    reset_drone_as_idle(drone.unit_number, drone.surface.index)
 
     return id
 end
@@ -221,8 +241,25 @@ function drone_tasks.assign_refuel(drone, refueler)
         refueler_unit_number = refueler.unit_number
     }
 
-    assign_task_drone(drone.unit_number, drone.surface.index, id)
-    assign_task_mooring(refueler, id)
+    assign_task_drone(drone.unit_number, id)
+    assign_task_mooring(refueler, id, true)
+
+    reset_drone_as_idle(drone.unit_number, drone.surface.index)
+
+    return id
+end
+function drone_tasks.assign_depot(drone, mooring)
+    local id = generate_next_id()
+
+    get_tasks()[id] = {
+        id = id,
+        type = task_types.depot,
+        drone_unit_number = drone.unit_number,
+        depot_unit_number = mooring.unit_number
+    }
+
+    assign_task_drone(drone.unit_number, id)
+    assign_task_mooring(mooring, id, false)
 
     return id
 end
@@ -249,7 +286,7 @@ function drone_tasks.cargo_unassign_provider(task_id)
     local mooring = ep.get_managed_entity(task.provider_unit_number)
 
     if mooring then
-        unassign_task_mooring(mooring, task_id)
+        unassign_task_mooring(mooring, task_id, true)
     end
 
     task.provider_unit_number = nil
