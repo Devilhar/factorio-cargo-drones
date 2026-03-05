@@ -341,9 +341,12 @@ local function update_drone_list(player_data)
             elseif task.requester_unit_number then
                 mooring_type = 2
                 target_mooring = ep.get_managed_entity(task.requester_unit_number)
-            else
+            elseif task.refueler_unit_number then
                 mooring_type = 3
                 target_mooring = ep.get_managed_entity(task.refueler_unit_number)
+            else
+                mooring_type = 4
+                target_mooring = ep.get_managed_entity(task.depot_unit_number)
             end
 
             if dh.get_docked_mooring(drone) == target_mooring then
@@ -367,8 +370,12 @@ local function update_drone_list(player_data)
                     task_label.caption = { "cargo-drone-status.heading-to-provider", math.floor(util.distance(drone.position, target_mooring.position)) }
                 elseif mooring_type == 2 then
                     task_label.caption = { "cargo-drone-status.heading-to-requester", math.floor(util.distance(drone.position, target_mooring.position)) }
-                else
+                elseif mooring_type == 3 then
                     task_label.caption = { "cargo-drone-status.heading-to-refueler", math.floor(util.distance(drone.position, target_mooring.position)) }
+                else
+                    -- FIXME: Localize
+                    task_label.caption = "Heading to depot [99999m]"
+                    --task_label.caption = { "cargo-drone-status.heading-to-refueler", math.floor(util.distance(drone.position, target_mooring.position)) }
                 end
             end
 

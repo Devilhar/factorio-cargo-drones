@@ -3,6 +3,7 @@ local util      = require("util")
 
 local constants = require("scripts.constants")
 local ep        = require("scripts.entity_property")
+local mh	    = require("scripts.mooring_helper")
 local rc        = require("scripts.requester_cooldown")
 local dt        = require("scripts.drone_tasks")
 local ir	    = require("scripts.item_requests")
@@ -28,6 +29,8 @@ local states = {
 
     assign_task_to_drone_with_cargo = 7,
     process_next_item_request       = 8,
+
+    assign_depot_task               = 12,
 
     wait_for_next_interval          = 9,
 }
@@ -295,6 +298,62 @@ local function process_next_item_request(heuristic_target_count_cost)
     return false
 end
 
+local function assign_depot_task()
+    local drones = nil
+
+    if storage.scheduler.key_drone == nil then
+        storage.scheduler.key_surface, drones = next(storage.scheduler.idling_cargo_drones_empty, storage.scheduler.key_surface)
+
+        if storage.scheduler.key_surface == nil then
+            return true
+        end
+    else
+        drones = storage.scheduler.idling_cargo_drones_empty[storage.scheduler.key_surface]
+    end
+
+    local drone = nil
+
+    storage.scheduler.key_drone, drone = next(drones, storage.scheduler.key_drone)
+
+    if storage.scheduler.key_drone == nil or not drone.valid then
+        return false
+    end
+
+    if dt.get_current_drone_task_id(drone) ~= nil then
+        return false
+    end
+
+    -- FIXME: Keep list of depots, make per surface
+    local function get_closest_depot()
+        local closest_depot = nil
+        local closest_distance = 30000000 -- Longer than moving from one corner to the other, and then multiplied by 10 for good measure
+
+        local providers = ep.get_cargo_drone_provider_moorings()
+
+        for _, provider_data in pairs(providers) do
+            if mh.is_depot_enabled(provider_data.entity) then
+                local distance = util.distance(drone.position, provider_data.entity.position)
+
+                if distance < closest_distance then
+                    closest_depot = provider_data.entity
+                    closest_distance = distance
+                end
+            end
+        end
+
+        return closest_depot
+    end
+
+    local closest_depot = get_closest_depot()
+
+    if closest_depot then
+        dt.assign_depot(drone, get_closest_depot())
+        storage.scheduler.tickrate_buffer[drone.unit_number] = constants.drones_tickrates.every
+    end
+
+    return false
+end
+
 local scheduler = {}
 
 function scheduler.init()
@@ -375,10 +434,6 @@ local state_procs = {
     [states.scan_requesters] = function()
         for _ = 1, settings.global["cargo-drone-max-scanned-moorings"].value do
             if scan_moorings(storage.scheduler.requester_buffer) then
-                if next(storage.scheduler.idling_cargo_drones) == nil or next(storage.scheduler.requester_buffer) == nil then
-                    return reset_state
-                end
-
                 return states.sort_idle_drone
             end
         end
@@ -391,6 +446,10 @@ local state_procs = {
             if sort_idle_drone() then
                 storage.scheduler.key_surface = nil
                 storage.scheduler.key_drone = nil
+
+                if next(storage.scheduler.idling_cargo_drones) == nil or next(storage.scheduler.requester_buffer) == nil then
+                    return states.assign_depot_task
+                end
 
                 return states.collect_requester_items
             end
@@ -450,6 +509,15 @@ local state_procs = {
                 storage.scheduler.key_surface = nil
                 storage.scheduler.key_drone = nil
 
+                return states.assign_depot_task
+            end
+        end
+
+        return nil
+    end,
+    [states.assign_depot_task] = function()
+        for _ = 1, settings.global["cargo-drone-max-processed-item-requests"].value do -- FIXME: Unique setting
+            if assign_depot_task() then
                 return reset_state
             end
         end
