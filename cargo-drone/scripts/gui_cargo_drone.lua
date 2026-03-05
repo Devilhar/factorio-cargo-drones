@@ -114,6 +114,11 @@ function gui_cargo_drone.tick()
 
     if removed then
         for _, player_index in ipairs(removed) do
+	        local player = game.get_player(player_index)
+
+            if player.gui.relative[gui_targets_name] then
+                player.gui.relative[gui_targets_name].destroy()
+            end
             storage.gui_cargo_drone[player_index] = nil
         end
     end
