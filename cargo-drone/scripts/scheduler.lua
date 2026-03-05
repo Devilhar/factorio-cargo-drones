@@ -323,7 +323,6 @@ local function assign_depot_task()
         return false
     end
 
-    -- FIXME: Spread evenly
     local function get_closest_depot()
         local depots = mh.get_depots(drone.surface.index)
 
@@ -333,14 +332,19 @@ local function assign_depot_task()
 
         local closest_depot = nil
         local closest_distance = 30000000 -- Longer than moving from one corner to the other, and then multiplied by 10 for good measure
+        local lowest_drone_count = 10000000
 
         for _, depot in pairs(depots) do
             if mh.is_depot_enabled(depot) then
                 local distance = util.distance(drone.position, depot.position)
+                local drone_count = mh.get_depot_drone_count(depot.unit_number)
 
-                if distance < closest_distance then
-                    closest_depot = depot
-                    closest_distance = distance
+                if drone_count <= lowest_drone_count then
+                    if drone_count < lowest_drone_count or distance < closest_distance then
+                        closest_depot = depot
+                        closest_distance = distance
+                        lowest_drone_count = drone_count
+                    end
                 end
             end
         end
