@@ -18,6 +18,7 @@ local settings_index = {
 --  fuel_inventory                  = 9,
 --  fuel_inventory_output           = 10,
 --  fuel_inventory_signal_id        = 11,
+    depot                           = 12,
 }
 local settings_filter_name = {
     drone_limit                     = "signal-A",
@@ -32,6 +33,7 @@ local settings_filter_name = {
 --  fuel_inventory                  = "signal-I",
 --  fuel_inventory_output           = "signal-J",
 --  fuel_inventory_signal_id        = "signal-K",
+    depot                           = "signal-L",
 }
 local section_index = {
     settings                        = 1,
@@ -290,6 +292,13 @@ local function set_inventory_target(mooring, x, y, target)
     else
         section.clear_slot(index)
     end
+end
+
+local function set_depot(mooring, flag)
+    set_filter_value(settings_index.depot, settings_filter_name.depot, mooring, flag)
+end
+local function get_depot(mooring)
+    return get_filter_value(settings_index.depot, mooring)
 end
 
 local function get_rotated_offset(mooring, x, y)
@@ -648,6 +657,17 @@ function mooring_helper.set_inventory_target_absolute(mooring, x, y, target)
     set_inventory_target(mooring, x, y, target)
 
     update_proxy_container_inventories(mooring)
+end
+
+function mooring_helper.is_depot_enabled(mooring)
+    return get_depot(mooring) ~= nil
+end
+function mooring_helper.set_depot_enabled(mooring, flag)
+    if flag then
+        set_depot(mooring, 0)
+    else
+        set_depot(mooring, nil)
+    end
 end
 
 return mooring_helper
