@@ -254,6 +254,13 @@ local function update_drone_count_output(mooring)
         min = count
     })
 end
+local function clear_fuel_inventory_output(mooring)
+    local cb = mooring.get_control_behavior()
+
+    local section = cb.get_section(section_index.output)
+
+    section.clear_slot(output_index.fuel_inventory)
+end
 
 local function get_inventory_target(mooring, x, y)
     local index = x + (y - 1) * 3
@@ -308,19 +315,9 @@ local function get_rotated_offset(mooring, x, y)
 
     return x, y
 end
-
-local function clear_fuel_inventory_output(mooring)
-    local cb = mooring.get_control_behavior()
-
-    local section = cb.get_section(section_index.output)
-
-    section.clear_slot(output_index.fuel_inventory)
-end
-
 local function get_proxy_container_offset(index)
     return ((index - 1) % 3) + 1, math.floor((index - 1) / 3) + 1
 end
-
 local function get_default_inventory_target(mooring)
     if ep.is_refueler_mooring(mooring.unit_number) then
         return defines.inventory.fuel
@@ -328,7 +325,6 @@ local function get_default_inventory_target(mooring)
 
     return defines.inventory.car_trunk
 end
-
 local function update_proxy_container_inventories(mooring)
 	local proxy_containers = ep.get_entity_property(mooring, "proxy_containers")
     local default_target_inventory = get_default_inventory_target(mooring)
@@ -342,46 +338,6 @@ local function update_proxy_container_inventories(mooring)
 
         proxy_containers[i].proxy_target_inventory = target_inventory
     end
-end
-
-local function clean_settings(mooring)
-    local cb = mooring.get_control_behavior()
-
-    while cb.sections_count < 7 do
-        cb.add_section()
-    end
-    while cb.sections_count > 7 do
-        cb.remove_section(6)
-    end
-
-    for i = 1, 7 do
-        local section = cb.get_section(i)
-
-        section.active = false
-        section.group = ""
-    end
-
-    update_drone_count_output(mooring)
-    clear_fuel_inventory_output(mooring)
-    update_proxy_container_inventories(mooring)
-
-    cb.get_section(section_index.output).active = true
-end
-
-local function flip_horizontal(mooring)
-    local a1 = get_inventory_target(mooring, 1, 1)
-    local b1 = get_inventory_target(mooring, 1, 2)
-    local c1 = get_inventory_target(mooring, 1, 3)
-    local a3 = get_inventory_target(mooring, 3, 1)
-    local b3 = get_inventory_target(mooring, 3, 2)
-    local c3 = get_inventory_target(mooring, 3, 3)
-
-    set_inventory_target(mooring, 1, 1, a3)
-    set_inventory_target(mooring, 1, 2, b3)
-    set_inventory_target(mooring, 1, 3, c3)
-    set_inventory_target(mooring, 3, 1, a1)
-    set_inventory_target(mooring, 3, 2, b1)
-    set_inventory_target(mooring, 3, 3, c1)
 end
 
 local function create_proxy_containers(mooring)
@@ -411,6 +367,45 @@ local function create_proxy_containers(mooring)
     end
 
     return proxy_containers
+end
+
+local function clean_settings(mooring)
+    local cb = mooring.get_control_behavior()
+
+    while cb.sections_count < 7 do
+        cb.add_section()
+    end
+    while cb.sections_count > 7 do
+        cb.remove_section(6)
+    end
+
+    for i = 1, 7 do
+        local section = cb.get_section(i)
+
+        section.active = false
+        section.group = ""
+    end
+
+    update_drone_count_output(mooring)
+    clear_fuel_inventory_output(mooring)
+    update_proxy_container_inventories(mooring)
+
+    cb.get_section(section_index.output).active = true
+end
+local function flip_horizontal(mooring)
+    local a1 = get_inventory_target(mooring, 1, 1)
+    local b1 = get_inventory_target(mooring, 1, 2)
+    local c1 = get_inventory_target(mooring, 1, 3)
+    local a3 = get_inventory_target(mooring, 3, 1)
+    local b3 = get_inventory_target(mooring, 3, 2)
+    local c3 = get_inventory_target(mooring, 3, 3)
+
+    set_inventory_target(mooring, 1, 1, a3)
+    set_inventory_target(mooring, 1, 2, b3)
+    set_inventory_target(mooring, 1, 3, c3)
+    set_inventory_target(mooring, 3, 1, a1)
+    set_inventory_target(mooring, 3, 2, b1)
+    set_inventory_target(mooring, 3, 3, c1)
 end
 
 local mooring_helper = {}
