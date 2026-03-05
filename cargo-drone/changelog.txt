@@ -1,3 +1,5 @@
+  Bugfixes:
+    - Fixed a crash when selecting a Cargo drone after destroying a selected Cargo drone.
 ---------------------------------------------------------------------------------------------------
 Version: 1.5.1
 Date: 03. 03. 2026
@@ -10,6 +12,8 @@ Date: 02. 03. 2026
   Minor Features:
     - Added alert for Cargo drones that has spent too long docked to a Refueler mooring. Defaults to 120 seconds.
     - Added inventory target selection to moorings, allowing different tiles of moorings to target different inventories inside Cargo drones.
+  Changes:
+    - Removed the Read inventory output from Refueler moorings when using burnt results.
 ---------------------------------------------------------------------------------------------------
 Version: 1.4.6
 Date: 25. 02. 2026
