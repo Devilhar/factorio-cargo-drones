@@ -154,7 +154,7 @@ local function get_closest_provider(requester, item_name, item_quality, item_pro
         if item_data.count > 0 and provider.valid and not mh.is_at_drone_limit(provider) then
             if provider.surface.index == requester.surface.index then
                 if highest_priority <= item_data.priority then
-                    local cost = util.distance(provider.position, requester.position) + mh.get_drone_count_value(provider.unit_number) * heuristic_target_count_cost
+                    local cost = util.distance(provider.position, requester.position) + mh.get_drone_count(provider.unit_number) * heuristic_target_count_cost
 
                     if highest_priority < item_data.priority or cost < lowest_cost then
                         highest_priority = item_data.priority
