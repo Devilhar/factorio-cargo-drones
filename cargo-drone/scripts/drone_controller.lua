@@ -345,6 +345,27 @@ local function perform_task_refuel(drone, state, task, game_tick)
 
     return false
 end
+local function perform_task_depot(drone, state, task, game_tick)
+    if game_tick % constants.random_tick_interval == drone.unit_number % constants.random_tick_interval then
+        check_refuel(drone, state)
+    end
+
+    local mooring = ep.get_managed_entity(task.mooring_unit_number)
+
+    local drone_position = drone.position
+    local mooring_position = mooring.position
+
+    local drone_orientation = drone.orientation
+    local drone_speed = drone.speed
+
+    local completed = move_to_position(drone_position, drone_orientation, drone_speed, state, mooring_position)
+
+    if completed then
+        state.tickrate = constants.drones_tickrates.minimal
+    end
+
+    return false
+end
 
 local function get_current_task(drone)
     local current_task_id = dt.get_current_drone_task_id(drone)
@@ -387,6 +408,8 @@ local function tick_drone(drone, game_tick)
         if completed then
             complete_task(drone, current_task.id)
         end
+    elseif current_task.type == dt.task_types.depot then
+        perform_task_depot(drone, state, current_task, game_tick)
     end
 
     drone.riding_state = state.riding_state
