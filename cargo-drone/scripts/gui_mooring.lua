@@ -141,6 +141,13 @@ local observers = {
         end
     },
 
+    is_depot_enabled = {
+        get = function(player_data) return mh.is_depot_enabled(player_data.entity) end,
+        updated = function(player_data, data)
+            player_data.elements.depot_checkbox.state = data
+        end
+    },
+
     get_circuit_network_red_green = {
         get = function(player_data)
             return player_data.entity.get_circuit_network(defines.wire_connector_id.circuit_red) ~= nil
@@ -555,6 +562,12 @@ local callbacks = {
         update_gui(player_data)
     end,
 
+    [gui_prefix .. "depot-checkbox"] = function(player_data, event)
+        mh.set_depot_enabled(player_data.entity, player_data.elements.depot_checkbox.state)
+
+        update_gui(player_data)
+    end,
+
     ---------- Circuit ----------
     [gui_prefix .. "set-drone-limit-checkbox"] = function(player_data, event)
         mh.set_drone_limit_circuit(player_data.entity, player_data.elements.drone_limit_circuit_checkbox.state)
@@ -765,6 +778,26 @@ local function build_gui_mooring(player_data, mooring, parent)
 
     player_data.elements.priority_slider = priority_slider
     player_data.elements.priority_field = priority_field
+
+    ---------- Depot ----------
+    local depot_flow = mooring_frame.add{
+        type = "flow",
+        direction = "horizontal",
+    }
+
+    depot_flow.style.vertical_align = "center"
+    depot_flow.style.horizontal_spacing = 8
+    depot_flow.style.bottom_margin = 8
+
+    local depot_checkbox = depot_flow.add{
+        type = "checkbox",
+        name = gui_prefix .. "depot-checkbox",
+        caption = { "cargo-drone-gui-mooring.enable-depot" },
+        tooltip = { "cargo-drone-gui-mooring.enable-depot-tooltip" },
+        state = mh.is_depot_enabled(mooring)
+    }
+
+    player_data.elements.depot_checkbox = depot_checkbox
 
     ---------- Item Signals ----------
 
