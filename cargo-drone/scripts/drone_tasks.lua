@@ -180,6 +180,22 @@ local function remove_and_cleanup_task(task_id)
     end
 end
 
+local function pop_depot_task(drone)
+    local properties = ep.get_entity_properties(drone)
+
+    if not properties.task_ids then
+        return
+    end
+
+    local task_id = properties.task_ids[1]
+
+    if not task_id or get_tasks()[task_id].type ~= task_types.depot then
+        return
+    end
+
+    remove_and_cleanup_task(task_id)
+end
+
 local drone_tasks = {}
 
 drone_tasks.task_types = task_types
@@ -209,6 +225,8 @@ function drone_tasks.get_entity_task_ids(entity)
 end
 
 function drone_tasks.assign_cargo(drone, provider, requester, items, inventory_filters)
+    pop_depot_task(drone)
+
     local id = generate_next_id()
 
     get_tasks()[id] = {
@@ -232,6 +250,8 @@ function drone_tasks.assign_cargo(drone, provider, requester, items, inventory_f
     return id
 end
 function drone_tasks.assign_refuel(drone, refueler)
+    pop_depot_task(drone)
+
     local id = generate_next_id()
 
     get_tasks()[id] = {

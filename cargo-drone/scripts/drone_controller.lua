@@ -347,13 +347,26 @@ local function perform_task_refuel(drone, state, task, game_tick)
 end
 local function perform_task_depot(drone, state, task, game_tick)
     if game_tick % constants.random_tick_interval == drone.unit_number % constants.random_tick_interval then
+        local inventory = drone.get_inventory(defines.inventory.car_trunk)
+
+        for i = 1, #inventory do
+            inventory.set_filter(i, nil)
+        end
+
         check_refuel(drone, state)
     end
 
-    local mooring = ep.get_managed_entity(task.mooring_unit_number)
+    local mooring = ep.get_managed_entity(task.depot_unit_number)
 
     local drone_position = drone.position
     local mooring_position = mooring.position
+
+    if util.distance(drone_position, mooring_position) < 20 then
+        -- FIXME: Add a parked state for GUI
+        state.tickrate = constants.drones_tickrates.minimal
+
+        return false
+    end
 
     local drone_orientation = drone.orientation
     local drone_speed = drone.speed

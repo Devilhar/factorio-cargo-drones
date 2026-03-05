@@ -44,8 +44,12 @@ local function update_gui(player, drone)
                 label.caption = { "cargo-drone-status.heading-to-provider", math.floor(util.distance(drone.position, mooring.position)) }
             elseif mooring_type == 2 then
                 label.caption = { "cargo-drone-status.heading-to-requester", math.floor(util.distance(drone.position, mooring.position)) }
-            else
+            elseif mooring_type == 3 then
                 label.caption = { "cargo-drone-status.heading-to-refueler", math.floor(util.distance(drone.position, mooring.position)) }
+            else
+                -- FIXME: Localize
+                label.caption = "Heading to depot [99999m]"
+                --label.caption = { "cargo-drone-status.heading-to-depot", math.floor(util.distance(drone.position, mooring.position)) }
             end
         else
             if mooring_type == 1 then
@@ -69,6 +73,10 @@ local function update_gui(player, drone)
 
         if task.refueler_unit_number ~= nil then
             update_mooring(task.refueler_unit_number, 3)
+        end
+
+        if task.depot_unit_number ~= nil then
+            update_mooring(task.depot_unit_number, 4)
         end
     end
 
