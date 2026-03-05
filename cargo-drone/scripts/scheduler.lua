@@ -323,19 +323,23 @@ local function assign_depot_task()
         return false
     end
 
-    -- FIXME: Keep list of depots, make per surface
+    -- FIXME: Spread evenly
     local function get_closest_depot()
+        local depots = mh.get_depots(drone.surface.index)
+
+        if depots == nil then
+            return nil
+        end
+
         local closest_depot = nil
         local closest_distance = 30000000 -- Longer than moving from one corner to the other, and then multiplied by 10 for good measure
 
-        local providers = ep.get_cargo_drone_provider_moorings()
-
-        for _, provider_data in pairs(providers) do
-            if mh.is_depot_enabled(provider_data.entity) then
-                local distance = util.distance(drone.position, provider_data.entity.position)
+        for _, depot in pairs(depots) do
+            if mh.is_depot_enabled(depot) then
+                local distance = util.distance(drone.position, depot.position)
 
                 if distance < closest_distance then
-                    closest_depot = provider_data.entity
+                    closest_depot = depot
                     closest_distance = distance
                 end
             end

@@ -74,13 +74,15 @@ local function unassign_task_drone(drone_unit_number, task_id, mark_as_idle)
         index = index - 1
     end
 
-    if mark_as_idle and not properties.task_ids[1] then
+    if not properties.task_ids[1] then
         properties.task_ids = nil
 
-        local entity = ep.get_managed_entity(drone_unit_number)
+        if mark_as_idle then
+            local entity = ep.get_managed_entity(drone_unit_number)
 
-        if entity and entity.valid then
-            set_drone_as_idle(ep.get_managed_entity(drone_unit_number))
+            if entity and entity.valid then
+                set_drone_as_idle(entity)
+            end
         end
     end
 end
