@@ -332,6 +332,17 @@ local function get_depot(mooring)
     return get_filter_value(settings_index.depot, mooring) ~= nil
 end
 
+local function get_depot_drone_count(depot_unit_number)
+    return ep.get_entity_property_from_unit_number(depot_unit_number, "depot_drone_count") or 0
+end
+local function set_depot_drone_count(depot, count)
+    if count <= 0 then
+        count = nil
+    end
+
+    ep.set_entity_property(depot, "depot_drone_count", count)
+end
+
 local function get_rotated_offset(mooring, x, y)
     x = x - 2
     y = y - 2
@@ -646,10 +657,10 @@ function mooring_helper.get_priority(mooring)
     return priority
 end
 
-function mooring_helper.get_drone_count_value(mooring_unit_number)
+function mooring_helper.get_drone_count(mooring_unit_number)
     return get_drone_count(mooring_unit_number)
 end
-function mooring_helper.set_drone_count_value(mooring, value)
+function mooring_helper.set_drone_count(mooring, value)
     if value < 0 then
         value = 0
     end
@@ -715,6 +726,17 @@ function mooring_helper.is_depot_enabled(mooring)
 end
 function mooring_helper.set_depot_enabled(mooring, flag)
     set_depot(mooring, flag)
+end
+
+function mooring_helper.get_depot_drone_count(depot_unit_number)
+    return get_depot_drone_count(depot_unit_number)
+end
+function mooring_helper.set_depot_drone_count(depot, value)
+    if value < 0 then
+        value = 0
+    end
+
+    set_depot_drone_count(depot, value)
 end
 
 return mooring_helper
