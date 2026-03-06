@@ -361,7 +361,14 @@ local function perform_task_depot(drone, state, task, game_tick)
     local drone_position = drone.position
     local mooring_position = mooring.position
 
-    if util.distance(drone_position, mooring_position) < 20 then
+    local offset_direction = ((drone.unit_number * 281) % 100) / 100
+    local offset_distance = ((drone.unit_number * 13) % 100) / (100 / 15) + 2
+
+    local offset = util.rotate_position({ offset_distance, 0 }, offset_direction)
+
+    local target_position = { x = mooring_position.x + offset.x, y = mooring_position.y + offset.y }
+
+    if util.distance(drone_position, target_position) < 1 then
         state.parked_depot = mooring
         state.tickrate = constants.drones_tickrates.minimal
 
@@ -371,7 +378,7 @@ local function perform_task_depot(drone, state, task, game_tick)
     local drone_orientation = drone.orientation
     local drone_speed = drone.speed
 
-    local completed = move_to_position(drone_position, drone_orientation, drone_speed, state, mooring_position)
+    local completed = move_to_position(drone_position, drone_orientation, drone_speed, state, target_position)
 
     if completed then
         state.tickrate = constants.drones_tickrates.minimal
