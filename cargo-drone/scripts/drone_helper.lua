@@ -9,5 +9,8 @@ end
 function drone_helper.get_queuing_mooring(drone)
     return ep.get_entity_property(drone, "queuing_mooring")
 end
+function drone_helper.get_parked_depot(drone)
+    return ep.get_entity_property(drone, "parked_depot")
+end
 
 return drone_helper
