@@ -362,7 +362,7 @@ local function perform_task_depot(drone, state, task, game_tick)
     local mooring_position = mooring.position
 
     if util.distance(drone_position, mooring_position) < 20 then
-        -- FIXME: Add a parked state for GUI
+        state.parked_depot = mooring
         state.tickrate = constants.drones_tickrates.minimal
 
         return false
@@ -395,7 +395,8 @@ local state = {
     riding_state = { acceleration = defines.riding.acceleration.braking, direction = defines.riding.direction.straight },
     docked_mooring = nil,
     docking_mooring = nil,
-    queuing_mooring = nil
+    queuing_mooring = nil,
+    parked_depot = nil,
 }
 
 local function tick_drone(drone, game_tick)
@@ -406,6 +407,7 @@ local function tick_drone(drone, game_tick)
     state.docked_mooring = nil
     state.docking_mooring = nil
     state.queuing_mooring = nil
+    state.parked_depot = nil
 
     if not current_task then
         perform_task_none(drone, state, game_tick)
@@ -470,6 +472,7 @@ local function tick_drone(drone, game_tick)
     end
 
     ep.set_entity_property(drone, "queuing_mooring", state.queuing_mooring)
+    ep.set_entity_property(drone, "parked_depot", state.parked_depot)
 
     return state.tickrate
 end
