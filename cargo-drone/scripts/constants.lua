@@ -21,4 +21,9 @@ constants.drones_tickrates = {
     minimal = 60 * 5,
 }
 
+-- Utils
+
+-- Longer than moving from one corner to the other, and then multiplied by 10 for good measure
+constants.max_distance = 30000000
+
 return constants
