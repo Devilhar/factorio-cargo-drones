@@ -1,5 +1,6 @@
   Bugfixes:
     - Fixed a crash when selecting a Cargo drone after destroying a selected Cargo drone.
+    - Fixed an issue where item requests would sometimes have a higher priority than heading to a Refueler mooring.
 ---------------------------------------------------------------------------------------------------
 Version: 1.5.1
 Date: 03. 03. 2026
