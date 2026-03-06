@@ -1,3 +1,6 @@
+---------------------------------------------------------------------------------------------------
+Version: 1.6.0
+Date: 06. 03. 2026
   Minor Features:
     - Added a checkbox inside the GUI for moorings for marking them as a depot. Idle Cargo drones will park next to depots when waiting for new tasks.
   Bugfixes:
