@@ -126,7 +126,7 @@ end
 local function get_closest_valid_refueler(mooring_table, entity)
     local highest_priority = -1
     local closest_entity = nil
-    local closest_distance = 30000000 -- Longer than moving from one corner to the other, and then multiplied by 10 for good measure
+    local closest_distance = constants.max_distance
 
     for id, data in pairs(mooring_table) do
         if entity.surface.index == data.entity.surface.index and not mh.is_at_drone_limit(data.entity) then

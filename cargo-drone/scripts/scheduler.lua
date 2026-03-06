@@ -45,7 +45,7 @@ end
 
 local function get_closest_drone_to_mooring(drones, mooring)
     local closest_index = nil
-    local closest_distance = 30000000 -- Longer than moving from one corner to the other, and then multiplied by 10 for good measure
+    local closest_distance = constants.max_distance
 
     for i, drone in ipairs(drones) do
         if drone.valid then
@@ -323,41 +323,39 @@ local function assign_depot_task()
         return false
     end
 
-    local function get_closest_depot()
-        local depots = mh.get_depots(drone.surface.index)
+    local depots = mh.get_depots(drone.surface.index)
 
-        if depots == nil then
-            return nil
-        end
+    if depots == nil then
+        return false
+    end
 
-        local closest_depot = nil
-        local closest_distance = 30000000 -- Longer than moving from one corner to the other, and then multiplied by 10 for good measure
-        local lowest_drone_count = 10000000
+    local closest_depot = nil
+    local closest_distance = constants.max_distance
+    -- If for some reason, all depots have more drones than this, I don't think anyone will notice the imbalance. And if they do, I want them to pay me to fix it.
+    -- Because if they can afford to play Factorio on a NASA computer, they can afford to throw cash my way.
+    local lowest_drone_count = 10000000
 
-        for _, depot in pairs(depots) do
-            if mh.is_depot_enabled(depot) then
-                local distance = util.distance(drone.position, depot.position)
-                local drone_count = mh.get_depot_drone_count(depot.unit_number)
+    for _, depot in pairs(depots) do
+        if mh.is_depot_enabled(depot) then
+            local distance = util.distance(drone.position, depot.position)
+            local drone_count = mh.get_depot_drone_count(depot.unit_number)
 
-                if drone_count <= lowest_drone_count then
-                    if drone_count < lowest_drone_count or distance < closest_distance then
-                        closest_depot = depot
-                        closest_distance = distance
-                        lowest_drone_count = drone_count
-                    end
+            if drone_count <= lowest_drone_count then
+                if drone_count < lowest_drone_count or distance < closest_distance then
+                    closest_depot = depot
+                    closest_distance = distance
+                    lowest_drone_count = drone_count
                 end
             end
         end
-
-        return closest_depot
     end
 
-    local closest_depot = get_closest_depot()
-
-    if closest_depot then
-        dt.assign_depot(drone, get_closest_depot())
-        storage.scheduler.tickrate_buffer[drone.unit_number] = constants.drones_tickrates.every
+    if not closest_depot then
+        return false
     end
+
+    dt.assign_depot(drone, closest_depot)
+    storage.scheduler.tickrate_buffer[drone.unit_number] = constants.drones_tickrates.every
 
     return false
 end

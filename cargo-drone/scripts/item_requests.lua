@@ -1,6 +1,7 @@
 
 local util      = require("util")
 
+local constants = require("scripts.constants")
 local ep        = require("scripts.entity_property")
 local mh        = require("scripts.mooring_helper")
 local dt        = require("scripts.drone_tasks")
@@ -146,7 +147,7 @@ local function get_closest_provider(requester, item_name, item_quality, item_pro
 
     local highest_priority = -1
     local closest_provider = nil
-    local lowest_cost = 30000000 -- Longer than moving from one corner to the other, and then multiplied by 10 for good measure
+    local lowest_cost = constants.max_distance
 
     for _, item_data in ipairs(providers) do
         local provider = item_data.mooring
