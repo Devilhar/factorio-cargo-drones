@@ -54,20 +54,22 @@ local function get_items(mooring)
         for task_id, _ in pairs(properties.task_ids) do
             local task = dt.get(task_id)
 
-            for i, item_data in ipairs(task.items) do
-                local selected_item = items[item_data.name]
+            if task.items then
+                for i, item_data in ipairs(task.items) do
+                    local selected_item = items[item_data.name]
 
-                if selected_item then
-                    if selected_item[item_data.quality] ~= nil then
-                        local selected_quality = selected_item[item_data.quality]
+                    if selected_item then
+                        if selected_item[item_data.quality] ~= nil then
+                            local selected_quality = selected_item[item_data.quality]
 
-                        selected_quality.count = selected_quality.count - item_data.count
+                            selected_quality.count = selected_quality.count - item_data.count
 
-                        if selected_quality.count <= 0 then
-                            selected_item[item_data.quality] = nil
+                            if selected_quality.count <= 0 then
+                                selected_item[item_data.quality] = nil
 
-                            if next(items) == nil then
-                                return nil
+                                if next(items) == nil then
+                                    return nil
+                                end
                             end
                         end
                     end
