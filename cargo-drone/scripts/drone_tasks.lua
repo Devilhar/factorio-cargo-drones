@@ -9,17 +9,26 @@ local task_types = {
 }
 
 local task_data = {
+    -- drone_count          = Should this task count towards the drone count?
+    -- depot_drone_count    = Should this task count towards the depot drone count?
+    -- muted_task           = Is this task considered unimportant to show the player?
     [task_types.cargo] = {
-        drone_count = true,
-        depot_drone_count = false,
+        override            = false,
+        drone_count         = true,
+        depot_drone_count   = false,
+        muted_task          = false,
     },
     [task_types.refuel] = {
-        drone_count = true,
-        depot_drone_count = false,
+        override            = true,
+        drone_count         = true,
+        depot_drone_count   = false,
+        muted_task          = false,
     },
     [task_types.depot] = {
-        drone_count = false,
-        depot_drone_count = true,
+        override            = false,
+        drone_count         = false,
+        depot_drone_count   = true,
+        muted_task          = true,
     },
 }
 
@@ -63,14 +72,19 @@ local function reset_drone_as_idle(drone_unit_number, surface_index)
     end
 end
 
-local function assign_task_drone(drone_unit_number, task_id)
+local function assign_task_drone(drone_unit_number, task)
     local properties = ep.get_entity_properties_from_unit_number(drone_unit_number)
 
     if not properties.task_ids then
         properties.task_ids = {}
     end
 
-    table.insert(properties.task_ids, 1, task_id)
+    if task_data[task.type].override then
+        table.insert(properties.task_ids, 1, task.id)
+    else
+        table.insert(properties.task_ids, task.id)
+    end
+
 end
 local function unassign_task_drone(drone_unit_number, task_id, mark_as_idle)
     local properties = ep.get_entity_properties_from_unit_number(drone_unit_number)
@@ -297,7 +311,7 @@ function drone_tasks.assign_cargo(drone, provider, requester, items, inventory_f
 
     get_tasks()[id] = task
 
-    assign_task_drone(drone.unit_number, id)
+    assign_task_drone(drone.unit_number, task)
     if provider then
         assign_task_mooring(provider, task)
     end
@@ -321,7 +335,7 @@ function drone_tasks.assign_refuel(drone, refueler)
 
     get_tasks()[id] = task
 
-    assign_task_drone(drone.unit_number, id)
+    assign_task_drone(drone.unit_number, task)
     assign_task_mooring(refueler, task)
 
     reset_drone_as_idle(drone.unit_number, drone.surface.index)
@@ -340,7 +354,7 @@ function drone_tasks.assign_depot(drone, mooring)
 
     get_tasks()[id] = task
 
-    assign_task_drone(drone.unit_number, id)
+    assign_task_drone(drone.unit_number, task)
     assign_task_mooring(mooring, task)
 
     return id
@@ -354,6 +368,21 @@ function drone_tasks.get_current_drone_task_id(drone)
     end
 
     return properties.task_ids[1]
+end
+function drone_tasks.get_target(task)
+    if task.provider_unit_number then
+        return ep.get_managed_entity(task.provider_unit_number)
+    elseif task.requester_unit_number then
+        return ep.get_managed_entity(task.requester_unit_number)
+    elseif task.refueler_unit_number then
+        return ep.get_managed_entity(task.refueler_unit_number)
+    else
+        return ep.get_managed_entity(task.depot_unit_number)
+    end
+end
+
+function drone_tasks.is_muted(task)
+    return task_data[task.type].muted_task
 end
 
 function drone_tasks.cargo_unassign_provider(task_id)
