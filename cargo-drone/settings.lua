@@ -119,4 +119,13 @@ data:extend{
         maximum_value = 100,
         order = "d-scheduler-g",
     },
+    {
+        type = "int-setting",
+        name = "cargo-drone-max-assign-depot-tasks",
+        setting_type = "runtime-global",
+        default_value = 1,
+        minimum_value = 1,
+        maximum_value = 100,
+        order = "d-scheduler-h",
+    },
 }
