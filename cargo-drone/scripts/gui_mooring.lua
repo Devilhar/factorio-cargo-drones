@@ -15,6 +15,7 @@ local minimap_name = gui_prefix .. "drone-minimap"
 local window_gui_name = gui_prefix .. "window-mooring-main"
 
 local not_observed = {}
+local depot_task_weight = 1000
 
 local function get_drone_limit_signal_element(player_data, element)
     local signal_id = mh.get_drone_limit_circuit_signal_id(player_data.entity)
@@ -325,11 +326,76 @@ local function update_item_signals(player_data)
 end
 
 local function update_drone_list(player_data)
-    local task_ids = dt.get_entity_task_ids(player_data.entity)
+    local mooring = player_data.entity
 
-    local index = 1
+    local task_ids = dt.get_entity_task_ids(mooring)
+    local sorted_drone_task_list = {}
 
     if task_ids then
+        local function get_weight(drone, task)
+            local target = dh.get_docked_mooring(drone)
+
+            if target then
+                if target == mooring then
+                    return 1
+                else
+                    return 5
+                end
+            end
+
+            target = dh.get_docking_mooring(drone)
+
+            if target then
+                if target == mooring then
+                    return 2
+                else
+                    return 6
+                end
+            end
+
+            target = dh.get_queuing_mooring(drone)
+
+            if target then
+                if target == mooring then
+                    return 3
+                else
+                    return 7
+                end
+            end
+
+            target = dt.get_target(task)
+
+            if target then
+                if target == mooring then
+                    return 4
+                else
+                    return 8
+                end
+            end
+
+            return 9
+        end
+
+        local function insert_sorted(drone, task)
+            if dt.is_muted(task) then
+                table.insert(sorted_drone_task_list, { drone, task, depot_task_weight })
+
+                return
+            end
+
+            local weight = get_weight(drone, task)
+
+            for i, drone_task in ipairs(sorted_drone_task_list) do
+                if weight < drone_task[3] then
+                    table.insert(sorted_drone_task_list, i, { drone, task, weight })
+
+                    return
+                end
+            end
+
+            table.insert(sorted_drone_task_list, { drone, task, weight })
+        end
+
         local function update_elements(drone, minimap, task_label)
             local task = dt.get(dt.get_current_drone_task_id(drone))
             local mooring_type = 0
@@ -461,7 +527,7 @@ local function update_drone_list(player_data)
             items_table.style.padding = 4
 
             for _, item in ipairs(task.items) do
-                local item_sprite = items_table.add{
+                items_table.add{
                     type = "sprite-button",
                     style = "transparent_slot",
                     sprite = "item/" .. item.name,
@@ -475,8 +541,15 @@ local function update_drone_list(player_data)
         for task_id, _ in pairs(task_ids) do
             local task = dt.get(task_id)
             
-            local element = player_data.elements.drone_table[mooring_drone_prefix .. index]
             local drone = ep.get_managed_entity(task.drone_unit_number)
+
+            insert_sorted(drone, task)
+        end
+
+        for i, drone_task in ipairs(sorted_drone_task_list) do
+            local element = player_data.elements.drone_table[mooring_drone_prefix .. i]
+            local drone = drone_task[1]
+            local task = drone_task[2]
 
             if element then
                 local minimap = element[gui_prefix .. "minimap-frame"][gui_prefix .. "minimap-flow"][minimap_name]
@@ -484,12 +557,12 @@ local function update_drone_list(player_data)
 
                 update_elements(drone, minimap, task_label)
             else
-                create_drone_element(index, drone, task)
+                create_drone_element(i, drone, task)
             end
-
-            index = index + 1
         end
     end
+
+    local index = #sorted_drone_task_list + 1
 
     while true do
         local element = player_data.elements.drone_table[mooring_drone_prefix .. index]
