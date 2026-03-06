@@ -522,7 +522,7 @@ local state_procs = {
         return nil
     end,
     [states.assign_depot_task] = function()
-        for _ = 1, settings.global["cargo-drone-max-processed-item-requests"].value do -- FIXME: Unique setting
+        for _ = 1, settings.global["cargo-drone-max-assign-depot-tasks"].value do
             if assign_depot_task() then
                 return reset_state
             end
