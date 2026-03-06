@@ -3,6 +3,8 @@ Version: 1.6.0
 Date: 06. 03. 2026
   Minor Features:
     - Added a checkbox inside the GUI for moorings for marking them as a depot. Idle Cargo drones will park next to depots when waiting for new tasks.
+  Changes:
+    - Sorted the Cargo drone list in the mooring GUI, so more relevant drones are placed higher.
   Bugfixes:
     - Fixed a crash when selecting a Cargo drone after destroying a selected Cargo drone.
     - Fixed an issue where item requests would sometimes have a higher priority than heading to a Refueler mooring.
