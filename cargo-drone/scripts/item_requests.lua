@@ -41,13 +41,35 @@ local function get_item_signals(mooring)
     return items
 end
 
-local function get_items(mooring)
-    local items = get_item_signals(mooring)
+local function remove_items(items, items_to_remove, mul)
+    for i, item_data in ipairs(items_to_remove) do
+        local selected_item = items[item_data.name]
 
-    if not items then
-        return nil
+        if selected_item then
+            local selected_quality = selected_item[item_data.quality]
+
+            if selected_quality then
+                selected_quality.count = selected_quality.count - item_data.count * mul
+
+                if selected_quality.count <= 0 then
+                    selected_item[item_data.quality] = nil
+
+                    if next(selected_item) == nil then
+                        items[item_data.name] = nil
+
+                        if next(items) == nil then
+                            return false
+                        end
+                    end
+                end
+            end
+        end
     end
 
+    return true
+end
+
+local function remove_requested_items(mooring, items)
     local properties = ep.get_entity_properties(mooring)
 
     if properties.task_ids then
@@ -55,27 +77,51 @@ local function get_items(mooring)
             local task = dt.get(task_id)
 
             if task.items then
-                for i, item_data in ipairs(task.items) do
-                    local selected_item = items[item_data.name]
-
-                    if selected_item then
-                        if selected_item[item_data.quality] ~= nil then
-                            local selected_quality = selected_item[item_data.quality]
-
-                            selected_quality.count = selected_quality.count - item_data.count
-
-                            if selected_quality.count <= 0 then
-                                selected_item[item_data.quality] = nil
-
-                                if next(items) == nil then
-                                    return nil
-                                end
-                            end
-                        end
-                    end
+                if not remove_items(items, task.items, 1) then
+                    return false
                 end
             end
         end
+    end
+
+    return true
+end
+local function remove_request_output(mooring, items)
+    local request_output = mh.get_request_output(mooring)
+
+    if request_output ~= nil then
+        local mul = 0
+
+        if mooring.get_circuit_network(defines.wire_connector_id.circuit_red) ~= nil then
+            mul = mul + 1
+        end
+        if mooring.get_circuit_network(defines.wire_connector_id.circuit_green) ~= nil then
+            mul = mul + 1
+        end
+
+        if mul > 0 then
+            if not remove_items(items, request_output, mul) then
+                return false
+            end
+        end
+    end
+
+    return true
+end
+
+local function get_items(mooring)
+    local items = get_item_signals(mooring)
+
+    if not items then
+        return nil
+    end
+
+    if not remove_requested_items(mooring, items) then
+        return nil
+    end
+
+    if not remove_request_output(mooring, items) then
+        return nil
     end
 
     return items

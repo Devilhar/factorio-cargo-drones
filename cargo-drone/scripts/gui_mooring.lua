@@ -262,6 +262,15 @@ local observers = {
             player_data.elements.priority_signal_choose_elem_button.elem_value = mh.get_priority_circuit_signal_id(player_data.entity)
         end
     },
+
+    get_read_requests_circuit = {
+        get = function(player_data) return mh.get_read_requests(player_data.entity) end,
+        updated = function(player_data, data)
+            if player_data.elements.read_requests_circuit_checkbox then
+                player_data.elements.read_requests_circuit_checkbox.state = data
+            end
+        end
+    },
 }
 
 for x = 1, 3 do
@@ -280,11 +289,7 @@ for x = 1, 3 do
 end
 
 local function update_item_signals(player_data)
-    local mooring_signals = player_data.entity.get_signals(defines.wire_connector_id.circuit_red, defines.wire_connector_id.circuit_green)
-
-    local current_index = 1
-
-    local function update_item_element(index, item)
+    local function update_item_element(index, name, quality, count)
         local item_sprite = player_data.elements.signal_item_indices[index]
 
         if not item_sprite then
@@ -296,14 +301,20 @@ local function update_item_signals(player_data)
             player_data.elements.signal_item_indices[index] = item_sprite
         end
 
-        item_sprite.sprite = "item/" .. item.signal.name
-        item_sprite.quality = item.signal.quality
-        item_sprite.number = item.count
-        item_sprite.tooltip = prototypes.item[item.signal.name].localised_name
+        item_sprite.sprite = "item/" .. name
+        item_sprite.quality = quality
+        item_sprite.number = count
+        item_sprite.tooltip = prototypes.item[name].localised_name
         item_sprite.visible = true
     end
 
+    local mooring_signals = player_data.entity.get_signals(defines.wire_connector_id.circuit_red, defines.wire_connector_id.circuit_green)
+
+    local current_index = 1
+
     if mooring_signals then
+        local requests = {}
+
         for i, item in ipairs(mooring_signals) do
             if item.signal.type ~= nil then
                 goto continue
@@ -312,11 +323,48 @@ local function update_item_signals(player_data)
                 goto continue
             end
 
-            update_item_element(i, item)
+            local selected_item = requests[item.signal.name]
 
-            current_index = current_index + 1
+            if not selected_item then
+                selected_item = {}
+
+                requests[item.signal.name] = selected_item
+            end
+
+            selected_item[item.signal.quality or "normal"] = item.count
 
             ::continue::
+        end
+
+        local request_output = mh.get_request_output(player_data.entity)
+
+        if request_output and mh.get_read_requests(player_data.entity) then
+            local mul = 0
+
+            if player_data.entity.get_circuit_network(defines.wire_connector_id.circuit_red) ~= nil then
+                mul = mul + 1
+            end
+            if player_data.entity.get_circuit_network(defines.wire_connector_id.circuit_green) ~= nil then
+                mul = mul + 1
+            end
+
+            if mul > 0 then
+                for _, item in ipairs(request_output) do
+                    local selected_item = requests[item.name]
+
+                    if selected_item and selected_item[item.quality] ~= nil then
+                        selected_item[item.quality] = selected_item[item.quality] - item.count * mul
+                    end
+                end
+            end
+        end
+
+        for name, quality_and_count in pairs(requests) do
+            for quality, count in pairs(quality_and_count) do
+                update_item_element(current_index, name, quality, count)
+
+                current_index = current_index + 1
+            end
         end
     end
 
@@ -680,6 +728,11 @@ local callbacks = {
     end,
     [gui_prefix .. "priority-signal-choose-elem-button"] = function(player_data, event)
         mh.set_priority_circuit_signal_id(player_data.entity, player_data.elements.priority_signal_choose_elem_button.elem_value)
+    end,
+    [gui_prefix .. "read-requests-checkbox"] = function(player_data, event)
+        mh.set_read_requests(player_data.entity, player_data.elements.read_requests_circuit_checkbox.state)
+
+        update_gui(player_data)
     end,
 }
 
@@ -1232,6 +1285,30 @@ local function build_gui_circuit(player_data, mooring, parent)
     player_data.elements.priority_circuit_checkbox = priority_circuit_checkbox
     player_data.elements.priority_signal_label = priority_signal_label
     player_data.elements.priority_signal_choose_elem_button = priority_signal_choose_elem_button
+
+    ---------- Read requests ----------
+
+    if ep.is_provider_mooring(mooring.unit_number) then
+        main_frame.add{
+            type = "line",
+        }
+
+        local read_requests_circuit_checkbox = main_frame.add{
+            type = "checkbox",
+            name = gui_prefix .. "read-requests-checkbox",
+            caption = { "cargo-drone-gui-control-behavior-modes.read-requests" },
+            tooltip = { "cargo-drone-gui-control-behavior-modes.read-requests-description" },
+            style = "subheader_caption_checkbox",
+            state = mh.get_read_requests(mooring)
+        }
+
+        read_requests_circuit_checkbox.style.top_margin = 4
+        read_requests_circuit_checkbox.style.bottom_margin = 4
+        read_requests_circuit_checkbox.style.left_margin = 12
+        read_requests_circuit_checkbox.style.right_margin = 12
+
+        player_data.elements.read_requests_circuit_checkbox = read_requests_circuit_checkbox
+    end
 end
 
 local function build_gui(player, mooring, mooring_name)
@@ -1411,7 +1488,7 @@ function gui_mooring.tick()
             end
 
             remove_from_lookup(player_index, player_data.entity_unit_number)
-            
+
             storage.gui_mooring_player[player_index] = nil
         end
     end
