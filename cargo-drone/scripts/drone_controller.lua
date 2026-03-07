@@ -448,6 +448,9 @@ local function tick_drone(drone, game_tick)
                     proxy_container.proxy_target_entity = nil
                 end
             end
+
+            ep.set_entity_property(old_docked_mooring, "docked_drone", nil)
+            mh.unset_request_reader(old_docked_mooring)
         end
 
         ep.set_entity_property(drone, "docked_mooring", nil)
@@ -463,6 +466,11 @@ local function tick_drone(drone, game_tick)
         end
         ep.set_entity_property(drone, "docked_mooring", state.docked_mooring)
         ep.set_entity_property(drone, "docked_game_tick", game_tick)
+        ep.set_entity_property(state.docked_mooring, "docked_drone", drone)
+
+        if mh.get_read_requests(state.docked_mooring) then
+            mh.set_request_reader(state.docked_mooring, drone)
+        end
     end
 
     if old_docking_mooring and old_docking_mooring ~= state.docking_mooring then

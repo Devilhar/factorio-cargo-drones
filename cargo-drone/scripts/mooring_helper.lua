@@ -19,6 +19,7 @@ local settings_index = {
 --  fuel_inventory_output           = 10,
 --  fuel_inventory_signal_id        = 11,
     depot                           = 12,
+    read_requests                   = 13,
 }
 local settings_filter_name = {
     drone_limit                     = "signal-A",
@@ -34,6 +35,7 @@ local settings_filter_name = {
 --  fuel_inventory_output           = "signal-J",
 --  fuel_inventory_signal_id        = "signal-K",
     depot                           = "signal-L",
+    read_requests                   = "signal-M",
 }
 local section_index = {
     settings                        = 1,
@@ -44,6 +46,7 @@ local section_index = {
 --  fuel_inventory                  = 5,
     output                          = 6,
     inventory_targets               = 7,
+    output_requests                 = 8,
 }
 local output_index = {
     drone_count                     = 1,
@@ -231,6 +234,48 @@ local function set_drone_count_circuit_signal_id(mooring, signal_id)
     set_signal_id(mooring, section_index.drone_count, signal_id)
 end
 
+local function get_read_requests(mooring)
+    return get_filter_value(settings_index.read_requests, mooring) ~= nil
+end
+local function set_read_requests(mooring, flag)
+    if flag then
+        set_filter_value(settings_index.read_requests, settings_filter_name.read_requests, mooring, 0)
+    else
+        set_filter_value(settings_index.read_requests, settings_filter_name.read_requests, mooring, nil)
+    end
+end
+
+local function unset_request_reader(mooring_unit_number)
+    local reader_data = storage.mooring_helper.active_readers[mooring_unit_number]
+
+    if not reader_data then
+        return
+    end
+
+    ep.set_entity_property(reader_data.mooring, "request_output", nil)
+
+    storage.mooring_helper.active_readers_lookup[mooring_unit_number]              = nil
+    storage.mooring_helper.active_readers_lookup[reader_data.drone_unit_number]    = nil
+
+    storage.mooring_helper.active_readers[mooring_unit_number] = nil
+end
+local function set_request_reader(mooring, drone)
+    local unit_number = mooring.unit_number
+
+    if storage.mooring_helper.active_readers[unit_number] then
+        unset_request_reader(storage.mooring_helper.active_readers[unit_number])
+    end
+
+    storage.mooring_helper.active_readers[unit_number] = {
+        mooring             = mooring,
+        drone               = drone,
+        drone_unit_number   = drone.unit_number,
+    }
+
+    storage.mooring_helper.active_readers_lookup[unit_number]       = unit_number
+    storage.mooring_helper.active_readers_lookup[drone.unit_number] = unit_number
+end
+
 local function update_drone_count_output(mooring)
     local cb = mooring.get_control_behavior()
 
@@ -262,6 +307,50 @@ local function clear_fuel_inventory_output(mooring)
     local section = cb.get_section(section_index.output)
 
     section.clear_slot(output_index.fuel_inventory)
+end
+local function update_request_reader(mooring)
+    local docked_drone = ep.get_entity_property(mooring, "docked_drone")
+
+    if docked_drone and docked_drone.valid and get_read_requests(mooring) then
+        set_request_reader(mooring, docked_drone)
+    else
+        unset_request_reader(mooring.unit_number)
+    end
+end
+local function update_request_output(mooring)
+    local cb = mooring.get_control_behavior()
+
+    local section = cb.get_section(section_index.output_requests)
+
+    local request_output = ep.get_entity_property(mooring, "request_output")
+
+    if request_output == nil or not get_read_requests(mooring) then
+        local index = 1
+
+        while true do
+            local filter = section.get_slot(index)
+
+            if filter.value == nil then
+                return
+            end
+
+            section.clear_slot(index)
+
+            index = index + 1
+        end
+
+        return
+    end
+
+    for i, item in ipairs(request_output) do
+        section.set_slot(i, {
+            value = {
+                name = item.name,
+                quality = item.quality,
+            },
+            min = item.count,
+        })
+    end
 end
 
 local function get_inventory_target(mooring, x, y)
@@ -423,28 +512,35 @@ end
 local function clean_settings(mooring)
     local cb = mooring.get_control_behavior()
 
-    while cb.sections_count < 7 do
+    while cb.sections_count < 8 do
         cb.add_section()
     end
-    while cb.sections_count > 7 do
-        cb.remove_section(6)
+    while cb.sections_count > 8 do
+        cb.remove_section(8)
     end
 
-    for i = 1, 7 do
+    for i = 1, 8 do
         local section = cb.get_section(i)
 
         section.active = false
         section.group = ""
     end
 
+    if not ep.is_provider_mooring(mooring.unit_number) then
+        set_read_requests(mooring, false)
+    end
+
     update_drone_count_output(mooring)
     clear_fuel_inventory_output(mooring)
+    update_request_reader(mooring)
+    update_request_output(mooring)
     update_proxy_container_inventories(mooring)
     if get_depot(mooring) then
         add_depot(mooring)
     end
 
     cb.get_section(section_index.output).active = true
+    cb.get_section(section_index.output_requests).active = true
 end
 local function flip_horizontal(mooring)
     local a1 = get_inventory_target(mooring, 1, 1)
@@ -466,10 +562,10 @@ local mooring_helper = {}
 
 function mooring_helper.init()
     storage.depots = storage.depots or {}
-end
+    storage.mooring_helper = storage.mooring_helper or {}
 
-function mooring_helper.clear_deprecated_values(mooring)
-	clear_fuel_inventory_output(mooring)
+    storage.mooring_helper.active_readers           = storage.mooring_helper.active_readers or {}
+    storage.mooring_helper.active_readers_lookup    = storage.mooring_helper.active_readers_lookup or {}
 end
 
 function mooring_helper.try_setup_mooring(mooring)
@@ -526,10 +622,15 @@ function mooring_helper.migration_create_proxy_containers(mooring)
 	ep.set_entity_property(mooring, "proxy_containers", proxy_containers)
 end
 
+function mooring_helper.is_mooring(entity_unit_number)
+    return ep.is_provider_mooring(entity_unit_number)
+        or ep.is_requester_mooring(entity_unit_number)
+        or ep.is_refueler_mooring(entity_unit_number)
+end
+
 function mooring_helper.on_rotate(mooring)
     update_proxy_container_inventories(mooring)
 end
-
 function mooring_helper.on_flip(mooring)
     flip_horizontal(mooring)
 
@@ -538,6 +639,24 @@ end
 
 function mooring_helper.clean_settings(mooring)
     clean_settings(mooring)
+end
+
+function mooring_helper.on_destroyed_entity(entity)
+    local mooring_unit_number = storage.mooring_helper.active_readers_lookup[entity.unit_number]
+
+    if mooring_unit_number == nil then
+        return
+    end
+
+    local mooring = ep.get_managed_entity(mooring_unit_number)
+
+    if not mooring or not mooring.valid then
+        return
+    end
+
+    unset_request_reader(mooring)
+
+    update_request_output(mooring)
 end
 
 function mooring_helper.get_depots(surface_index)
@@ -737,6 +856,37 @@ function mooring_helper.set_depot_drone_count(depot, value)
     end
 
     set_depot_drone_count(depot, value)
+end
+
+function mooring_helper.get_request_output(mooring)
+    return ep.get_entity_property(mooring, "request_output")
+end
+function mooring_helper.set_request_output(mooring, request_output)
+    ep.set_entity_property(mooring, "request_output", request_output)
+
+    update_request_output(mooring)
+end
+
+function mooring_helper.get_read_requests(mooring)
+    return get_read_requests(mooring)
+end
+function mooring_helper.set_read_requests(mooring, flag)
+    set_read_requests(mooring, flag)
+
+    update_request_reader(mooring)
+    update_request_output(mooring)
+end
+
+function mooring_helper.set_request_reader(mooring, drone)
+    set_request_reader(mooring, drone)
+
+    update_request_reader(mooring)
+    update_request_output(mooring)
+end
+function mooring_helper.unset_request_reader(mooring)
+    unset_request_reader(mooring.unit_number)
+
+    update_request_output(mooring)
 end
 
 return mooring_helper

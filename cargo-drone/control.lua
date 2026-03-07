@@ -4,6 +4,7 @@ local ep		= require("scripts.entity_property")
 local rc    	= require("scripts.requester_cooldown")
 local mh		= require("scripts.mooring_helper")
 local dt		= require("scripts.drone_tasks")
+local mc		= require("scripts.mooring_controller")
 local dc		= require("scripts.drone_controller")
 local gm		= require("scripts.gui_mooring")
 local gcd		= require("scripts.gui_cargo_drone")
@@ -16,9 +17,7 @@ local function unmanage_entity(unit_number)
 		dt.drone_destroyed(unit_number)
 
 		scheduler.drone_destroyed(unit_number)
-	elseif ep.is_provider_mooring(unit_number)
-		or ep.is_requester_mooring(unit_number)
-		or ep.is_refueler_mooring(unit_number) then
+	elseif mh.is_mooring(unit_number) then
 		dt.mooring_destroyed(unit_number)
 	end
 
@@ -101,7 +100,6 @@ local function migrate_state()
 			if ep.get_entity_property(mooring, "proxy_containers") == nil then
 				mh.migration_create_proxy_containers(mooring)
 			end
-			mh.clean_settings(mooring)
 		end
 
 		for _, entity_data in pairs(ep.get_cargo_drones()) do
@@ -115,7 +113,6 @@ local function migrate_state()
 		end
 		for _, entity_data in pairs(ep.get_cargo_drone_refuel_moorings()) do
 			migrate_proxy_containers(entity_data.entity)
-			mh.clear_deprecated_values(entity_data.entity)
 		end
 
 		if constants.drone_has_burnt_result then
@@ -124,6 +121,16 @@ local function migrate_state()
 	end
 
 	mh.init()
+
+	for _, entity_data in pairs(ep.get_cargo_drone_provider_moorings()) do
+		mh.clean_settings(entity_data.entity)
+	end
+	for _, entity_data in pairs(ep.get_cargo_drone_requester_moorings()) do
+		mh.clean_settings(entity_data.entity)
+	end
+	for _, entity_data in pairs(ep.get_cargo_drone_refuel_moorings()) do
+		mh.clean_settings(entity_data.entity)
+	end
 
 	log("cargo-drone state migration complete")
 end
@@ -151,6 +158,8 @@ function on_tick(event)
 	scheduler.tick(event.tick)
 
 	dc.tick(event.tick)
+
+	mc.tick()
 
 	gm.tick()
 	gcd.tick()
@@ -189,11 +198,7 @@ function on_destroyed_entity(event)
 		return
 	end
 
-	if ep.is_provider_mooring(unit_number)
-		or ep.is_requester_mooring(unit_number)
-		or ep.is_refueler_mooring(unit_number) then
-		mh.mooring_destroyed(entity)
-	end
+	mc.on_destroyed_entity(entity)
 
 	unmanage_entity(unit_number)
 end
@@ -204,9 +209,7 @@ function on_player_rotated_entity(event)
 
 	local unit_number = event.entity.unit_number
 
-	if ep.is_provider_mooring(unit_number)
-		or ep.is_requester_mooring(unit_number)
-		or ep.is_refueler_mooring(unit_number) then
+	if mh.is_mooring(unit_number) then
 		mh.on_rotate(event.entity)
 	end
 end
@@ -217,9 +220,7 @@ function on_player_flipped_entity(event)
 
 	local unit_number = event.entity.unit_number
 
-	if ep.is_provider_mooring(unit_number)
-		or ep.is_requester_mooring(unit_number)
-		or ep.is_refueler_mooring(unit_number) then
+	if mh.is_mooring(unit_number) then
 		mh.on_flip(event.entity)
 	end
 end
@@ -230,9 +231,7 @@ function on_entity_settings_pasted(event)
 
 	local unit_number = event.destination.unit_number
 
-	if ep.is_provider_mooring(unit_number)
-		or ep.is_requester_mooring(unit_number)
-		or ep.is_refueler_mooring(unit_number) then
+	if mh.is_mooring(unit_number) then
 		mh.clean_settings(event.destination)
 
 		if ep.is_refueler_mooring(unit_number) ~= ep.is_refueler_mooring(event.source.unit_number) then
