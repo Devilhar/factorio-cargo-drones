@@ -1,3 +1,5 @@
+  Minor Features:
+    - Added a checkbox inside the GUI for Provider moorings to read the currently missing items from docked Cargo drones.
 ---------------------------------------------------------------------------------------------------
 Version: 1.6.0
 Date: 06. 03. 2026
