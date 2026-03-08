@@ -47,6 +47,8 @@ local function migrate_state()
 
 	storage.mod_state = constants.current_mod_state
 
+	mh.init()
+
 	if old_mod_state < 6 then
 		ep.remove_invalid_entities()
 	end
@@ -119,8 +121,6 @@ local function migrate_state()
 			game.print({ "cargo-drone-migration.warning-read-inventory-output-removed" })
 		end
 	end
-
-	mh.init()
 
 	for _, entity_data in pairs(ep.get_cargo_drone_provider_moorings()) do
 		mh.clean_settings(entity_data.entity)
