@@ -467,6 +467,12 @@ local function get_default_inventory_target(mooring)
 end
 local function update_proxy_container_inventories(mooring)
 	local proxy_containers = ep.get_entity_property(mooring, "proxy_containers")
+
+    -- Ghost entities have no proxy containers
+    if not proxy_containers then
+        return
+    end
+
     local default_target_inventory = get_default_inventory_target(mooring)
 
     for i = 1, 9 do
@@ -509,22 +515,58 @@ local function create_proxy_containers(mooring)
     return proxy_containers
 end
 
-local function clean_settings(mooring)
-    local cb = mooring.get_control_behavior()
-
-    while cb.sections_count < 8 do
-        cb.add_section()
+local function resize_and_activate_sections(control_behavior)
+    while control_behavior.sections_count < 8 do
+        control_behavior.add_section()
     end
-    while cb.sections_count > 8 do
-        cb.remove_section(8)
+    while control_behavior.sections_count > 8 do
+        control_behavior.remove_section(8)
     end
 
     for i = 1, 8 do
-        local section = cb.get_section(i)
+        local section = control_behavior.get_section(i)
 
         section.active = false
         section.group = ""
     end
+
+    control_behavior.get_section(section_index.output).active = true
+    control_behavior.get_section(section_index.output_requests).active = true
+end
+local function clear_all_outputs(mooring)
+    local cb = mooring.get_control_behavior()
+
+    local section = cb.get_section(section_index.output)
+
+    section.clear_slot(output_index.drone_count)
+    section.clear_slot(output_index.fuel_inventory)
+
+    section = cb.get_section(section_index.output_requests)
+    local index = 1
+
+    while true do
+        local filter = section.get_slot(index)
+
+        if filter.value == nil then
+            return
+        end
+
+        section.clear_slot(index)
+
+        index = index + 1
+    end
+end
+local function clean_settings_ghost(mooring)
+    local cb = mooring.get_control_behavior()
+
+    resize_and_activate_sections(cb)
+
+    clear_all_outputs(mooring)
+end
+local function clean_settings(mooring)
+    local cb = mooring.get_control_behavior()
+
+    resize_and_activate_sections(cb)
 
     if not ep.is_provider_mooring(mooring.unit_number) then
         set_read_requests(mooring, false)
@@ -538,9 +580,6 @@ local function clean_settings(mooring)
     if get_depot(mooring) then
         add_depot(mooring)
     end
-
-    cb.get_section(section_index.output).active = true
-    cb.get_section(section_index.output_requests).active = true
 end
 local function flip_horizontal(mooring)
     local a1 = get_inventory_target(mooring, 1, 1)
@@ -639,6 +678,9 @@ end
 
 function mooring_helper.clean_settings(mooring)
     clean_settings(mooring)
+end
+function mooring_helper.clean_settings_ghost(mooring)
+    clean_settings_ghost(mooring)
 end
 
 function mooring_helper.on_destroyed_entity(entity)

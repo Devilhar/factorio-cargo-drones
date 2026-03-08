@@ -173,6 +173,12 @@ end
 function on_built_entity(event)
 	local entity = event.entity
 
+	if entity.name == "entity-ghost" then
+		mh.clean_settings_ghost(entity)
+
+		return
+	end
+
 	if entity.name == "cargo-drone" then
 		ep.entity_manage(entity)
 
@@ -181,10 +187,12 @@ function on_built_entity(event)
 		ep.add_cargo_drone(entity)
 
 		dt.drone_created(entity)
-	else
-		if not mh.try_setup_mooring(entity) then
-			entity.destroy()
-		end
+
+		return
+	end
+
+	if not mh.try_setup_mooring(entity) then
+		entity.destroy()
 	end
 end
 function on_destroyed_entity(event)
@@ -269,11 +277,14 @@ function on_gui_elem_changed(event)
 	gm.on_gui_elem_changed(event)
 end
 
-local event_filters = {
+local build_event_filters = {
 	{ filter = "name", name = "cargo-drone" },
 	{ filter = "name", name = "cargo-drone-mooring-constant-combinator-provider" },
 	{ filter = "name", name = "cargo-drone-mooring-constant-combinator-requester" },
-	{ filter = "name", name = "cargo-drone-mooring-constant-combinator-refueler" }
+	{ filter = "name", name = "cargo-drone-mooring-constant-combinator-refueler" },
+	{ filter = "ghost_name", name = "cargo-drone-mooring-constant-combinator-provider" },
+	{ filter = "ghost_name", name = "cargo-drone-mooring-constant-combinator-requester" },
+	{ filter = "ghost_name", name = "cargo-drone-mooring-constant-combinator-refueler" }
 }
 local build_events = {
 	defines.events.on_built_entity,
@@ -281,6 +292,12 @@ local build_events = {
 	defines.events.script_raised_built,
 	defines.events.script_raised_revive,
 	defines.events.on_entity_cloned,
+}
+local destroy_event_filters = {
+	{ filter = "name", name = "cargo-drone" },
+	{ filter = "name", name = "cargo-drone-mooring-constant-combinator-provider" },
+	{ filter = "name", name = "cargo-drone-mooring-constant-combinator-requester" },
+	{ filter = "name", name = "cargo-drone-mooring-constant-combinator-refueler" }
 }
 local destroy_events = {
 	defines.events.on_entity_died,
@@ -310,8 +327,8 @@ script.on_event(defines.events.on_gui_text_changed, on_gui_text_changed)
 script.on_event(defines.events.on_gui_elem_changed, on_gui_elem_changed)
 
 for _, event in ipairs(build_events) do
-	script.set_event_filter(event, event_filters)
+	script.set_event_filter(event, build_event_filters)
 end
 for _, event in ipairs(destroy_events) do
-	script.set_event_filter(event, event_filters)
+	script.set_event_filter(event, destroy_event_filters)
 end
