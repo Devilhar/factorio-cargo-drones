@@ -64,7 +64,9 @@ end
 local function begin_frame()
     storage.scheduler.update_stage = 0
 
-    storage.scheduler.should_perform_mooring_scan = storage.scheduler.last_mooring_scan_tick + mooring_scan_interval < storage.scheduler.last_schedule_tick
+    storage.scheduler.should_perform_mooring_scan =
+        settings.global["cargo-drone-mooring-no-wire-connection-alert"].value
+        and storage.scheduler.last_mooring_scan_tick + mooring_scan_interval < storage.scheduler.last_schedule_tick
 
     storage.scheduler.idling_cargo_drones = {}
     storage.scheduler.idling_cargo_drones_empty = {}

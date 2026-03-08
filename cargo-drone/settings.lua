@@ -38,13 +38,20 @@ data:extend{
     },
 
     {
+        type = "bool-setting",
+        name = "cargo-drone-mooring-no-wire-connection-alert",
+        setting_type = "runtime-global",
+        default_value = true,
+        order = "c-mooring-a",
+    },
+    {
         type = "int-setting",
         name = "cargo-drone-stuck-at-refueler-seconds-alert",
         setting_type = "runtime-global",
         default_value = 120,
         minimum_value = 0,
         maximum_value = 3600,
-        order = "c-mooring-a",
+        order = "c-mooring-b",
     },
     {
         type = "int-setting",
@@ -53,7 +60,7 @@ data:extend{
         default_value = 50,
         minimum_value = 0,
         maximum_value = 10000,
-        order = "c-mooring-b",
+        order = "c-mooring-c",
     },
 
     {
