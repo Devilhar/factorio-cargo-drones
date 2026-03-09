@@ -1,6 +1,8 @@
 ---------------------------------------------------------------------------------------------------
 Version: 1.7.1
 Date: 09. 03. 2026
+  Changes:
+    - Made internal changes to how mooring settings are stored. Previously it was based on setting index, now it's based on the setting filter name. This is to fix incompatibilities with mods that sort filters.
 ---------------------------------------------------------------------------------------------------
 Version: 1.7.0
 Date: 08. 03. 2026
