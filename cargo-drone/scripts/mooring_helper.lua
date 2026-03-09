@@ -461,7 +461,8 @@ local function get_proxy_container_offset(index)
     return ((index - 1) % 3) + 1, math.floor((index - 1) / 3) + 1
 end
 local function get_default_inventory_target(mooring)
-    if ep.is_refueler_mooring(mooring.unit_number) then
+    if mooring.name == "cargo-drone-mooring-constant-combinator-refueler"
+        or (mooring.name == "entity-ghost" and mooring.ghost_name == "cargo-drone-mooring-constant-combinator-refueler") then
         return defines.inventory.fuel
     end
 

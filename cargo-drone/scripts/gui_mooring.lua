@@ -790,7 +790,7 @@ local function handle_event(event)
     callable(storage.gui_mooring_player[player.index], event)
 end
 
-local function build_gui_mooring(player_data, mooring, parent)
+local function build_gui_mooring(player_data, mooring, mooring_name, parent)
     local mooring_frame = parent.add{
         type = "frame",
         style = "inside_shallow_frame",
@@ -934,7 +934,7 @@ local function build_gui_mooring(player_data, mooring, parent)
 
     ---------- Item Signals ----------
 
-    if mooring.name ~= "cargo-drone-mooring-constant-combinator-refueler" then
+    if mooring_name ~= "cargo-drone-mooring-constant-combinator-refueler" then
         local label_caption = "cargo-drone-gui-mooring.provided-items"
 
         if mooring.name == "cargo-drone-mooring-constant-combinator-requester" then
@@ -1118,7 +1118,7 @@ local function build_gui_circuit_connection_status(player_data, mooring, parent)
     player_data.elements.network_red_label = network_red_label
     player_data.elements.network_green_label = network_green_label
 end
-local function build_gui_circuit(player_data, mooring, parent)
+local function build_gui_circuit(player_data, mooring, mooring_name, parent)
     local frame = parent.add{
         type = "frame",
         direction = "vertical",
@@ -1288,7 +1288,7 @@ local function build_gui_circuit(player_data, mooring, parent)
 
     ---------- Read requests ----------
 
-    if ep.is_provider_mooring(mooring.unit_number) then
+    if mooring_name == "cargo-drone-mooring-constant-combinator-provider" then
         main_frame.add{
             type = "line",
         }
@@ -1389,11 +1389,11 @@ local function build_gui(player, mooring, mooring_name)
 
     main_flow.style.horizontal_spacing = 8
 
-    build_gui_mooring(player_data, mooring, main_flow)
+    build_gui_mooring(player_data, mooring, mooring_name, main_flow)
 
     build_gui_drones(player_data, main_flow)
 
-    build_gui_circuit(player_data, mooring, main_flow)
+    build_gui_circuit(player_data, mooring, mooring_name, main_flow)
 
     player.opened = frame
 
