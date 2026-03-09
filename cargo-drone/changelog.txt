@@ -1,3 +1,6 @@
+---------------------------------------------------------------------------------------------------
+Version: 1.7.2
+Date: 09. 03. 2026
   Bugfixes:
     - Fixed mooring ghosts not being able to be rotated or flipped.
     - Fixed ghost Provider mooring not showing the Read requests checkbox.
