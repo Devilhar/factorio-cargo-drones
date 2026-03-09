@@ -237,12 +237,31 @@ function on_entity_settings_pasted(event)
 		return
 	end
 
-	local unit_number = event.destination.unit_number
+	local destination_name = event.destination.name
 
-	if mh.is_mooring(unit_number) then
-		mh.clean_settings(event.destination)
+	local destination_is_ghost = destination_name == "entity-ghost"
 
-		if ep.is_refueler_mooring(unit_number) ~= ep.is_refueler_mooring(event.source.unit_number) then
+	if destination_is_ghost then
+		destination_name = event.destination.ghost_name
+	end
+
+	if mh.is_name_mooring(destination_name) then
+		if destination_is_ghost then
+			mh.clean_settings_ghost(event.destination)
+		else
+			mh.clean_settings(event.destination)
+		end
+
+		local source_name = event.source.name
+
+		if source_name == "entity-ghost" then
+			source_name = event.source.ghost_name
+		end
+
+		local is_refueler_destination = destination_name == "cargo-drone-mooring-constant-combinator-refueler"
+		local is_refueler_source = source_name == "cargo-drone-mooring-constant-combinator-refueler"
+
+		if is_refueler_destination ~= is_refueler_source then
 			for x = 1, 3 do
 				for y = 1, 3 do
 					mh.set_inventory_target_absolute(event.destination, x, y, mh.get_inventory_target_absolute(event.source, x, y))

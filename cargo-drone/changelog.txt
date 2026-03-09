@@ -1,3 +1,5 @@
+  Bugfixes:
+    - Fixed a crash when pasting an empty Constant container's settings to a mooring ghost.
 ---------------------------------------------------------------------------------------------------
 Version: 1.7.1
 Date: 09. 03. 2026
