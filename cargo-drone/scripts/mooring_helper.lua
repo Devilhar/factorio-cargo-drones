@@ -5,38 +5,36 @@ local signal_id_drone_limit     = { type = "virtual", name = "signal-L", quality
 local signal_id_priority        = { type = "virtual", name = "signal-P", quality = "normal" }
 local signal_id_drone_count     = { type = "virtual", name = "signal-C", quality = "normal" }
 
-local settings_index = {
-    drone_limit                     = 1,
-    drone_limit_circuit             = 2,
-    drone_limit_circuit_signal_id   = 3,
-    priority                        = 4,
-    priority_circuit                = 5,
-    priority_circuit_signal_id      = 6,
-    drone_count_circuit             = 7,
-    drone_count_signal_id           = 8,
--- Deprecated
---  fuel_inventory                  = 9,
---  fuel_inventory_output           = 10,
---  fuel_inventory_signal_id        = 11,
-    depot                           = 12,
-    read_requests                   = 13,
+local setting_names = {
+    drone_limit                     = "drone_limit",
+    drone_limit_circuit             = "drone_limit_circuit",
+    drone_limit_circuit_signal_id   = "drone_limit_circuit_signal_id",
+    priority                        = "priority",
+    priority_circuit                = "priority_circuit",
+    priority_circuit_signal_id      = "priority_circuit_signal_id",
+    drone_count_circuit             = "drone_count_circuit",
+    drone_count_signal_id           = "drone_count_signal_id",
+    depot                           = "depot",
+    read_requests                   = "read_requests",
 }
+
 local settings_filter_name = {
-    drone_limit                     = "signal-A",
-    drone_limit_circuit             = "signal-B",
-    drone_limit_circuit_signal_id   = "signal-C",
-    priority                        = "signal-D",
-    priority_circuit                = "signal-E",
-    priority_circuit_signal_id      = "signal-F",
-    drone_count_circuit             = "signal-G",
-    drone_count_signal_id           = "signal-H",
+    [setting_names.drone_limit]                     = "signal-A",
+    [setting_names.drone_limit_circuit]             = "signal-B",
+    [setting_names.drone_limit_circuit_signal_id]   = "signal-C",
+    [setting_names.priority]                        = "signal-D",
+    [setting_names.priority_circuit]                = "signal-E",
+    [setting_names.priority_circuit_signal_id]      = "signal-F",
+    [setting_names.drone_count_circuit]             = "signal-G",
+    [setting_names.drone_count_signal_id]           = "signal-H",
 -- Deprecated
---  fuel_inventory                  = "signal-I",
---  fuel_inventory_output           = "signal-J",
---  fuel_inventory_signal_id        = "signal-K",
-    depot                           = "signal-L",
-    read_requests                   = "signal-M",
+--  fuel_inventory                                  = "signal-I",
+--  fuel_inventory_output                           = "signal-J",
+--  fuel_inventory_signal_id                        = "signal-K",
+    [setting_names.depot]                           = "signal-L",
+    [setting_names.read_requests]                   = "signal-M",
 }
+
 local section_index = {
     settings                        = 1,
     drone_limit                     = 2,
@@ -71,32 +69,53 @@ local function get_settings_section(mooring)
     return cb.get_section(section_index.settings)
 end
 
-local function set_filter_value(index, filter_name, mooring, value)
-    local section = get_settings_section(mooring)
+local function set_filter_value(section, filter_name, value)
+    local filters = section.filters
 
-    if value ~= nil then
-        section.set_slot(index, {
-            value = {
-                type = "virtual",
-                name = filter_name,
-                quality = "normal",
-            },
-            min = value
-        })
-    else
-        section.clear_slot(index)
+    for i, filter in ipairs(filters) do
+        if filter.value and filter.value.name == filter_name then
+            if value == nil then
+                table.remove(filters, i)
+            else
+                filter.min = value
+            end
+
+            section.filters = filters
+
+            return
+        end
     end
+
+    if value == nil then
+        return
+    end
+
+    table.insert(filters, {
+        value = {
+            type = "virtual",
+            name = filter_name,
+            quality = "normal",
+        },
+        min = value
+    })
+
+    section.filters = filters
 end
-local function get_filter_value(index, mooring)
-    local section = get_settings_section(mooring)
-
-    local filter = section.get_slot(index)
-
-    if not filter then
-        return nil
+local function get_filter_value(section, filter_name)
+    for _, filter in ipairs(section.filters) do
+        if filter.value and filter.value.name == filter_name then
+            return filter.min
+        end
     end
 
-    return filter.min
+    return nil
+end
+
+local function set_settings_value(mooring, setting_name, value)
+    set_filter_value(get_settings_section(mooring), settings_filter_name[setting_name], value)
+end
+local function get_settings_value(mooring, setting_name)
+    return get_filter_value(get_settings_section(mooring), settings_filter_name[setting_name])
 end
 
 local function set_signal_id(mooring, index, signal_id)
@@ -117,10 +136,10 @@ local function set_signal_id(mooring, index, signal_id)
 end
 
 local function set_drone_limit(mooring, limit)
-    set_filter_value(settings_index.drone_limit, settings_filter_name.drone_limit, mooring, limit)
+    set_settings_value(mooring, setting_names.drone_limit, limit)
 end
 local function get_drone_limit(mooring)
-    local limit = get_filter_value(settings_index.drone_limit, mooring)
+    local limit = get_settings_value(mooring, setting_names.drone_limit)
 
     if limit == nil then
         return nil
@@ -134,18 +153,18 @@ local function get_drone_limit(mooring)
 end
 
 local function get_drone_limit_circuit(mooring)
-    return get_filter_value(settings_index.drone_limit_circuit, mooring) ~= nil
+    return get_settings_value(mooring, setting_names.drone_limit_circuit) ~= nil
 end
 local function set_drone_limit_circuit(mooring, flag)
     if flag then
-        set_filter_value(settings_index.drone_limit_circuit, settings_filter_name.drone_limit_circuit, mooring, 0)
+        set_settings_value(mooring, setting_names.drone_limit_circuit, 0)
     else
-        set_filter_value(settings_index.drone_limit_circuit, settings_filter_name.drone_limit_circuit, mooring, nil)
+        set_settings_value(mooring, setting_names.drone_limit_circuit, nil)
     end
 end
 
 local function get_drone_limit_circuit_signal_id(mooring)
-    if get_filter_value(settings_index.drone_limit_circuit_signal_id, mooring) == nil then
+    if get_settings_value(mooring, setting_names.drone_limit_circuit_signal_id) == nil then
         return signal_id_drone_limit
     end
 
@@ -154,12 +173,12 @@ local function get_drone_limit_circuit_signal_id(mooring)
     return section.get_slot(1).value
 end
 local function set_drone_limit_circuit_signal_id(mooring, signal_id)
-    set_filter_value(settings_index.drone_limit_circuit_signal_id, settings_filter_name.drone_limit_circuit_signal_id, mooring, 0)
+    set_settings_value(mooring, setting_names.drone_limit_circuit_signal_id, 0)
     set_signal_id(mooring, section_index.drone_limit, signal_id)
 end
 
 local function get_priority(mooring)
-    local priority = get_filter_value(settings_index.priority, mooring) or 50
+    local priority = get_settings_value(mooring, setting_names.priority) or 50
 
     if priority < 0 then
         priority = 0
@@ -170,22 +189,22 @@ local function get_priority(mooring)
     return priority
 end
 local function set_priority(mooring, limit)
-    set_filter_value(settings_index.priority, settings_filter_name.priority, mooring, limit)
+    set_settings_value(mooring, setting_names.priority, limit)
 end
 
 local function get_priority_circuit(mooring)
-    return get_filter_value(settings_index.priority_circuit, mooring) ~= nil
+    return get_settings_value(mooring, setting_names.priority_circuit) ~= nil
 end
 local function set_priority_circuit(mooring, flag)
     if flag then
-        set_filter_value(settings_index.priority_circuit, settings_filter_name.priority_circuit, mooring, 0)
+        set_settings_value(mooring, setting_names.priority_circuit, 0)
     else
-        set_filter_value(settings_index.priority_circuit, settings_filter_name.priority_circuit, mooring, nil)
+        set_settings_value(mooring, setting_names.priority_circuit, nil)
     end
 end
 
 local function get_priority_circuit_signal_id(mooring)
-    if get_filter_value(settings_index.priority_circuit_signal_id, mooring) == nil then
+    if get_settings_value(mooring, setting_names.priority_circuit_signal_id) == nil then
         return signal_id_priority
     end
 
@@ -194,7 +213,7 @@ local function get_priority_circuit_signal_id(mooring)
     return section.get_slot(1).value
 end
 local function set_priority_circuit_signal_id(mooring, signal_id)
-    set_filter_value(settings_index.priority_circuit_signal_id, settings_filter_name.priority_circuit_signal_id, mooring, 0)
+    set_settings_value(mooring, setting_names.priority_circuit_signal_id, 0)
     set_signal_id(mooring, section_index.priority_circuit, signal_id)
 end
 
@@ -210,18 +229,18 @@ local function set_drone_count(mooring, count)
 end
 
 local function get_drone_count_circuit(mooring)
-    return get_filter_value(settings_index.drone_count_circuit, mooring) ~= nil
+    return get_settings_value(mooring, setting_names.drone_count_circuit) ~= nil
 end
 local function set_drone_count_circuit(mooring, flag)
     if flag then
-        set_filter_value(settings_index.drone_count_circuit, settings_filter_name.drone_count_circuit, mooring, 0)
+        set_settings_value(mooring, setting_names.drone_count_circuit, 0)
     else
-        set_filter_value(settings_index.drone_count_circuit, settings_filter_name.drone_count_circuit, mooring, nil)
+        set_settings_value(mooring, setting_names.drone_count_circuit, nil)
     end
 end
 
 local function get_drone_count_circuit_signal_id(mooring)
-    if get_filter_value(settings_index.drone_count_signal_id, mooring) == nil then
+    if get_settings_value(mooring, setting_names.drone_count_signal_id) == nil then
         return signal_id_drone_count
     end
 
@@ -230,18 +249,18 @@ local function get_drone_count_circuit_signal_id(mooring)
     return section.get_slot(1).value
 end
 local function set_drone_count_circuit_signal_id(mooring, signal_id)
-    set_filter_value(settings_index.drone_count_signal_id, settings_filter_name.drone_count_signal_id, mooring, 0)
+    set_settings_value(mooring, setting_names.drone_count_signal_id, 0)
     set_signal_id(mooring, section_index.drone_count, signal_id)
 end
 
 local function get_read_requests(mooring)
-    return get_filter_value(settings_index.read_requests, mooring) ~= nil
+    return get_settings_value(mooring, setting_names.read_requests) ~= nil
 end
 local function set_read_requests(mooring, flag)
     if flag then
-        set_filter_value(settings_index.read_requests, settings_filter_name.read_requests, mooring, 0)
+        set_settings_value(mooring, setting_names.read_requests, 0)
     else
-        set_filter_value(settings_index.read_requests, settings_filter_name.read_requests, mooring, nil)
+        set_settings_value(mooring, setting_names.read_requests, nil)
     end
 end
 
@@ -357,30 +376,13 @@ local function get_inventory_target(mooring, x, y)
     local index = x + (y - 1) * 3
     local section = mooring.get_control_behavior().get_section(section_index.inventory_targets)
 
-    local slot = section.get_slot(index)
-
-    if not slot then
-        return nil
-    end
-
-    return slot.min
+    return get_filter_value(section, "signal-" .. index)
 end
 local function set_inventory_target(mooring, x, y, target)
     local index = x + (y - 1) * 3
     local section = mooring.get_control_behavior().get_section(section_index.inventory_targets)
 
-    if target ~= nil then
-        section.set_slot(index, {
-            value = {
-                type = "virtual",
-                name = "signal-" .. index,
-                quality = "normal",
-            },
-            min = target
-        })
-    else
-        section.clear_slot(index)
-    end
+    set_filter_value(section, "signal-" .. index, target)
 end
 
 local function add_depot(mooring)
@@ -410,15 +412,15 @@ end
 
 local function set_depot(mooring, flag)
     if flag then
-        set_filter_value(settings_index.depot, settings_filter_name.depot, mooring, 0)
+        set_settings_value(mooring, setting_names.depot, 0)
         add_depot(mooring)
     else
-        set_filter_value(settings_index.depot, settings_filter_name.depot, mooring, nil)
+        set_settings_value(mooring, setting_names.depot, nil)
         remove_depot(mooring)
     end
 end
 local function get_depot(mooring)
-    return get_filter_value(settings_index.depot, mooring) ~= nil
+    return get_settings_value(mooring, setting_names.depot) ~= nil
 end
 
 local function get_depot_drone_count(depot_unit_number)
