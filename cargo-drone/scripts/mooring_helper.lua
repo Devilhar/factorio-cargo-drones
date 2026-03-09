@@ -663,6 +663,9 @@ function mooring_helper.migration_create_proxy_containers(mooring)
 	ep.set_entity_property(mooring, "proxy_containers", proxy_containers)
 end
 
+function mooring_helper.is_name_mooring(name)
+    return mooring_type_lookup[name] ~= nil
+end
 function mooring_helper.is_mooring(entity_unit_number)
     return ep.is_provider_mooring(entity_unit_number)
         or ep.is_requester_mooring(entity_unit_number)
