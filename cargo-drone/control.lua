@@ -215,9 +215,13 @@ function on_player_rotated_entity(event)
 		return
 	end
 
-	local unit_number = event.entity.unit_number
+	local entity_name = event.entity.name
 
-	if mh.is_mooring(unit_number) then
+	if entity_name == "entity-ghost" then
+		entity_name = event.entity.ghost_name
+	end
+
+	if mh.is_name_mooring(entity_name) then
 		mh.on_rotate(event.entity)
 	end
 end
@@ -226,9 +230,13 @@ function on_player_flipped_entity(event)
 		return
 	end
 
-	local unit_number = event.entity.unit_number
+	local entity_name = event.entity.name
 
-	if mh.is_mooring(unit_number) then
+	if entity_name == "entity-ghost" then
+		entity_name = event.entity.ghost_name
+	end
+
+	if mh.is_name_mooring(entity_name) then
 		mh.on_flip(event.entity)
 	end
 end

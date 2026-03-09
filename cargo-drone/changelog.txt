@@ -1,4 +1,5 @@
   Bugfixes:
+    - Fixed mooring ghosts not being able to be rotated or flipped.
     - Fixed a crash when pasting an empty Constant container's settings to a mooring ghost.
 ---------------------------------------------------------------------------------------------------
 Version: 1.7.1
