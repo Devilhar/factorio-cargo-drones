@@ -1,7 +1,7 @@
 
-local ep = require("scripts.entity_property")
-local dt = require("scripts.drone_tasks")
-local dh = require("scripts.drone_helper")
+local ep = require("entity_property")
+local dt = require("drone_tasks")
+local dh = require("drone_helper")
 
 local gui_prefix = "cargo-drone-"
 
