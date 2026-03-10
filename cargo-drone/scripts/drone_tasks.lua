@@ -33,25 +33,17 @@ local task_data = {
 }
 
 local function generate_next_id()
-    local id = storage.tasks_next_id or 1
+    local id = storage.tasks_next_id
 
     storage.tasks_next_id = id + 1
 
     return id
 end
 local function get_tasks()
-    if not storage.drone_tasks then
-        storage.drone_tasks = {}
-    end
-
     return storage.drone_tasks
 end
 
 local function set_drone_as_idle(drone)
-    if not storage.idle_drones then
-        storage.idle_drones = {}
-    end
-
     local surface_index = drone.surface.index
 
     if not storage.idle_drones[surface_index] then
@@ -270,8 +262,13 @@ local drone_tasks = {}
 
 drone_tasks.task_types = task_types
 
+function drone_tasks.init()
+    storage.drone_tasks = storage.drone_tasks or {}
+    storage.tasks_next_id = storage.tasks_next_id or 1
+    storage.idle_drones = storage.idle_drones or {}
+end
 function drone_tasks.migration_remove_all_tasks()
-    storage.idle_drones = nil
+    storage.idle_drones = {}
 
     for _, drone_data in pairs(ep.get_cargo_drones()) do
         ep.set_entity_property(drone_data.entity, "task_ids", nil)
@@ -280,7 +277,7 @@ function drone_tasks.migration_remove_all_tasks()
     end
 
     storage.drone_tasks = {}
-    storage.tasks_next_id = nil
+    storage.tasks_next_id = 1
 end
 
 function drone_tasks.is_valid(id)
