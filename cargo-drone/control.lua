@@ -49,6 +49,8 @@ local function migrate_state()
 
 	mh.init()
 
+	dt.init()
+
 	if old_mod_state < 6 then
 		ep.remove_invalid_entities()
 	end
@@ -139,6 +141,8 @@ function on_init()
 	ep.init()
 
 	mh.init()
+
+	dt.init()
 
 	gm.create_player_storage()
 	gcd.create_player_storage()
