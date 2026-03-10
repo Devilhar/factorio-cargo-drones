@@ -1,5 +1,4 @@
 
-local constants = require("scripts.constants")
 local ep		= require("scripts.entity_property")
 local rc    	= require("scripts.requester_cooldown")
 local mh		= require("scripts.mooring_helper")
@@ -9,6 +8,7 @@ local dc		= require("scripts.drone_controller")
 local gm		= require("scripts.gui_mooring")
 local gcd		= require("scripts.gui_cargo_drone")
 local scheduler	= require("scripts.scheduler")
+local migration	= require("scripts.migration")
 
 local function unmanage_entity(unit_number)
 	if ep.is_cargo_drone(unit_number) then
@@ -22,121 +22,6 @@ local function unmanage_entity(unit_number)
 	end
 
 	ep.entity_unmanage(unit_number)
-end
-
-local function resetup_object_events()
-	local removal = {}
-
-	for unit_number, entity_data in pairs(ep.get_managed_entities()) do
-		if entity_data.entity.valid then
-			script.register_on_object_destroyed(entity_data.entity)
-		else
-			table.insert(removal, unit_number)
-		end
-	end
-
-	for _, unit_number in ipairs(removal) do
-		unmanage_entity(unit_number)
-	end
-end
-
-local function migrate_state()
-	local old_mod_state = storage.mod_state or 0
-
-	log("Migrating cargo-drone state from " .. old_mod_state .. " to " .. constants.current_mod_state .. "...")
-
-	storage.mod_state = constants.current_mod_state
-
-	rc.init()
-
-	mh.init()
-
-	dt.init()
-
-	if old_mod_state < 6 then
-		ep.remove_invalid_entities()
-	end
-
-	if old_mod_state < 1 then
-		resetup_object_events()
-	end
-
-	if old_mod_state < 4 then
-		ep.reset_surface_indices()
-	end
-
-	if old_mod_state < 6 then
-		gm.create_player_storage()
-		gcd.create_player_storage()
-
-		dt.migration_remove_all_tasks()
-
-		for _, surface in pairs(game.surfaces) do
-			for _, entity in pairs(surface.find_entities_filtered{ name = "cargo-drone-mooring-constant-combinator-provider" }) do
-				if not mh.try_setup_mooring(entity) then
-					entity.destroy()
-				end
-			end
-			for _, entity in pairs(surface.find_entities_filtered{ name = "cargo-drone-mooring-constant-combinator-requester" }) do
-				if not mh.try_setup_mooring(entity) then
-					entity.destroy()
-				end
-			end
-			for _, entity in pairs(surface.find_entities_filtered{ name = "cargo-drone-mooring-constant-combinator-refueler" }) do
-				if not mh.try_setup_mooring(entity) then
-					entity.destroy()
-				end
-			end
-		end
-
-		game.print({ "cargo-drone-migration.warning-wires-removed" })
-	end
-
-	if old_mod_state < 7 then
-		storage.drone_controller = nil
-	end
-
-	if old_mod_state < 8 then
-		scheduler.init()
-	end
-
-	if old_mod_state < 9 then
-		local function migrate_proxy_containers(mooring)
-			ep.set_entity_property(mooring, "proxy_container", nil)
-			if ep.get_entity_property(mooring, "proxy_containers") == nil then
-				mh.migration_create_proxy_containers(mooring)
-			end
-		end
-
-		for _, entity_data in pairs(ep.get_cargo_drones()) do
-			ep.set_entity_property(entity_data.entity, "docked_mooring", nil)
-		end
-		for _, entity_data in pairs(ep.get_cargo_drone_provider_moorings()) do
-			migrate_proxy_containers(entity_data.entity)
-		end
-		for _, entity_data in pairs(ep.get_cargo_drone_requester_moorings()) do
-			migrate_proxy_containers(entity_data.entity)
-		end
-		for _, entity_data in pairs(ep.get_cargo_drone_refuel_moorings()) do
-			migrate_proxy_containers(entity_data.entity)
-		end
-
-		if constants.drone_has_burnt_result then
-			game.print({ "cargo-drone-migration.warning-read-inventory-output-removed" })
-		end
-	end
-
-	for _, entity_data in pairs(ep.get_cargo_drone_provider_moorings()) do
-		mh.clean_settings(entity_data.entity)
-	end
-	for _, entity_data in pairs(ep.get_cargo_drone_requester_moorings()) do
-		mh.clean_settings(entity_data.entity)
-	end
-	for _, entity_data in pairs(ep.get_cargo_drone_refuel_moorings()) do
-		mh.clean_settings(entity_data.entity)
-	end
-
-	log("cargo-drone state migration complete")
 end
 
 function on_init()
@@ -154,11 +39,7 @@ function on_init()
 	scheduler.init()
 end
 function on_configuration_changed(event)
-	if storage.mod_state == constants.current_mod_state then
-		return
-	end
-
-	migrate_state()
+	migration.run_migration()
 end
 function on_tick(event)
 	rc.tick()
