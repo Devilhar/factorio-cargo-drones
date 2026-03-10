@@ -267,18 +267,6 @@ function drone_tasks.init()
     storage.tasks_next_id = storage.tasks_next_id or 1
     storage.idle_drones = storage.idle_drones or {}
 end
-function drone_tasks.migration_remove_all_tasks()
-    storage.idle_drones = {}
-
-    for _, drone_data in pairs(ep.get_cargo_drones()) do
-        ep.set_entity_property(drone_data.entity, "task_ids", nil)
-
-        set_drone_as_idle(drone_data.entity)
-    end
-
-    storage.drone_tasks = {}
-    storage.tasks_next_id = 1
-end
 
 function drone_tasks.is_valid(id)
     return get_tasks()[id] ~= nil
