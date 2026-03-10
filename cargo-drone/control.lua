@@ -47,6 +47,8 @@ local function migrate_state()
 
 	storage.mod_state = constants.current_mod_state
 
+	rc.init()
+
 	mh.init()
 
 	dt.init()
@@ -139,6 +141,8 @@ end
 
 function on_init()
 	ep.init()
+
+	rc.init()
 
 	mh.init()
 

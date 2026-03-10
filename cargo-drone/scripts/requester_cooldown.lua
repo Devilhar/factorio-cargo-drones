@@ -8,11 +8,11 @@ local constants = require("scripts.constants")
 
 local requester_cooldown = {}
 
-function requester_cooldown.tick()
-    if not storage.requester_cooldown then
-        return
-    end
+function requester_cooldown.init()
+    storage.requester_cooldown = storage.requester_cooldown or {}
+end
 
+function requester_cooldown.tick()
     local removal = {}
 
     for unit_number, cooldown in pairs(storage.requester_cooldown) do
@@ -29,17 +29,9 @@ function requester_cooldown.tick()
 end
 
 function requester_cooldown.flag_for_cooldown(requester_unit_number)
-    if not storage.requester_cooldown then
-        storage.requester_cooldown = {}
-    end
-
     storage.requester_cooldown[requester_unit_number] = constants.requester_cooldown_ticks
 end
 function requester_cooldown.is_on_cooldown(requester_unit_number)
-    if not storage.requester_cooldown then
-        return false
-    end
-
     return storage.requester_cooldown[requester_unit_number] ~= nil
 end
 
