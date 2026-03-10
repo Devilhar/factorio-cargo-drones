@@ -1,7 +1,6 @@
 
-local ep = require("scripts.entity_property")
-local mh = require("scripts.mooring_helper")
-local dt = require("scripts.drone_tasks")
+local mh = require("mooring_helper")
+local dt = require("drone_tasks")
 
 local mooring_controller = {}
 

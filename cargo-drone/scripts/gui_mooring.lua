@@ -1,11 +1,11 @@
 
 -- If you're here looking for a good way to handle GUI. Go elsewhere. There's nothing for you here. Naught but despair
 
-local constants = require("scripts.constants")
-local ep        = require("scripts.entity_property")
-local dt        = require("scripts.drone_tasks")
-local mh        = require("scripts.mooring_helper")
-local dh        = require("scripts.drone_helper")
+local constants = require("constants")
+local ep        = require("entity_property")
+local dt        = require("drone_tasks")
+local mh        = require("mooring_helper")
+local dh        = require("drone_helper")
 
 local gui_prefix = "cargo-drone-"
 

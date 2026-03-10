@@ -4,7 +4,7 @@ To stop requester moorings from requesting items it just received, stop them fro
 This is because the signals take 1 tick to update, and the user shouldn't need to read the content of any inserter.
 ]]--
 
-local constants = require("scripts.constants")
+local constants = require("constants")
 
 local requester_cooldown = {}
 

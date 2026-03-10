@@ -1,10 +1,10 @@
 
 local util      = require("util")
 
-local constants = require("scripts.constants")
-local ep        = require("scripts.entity_property")
-local mh        = require("scripts.mooring_helper")
-local dt        = require("scripts.drone_tasks")
+local constants = require("constants")
+local ep        = require("entity_property")
+local mh        = require("mooring_helper")
+local dt        = require("drone_tasks")
 
 local function get_item_signals(mooring)
     local mooring_signals = mooring.get_signals(defines.wire_connector_id.circuit_red, defines.wire_connector_id.circuit_green)

@@ -1,6 +1,6 @@
 
-local ep    = require("scripts.entity_property")
-local mh    = require("scripts.mooring_helper")
+local ep    = require("entity_property")
+local mh    = require("mooring_helper")
 
 local task_types = {
     cargo   = 1,

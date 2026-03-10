@@ -1,5 +1,5 @@
 
-local ep        = require("scripts.entity_property")
+local ep        = require("entity_property")
 
 local signal_id_drone_limit     = { type = "virtual", name = "signal-L", quality = "normal" }
 local signal_id_priority        = { type = "virtual", name = "signal-P", quality = "normal" }

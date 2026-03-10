@@ -1,5 +1,5 @@
 
-local ep = require("scripts.entity_property")
+local ep = require("entity_property")
 
 local drone_helper = {}
 
