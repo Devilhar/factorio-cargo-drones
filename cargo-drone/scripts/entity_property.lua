@@ -29,30 +29,6 @@ function entity_property.init()
     storage.cargo_drone_refuel_mooring = storage.cargo_drone_refuel_mooring or {}
 end
 
-function entity_property.remove_invalid_entities()
-	local removed = {}
-
-	for unit_number, entity_data in pairs(storage.managed_entities) do
-		if not entity_data.entity.valid then
-			table.insert(removed, unit_number)
-		end
-	end
-
-	for _, unit_number in ipairs(removed) do
-		storage.managed_entities[unit_number] = nil
-		storage.cargo_drones[unit_number] = nil
-		storage.cargo_drone_provider_mooring[unit_number] = nil
-		storage.cargo_drone_requester_mooring[unit_number] = nil
-		storage.cargo_drone_refuel_mooring[unit_number] = nil
-	end
-end
-
-function entity_property.reset_surface_indices()
-	for _, entity_data in pairs(storage.managed_entities) do
-		entity_data.surface_index = entity_data.entity.surface.index
-	end
-end
-
 function entity_property.entity_manage(entity)
 	if storage.managed_entities[entity.unit_number] then
 		return

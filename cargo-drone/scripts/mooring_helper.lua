@@ -654,16 +654,6 @@ function mooring_helper.mooring_destroyed(mooring)
     remove_depot(mooring)
 end
 
-function mooring_helper.migration_create_proxy_containers(mooring)
-    local proxy_containers = create_proxy_containers(mooring)
-
-    if proxy_containers == nil then
-        error("Cargo drone mooring failed to create proxy containers")
-    end
-
-	ep.set_entity_property(mooring, "proxy_containers", proxy_containers)
-end
-
 function mooring_helper.is_name_mooring(name)
     return mooring_type_lookup[name] ~= nil
 end
