@@ -5,6 +5,10 @@ local mh		= require("states.12.mooring_helper")
 local dt		= require("states.12.drone_tasks")
 
 return function()
+	for _, entity_data in pairs(storage.managed_entities) do
+		entity_data.surface_index = nil
+	end
+
 	rc.init()
 
 	mh.init()

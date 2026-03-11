@@ -1,3 +1,6 @@
+  Bugfixes:
+    - Fixed a crash when deleting a surface with Cargo drones.
+    - Fixed a crash when clearing a surface with Cargo drones.
 ---------------------------------------------------------------------------------------------------
 Version: 1.7.2
 Date: 09. 03. 2026

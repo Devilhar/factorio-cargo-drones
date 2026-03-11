@@ -10,11 +10,13 @@ local gcd		= require("scripts.gui_cargo_drone")
 local scheduler	= require("scripts.scheduler")
 local migration	= require("scripts.migration")
 
-local function unmanage_entity(unit_number)
+local function unmanage_entity(entity)
+	local unit_number = entity.unit_number
+
 	if ep.is_cargo_drone(unit_number) then
 		dc.drone_destroyed(unit_number)
 
-		dt.drone_destroyed(unit_number)
+		dt.drone_destroyed(entity)
 
 		scheduler.drone_destroyed(unit_number)
 	elseif mh.is_mooring(unit_number) then
@@ -59,6 +61,16 @@ function on_player_removed(event)
 	gcd.on_player_removed(event)
 end
 
+function on_surface_deleted(event)
+	ep.remove_invalid_entities()
+
+	dt.surface_deleted(event.surface_index)
+end
+function on_surface_cleared(event)
+	ep.remove_invalid_entities()
+
+	dt.surface_cleared(event.surface_index)
+end
 function on_built_entity(event)
 	local entity = event.entity
 
@@ -89,15 +101,13 @@ function on_destroyed_entity(event)
 
 	local entity = event.entity
 
-	local unit_number = entity.unit_number
-
-	if not ep.is_managed(unit_number) then
+	if not ep.is_managed(entity.unit_number) then
 		return
 	end
 
 	mc.on_destroyed_entity(entity)
 
-	unmanage_entity(unit_number)
+	unmanage_entity(entity)
 end
 function on_player_rotated_entity(event)
 	if not event.entity or not event.entity.valid then
@@ -228,6 +238,8 @@ script.on_event(defines.events.on_tick, on_tick)
 
 script.on_event(defines.events.on_player_joined_game, on_player_removed)
 
+script.on_event(defines.events.on_surface_deleted, on_surface_deleted)
+script.on_event(defines.events.on_surface_cleared, on_surface_cleared)
 script.on_event(build_events, on_built_entity)
 script.on_event(destroy_events, on_destroyed_entity)
 script.on_event(defines.events.on_player_rotated_entity, on_player_rotated_entity)
