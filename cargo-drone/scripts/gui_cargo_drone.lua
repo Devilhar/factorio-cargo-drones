@@ -149,6 +149,10 @@ function gui_cargo_drone.on_gui_opened(event)
 
 	local player = game.get_player(event.player_index)
 
+    if player.gui.relative[gui_targets_name] then
+        player.gui.relative[gui_targets_name].destroy()
+    end
+
     storage.gui_cargo_drone[event.player_index] = entity
 
     local targets_frame = player.gui.relative.add{

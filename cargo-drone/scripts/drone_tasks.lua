@@ -309,6 +309,22 @@ function drone_tasks.init()
     storage.idle_drones = storage.idle_drones or {}
 end
 
+function drone_tasks.drone_surface_change(drone, old_surface)
+    local task_ids = ep.get_entity_property(drone, "task_ids")
+
+	if task_ids then
+		task_ids = table.deepcopy(task_ids)
+
+        for _, task_id in ipairs(task_ids) do
+            remove_and_cleanup_task(task_id)
+        end
+	end
+
+    reset_drone_as_idle(drone.unit_number, old_surface)
+
+    set_drone_as_idle(drone)
+end
+
 function drone_tasks.surface_deleted(surface_index)
     remove_tasks_with_invalid_entities()
 

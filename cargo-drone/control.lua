@@ -177,6 +177,13 @@ function on_entity_settings_pasted(event)
 		end
 	end
 end
+function script_raised_teleported(event)
+	if event.old_surface_index == event.entity.surface.index then
+		return
+	end
+
+	dt.drone_surface_change(event.entity, event.old_surface_index)
+end
 
 function on_gui_opened(event)
 	gm.on_gui_opened(event)
@@ -231,6 +238,9 @@ local destroy_events = {
 	defines.events.on_robot_mined_entity,
 	defines.events.script_raised_destroy,
 }
+local script_raised_teleported_filters = {
+	{ filter = "name", name = "cargo-drone" },
+}
 
 script.on_init(on_init)
 script.on_configuration_changed(on_configuration_changed)
@@ -245,6 +255,7 @@ script.on_event(destroy_events, on_destroyed_entity)
 script.on_event(defines.events.on_player_rotated_entity, on_player_rotated_entity)
 script.on_event(defines.events.on_player_flipped_entity, on_player_flipped_entity)
 script.on_event(defines.events.on_entity_settings_pasted, on_entity_settings_pasted)
+script.on_event(defines.events.script_raised_teleported, script_raised_teleported)
 
 script.on_event(defines.events.on_gui_opened, on_gui_opened)
 script.on_event(defines.events.on_gui_closed, on_gui_closed)
@@ -260,3 +271,4 @@ end
 for _, event in ipairs(destroy_events) do
 	script.set_event_filter(event, destroy_event_filters)
 end
+script.set_event_filter(defines.events.script_raised_teleported, script_raised_teleported_filters)
