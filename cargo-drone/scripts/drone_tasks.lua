@@ -53,7 +53,7 @@ local function set_drone_as_idle(drone)
     storage.idle_drones[surface_index][drone.unit_number] = drone
 end
 local function reset_drone_as_idle(drone_unit_number, surface_index)
-    if not storage.idle_drones or not storage.idle_drones[surface_index] then
+    if not storage.idle_drones[surface_index] then
         return
     end
 
@@ -210,7 +210,9 @@ local function remove_and_cleanup_task(task_id)
     local mark_drone_as_idle = task.type ~= task_types.depot
 
     if task.drone_unit_number ~= nil then
-        unassign_task_drone(task.drone_unit_number, task_id, mark_drone_as_idle)
+        if ep.is_managed(task.drone_unit_number) then
+            unassign_task_drone(task.drone_unit_number, task_id, mark_drone_as_idle)
+        end
     end
     if task.provider_unit_number ~= nil then
         local mooring = ep.get_managed_entity(task.provider_unit_number)
@@ -258,6 +260,45 @@ local function pop_depot_task(drone)
     remove_and_cleanup_task(task_id)
 end
 
+local function remove_tasks_with_invalid_entities()
+    local removed = {}
+
+    for task_id, task in pairs(storage.drone_tasks) do
+        if task.drone_unit_number == nil or not ep.is_managed(task.drone_unit_number) then
+            table.insert(removed, task_id)
+
+            goto continue
+        end
+
+        if task.provider_unit_number ~= nil and not ep.is_managed(task.provider_unit_number) then
+            table.insert(removed, task_id)
+
+            goto continue
+        end
+        if task.requester_unit_number ~= nil and not ep.is_managed(task.requester_unit_number) then
+            table.insert(removed, task_id)
+
+            goto continue
+        end
+        if task.refueler_unit_number ~= nil and not ep.is_managed(task.refueler_unit_number) then
+            table.insert(removed, task_id)
+
+            goto continue
+        end
+        if task.depot_unit_number ~= nil and not ep.is_managed(task.depot_unit_number) then
+            table.insert(removed, task_id)
+
+            goto continue
+        end
+
+        ::continue::
+    end
+
+    for _, task_id in ipairs(removed) do
+        remove_and_cleanup_task(task_id)
+    end
+end
+
 local drone_tasks = {}
 
 drone_tasks.task_types = task_types
@@ -266,6 +307,17 @@ function drone_tasks.init()
     storage.drone_tasks = storage.drone_tasks or {}
     storage.tasks_next_id = storage.tasks_next_id or 1
     storage.idle_drones = storage.idle_drones or {}
+end
+
+function drone_tasks.surface_deleted(surface_index)
+    remove_tasks_with_invalid_entities()
+
+    storage.idle_drones[surface_index] = nil
+end
+function drone_tasks.surface_cleared(surface_index)
+    remove_tasks_with_invalid_entities()
+
+    storage.idle_drones[surface_index] = nil
 end
 
 function drone_tasks.is_valid(id)
@@ -399,11 +451,10 @@ end
 function drone_tasks.drone_created(drone)
     set_drone_as_idle(drone)
 end
-function drone_tasks.drone_destroyed(unit_number)
-    local properties = ep.get_entity_properties_from_unit_number(unit_number)
-    local surface_index = ep.get_managed_entity_surface_index(unit_number)
+function drone_tasks.drone_destroyed(drone)
+    local properties = ep.get_entity_properties(drone)
 
-    reset_drone_as_idle(unit_number, surface_index)
+    reset_drone_as_idle(drone.unit_number, drone.surface.index)
 
     if not properties.task_ids then
         return
