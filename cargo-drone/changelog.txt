@@ -10,7 +10,7 @@ Date: 09. 03. 2026
   Bugfixes:
     - Fixed mooring ghosts not being able to be rotated or flipped.
     - Fixed ghost Provider mooring not showing the Read requests checkbox.
-    - Fixed ghost Refueler mooring showing incorrectly showing the inventory selection as Trunk.
+    - Fixed ghost Refueler mooring incorrectly showing the inventory selection as Trunk.
     - Fixed a crash when pasting an empty Constant container's settings to a mooring ghost.
 ---------------------------------------------------------------------------------------------------
 Version: 1.7.1
