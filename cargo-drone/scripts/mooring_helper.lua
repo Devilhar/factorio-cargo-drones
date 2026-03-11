@@ -1,5 +1,6 @@
 
 local ep        = require("entity_property")
+local fh        = require("filter_helper")
 
 local signal_id_drone_limit     = { type = "virtual", name = "signal-L", quality = "normal" }
 local signal_id_priority        = { type = "virtual", name = "signal-P", quality = "normal" }
@@ -69,53 +70,11 @@ local function get_settings_section(mooring)
     return cb.get_section(section_index.settings)
 end
 
-local function set_filter_value(section, filter_name, value)
-    local filters = section.filters
-
-    for i, filter in ipairs(filters) do
-        if filter.value and filter.value.name == filter_name then
-            if value == nil then
-                table.remove(filters, i)
-            else
-                filter.min = value
-            end
-
-            section.filters = filters
-
-            return
-        end
-    end
-
-    if value == nil then
-        return
-    end
-
-    table.insert(filters, {
-        value = {
-            type = "virtual",
-            name = filter_name,
-            quality = "normal",
-        },
-        min = value
-    })
-
-    section.filters = filters
-end
-local function get_filter_value(section, filter_name)
-    for _, filter in ipairs(section.filters) do
-        if filter.value and filter.value.name == filter_name then
-            return filter.min
-        end
-    end
-
-    return nil
-end
-
 local function set_settings_value(mooring, setting_name, value)
-    set_filter_value(get_settings_section(mooring), settings_filter_name[setting_name], value)
+    fh.set_filter_value(get_settings_section(mooring), settings_filter_name[setting_name], value)
 end
 local function get_settings_value(mooring, setting_name)
-    return get_filter_value(get_settings_section(mooring), settings_filter_name[setting_name])
+    return fh.get_filter_value(get_settings_section(mooring), settings_filter_name[setting_name])
 end
 
 local function set_signal_id(mooring, index, signal_id)
@@ -374,13 +333,13 @@ local function get_inventory_target(mooring, x, y)
     local index = x + (y - 1) * 3
     local section = mooring.get_control_behavior().get_section(section_index.inventory_targets)
 
-    return get_filter_value(section, "signal-" .. index)
+    return fh.get_filter_value(section, "signal-" .. index)
 end
 local function set_inventory_target(mooring, x, y, target)
     local index = x + (y - 1) * 3
     local section = mooring.get_control_behavior().get_section(section_index.inventory_targets)
 
-    set_filter_value(section, "signal-" .. index, target)
+    fh.set_filter_value(section, "signal-" .. index, target)
 end
 
 local function add_depot(mooring)
@@ -521,7 +480,7 @@ local function resize_and_activate_sections(control_behavior)
         control_behavior.add_section()
     end
     while control_behavior.sections_count > 8 do
-        control_behavior.remove_section(8)
+        control_behavior.remove_section(9)
     end
 
     for i = 1, 8 do

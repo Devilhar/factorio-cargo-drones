@@ -1,5 +1,6 @@
 
 local ep		= require("scripts.entity_property")
+local deh		= require("scripts.depot_helper")
 local rc    	= require("scripts.requester_cooldown")
 local mh		= require("scripts.mooring_helper")
 local dt		= require("scripts.drone_tasks")
@@ -20,7 +21,9 @@ local function unmanage_entity(entity)
 
 		scheduler.drone_destroyed(unit_number)
 	elseif mh.is_mooring(unit_number) then
-		dt.mooring_destroyed(unit_number)
+		dt.target_destroyed(entity)
+	elseif entity.name == "cargo-drone-depot-constant-combinator" then
+		dt.target_destroyed(entity)
 	end
 
 	ep.entity_unmanage(unit_number)
@@ -28,6 +31,8 @@ end
 
 function on_init()
 	ep.init()
+
+	deh.init()
 
 	rc.init()
 
@@ -92,6 +97,14 @@ function on_built_entity(event)
 		return
 	end
 
+	if entity.name == "cargo-drone-depot-constant-combinator" then
+		deh.created(entity)
+
+		script.register_on_object_destroyed(entity)
+
+		return
+	end
+
 	if not mh.try_setup_mooring(entity) then
 		entity.destroy()
 	end
@@ -103,6 +116,10 @@ function on_destroyed_entity(event)
 
 	if not ep.is_managed(entity.unit_number) then
 		return
+	end
+
+	if entity.name == "cargo-drone-depot-constant-combinator" then
+		deh.destroyed(entity)
 	end
 
 	mc.on_destroyed_entity(entity)
@@ -175,6 +192,8 @@ function on_entity_settings_pasted(event)
 				end
 			end
 		end
+	elseif destination_name == "cargo-drone-depot-constant-combinator" then
+		deh.clean_settings(event.destination)
 	end
 end
 function script_raised_teleported(event)
@@ -215,9 +234,10 @@ local build_event_filters = {
 	{ filter = "name", name = "cargo-drone-mooring-constant-combinator-provider" },
 	{ filter = "name", name = "cargo-drone-mooring-constant-combinator-requester" },
 	{ filter = "name", name = "cargo-drone-mooring-constant-combinator-refueler" },
+	{ filter = "name", name = "cargo-drone-depot-constant-combinator" },
 	{ filter = "ghost_name", name = "cargo-drone-mooring-constant-combinator-provider" },
 	{ filter = "ghost_name", name = "cargo-drone-mooring-constant-combinator-requester" },
-	{ filter = "ghost_name", name = "cargo-drone-mooring-constant-combinator-refueler" }
+	{ filter = "ghost_name", name = "cargo-drone-mooring-constant-combinator-refueler" },
 }
 local build_events = {
 	defines.events.on_built_entity,
@@ -230,7 +250,8 @@ local destroy_event_filters = {
 	{ filter = "name", name = "cargo-drone" },
 	{ filter = "name", name = "cargo-drone-mooring-constant-combinator-provider" },
 	{ filter = "name", name = "cargo-drone-mooring-constant-combinator-requester" },
-	{ filter = "name", name = "cargo-drone-mooring-constant-combinator-refueler" }
+	{ filter = "name", name = "cargo-drone-mooring-constant-combinator-refueler" },
+	{ filter = "name", name = "cargo-drone-depot-constant-combinator" },
 }
 local destroy_events = {
 	defines.events.on_entity_died,

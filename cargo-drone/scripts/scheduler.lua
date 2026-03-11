@@ -3,6 +3,7 @@ local util      = require("util")
 
 local constants = require("scripts.constants")
 local ep        = require("scripts.entity_property")
+local deh       = require("scripts.depot_helper")
 local mh	    = require("scripts.mooring_helper")
 local rc        = require("scripts.requester_cooldown")
 local dt        = require("scripts.drone_tasks")
@@ -325,12 +326,13 @@ local function assign_depot_task()
         return false
     end
 
-    local depots = mh.get_depots(drone.surface.index)
+    local depots = deh.get_depots(drone.surface.index)
 
     if depots == nil then
         return false
     end
 
+    local highest_priority = -1
     local closest_depot = nil
     local closest_distance = constants.max_distance
     -- If for some reason, all depots have more drones than this, I don't think anyone will notice the imbalance. And if they do, I want them to pay me to fix it.
@@ -338,18 +340,31 @@ local function assign_depot_task()
     local lowest_drone_count = 10000000
 
     for _, depot in pairs(depots) do
-        if mh.is_depot_enabled(depot) then
-            local distance = util.distance(drone.position, depot.position)
-            local drone_count = mh.get_depot_drone_count(depot.unit_number)
+        if not deh.is_at_drone_limit(depot) then
+            local priority = deh.get_priority(depot)
 
-            if drone_count <= lowest_drone_count then
-                if drone_count < lowest_drone_count or distance < closest_distance then
-                    closest_depot = depot
-                    closest_distance = distance
-                    lowest_drone_count = drone_count
+            if priority >= highest_priority then
+                local distance = util.distance(drone.position, depot.position)
+                local drone_count = deh.get_drone_count(depot)
+
+                if priority == highest_priority then
+                    if drone_count > lowest_drone_count then
+                        goto continue
+                    end
+
+                    if drone_count == lowest_drone_count and distance >= closest_distance then
+                        goto continue
+                    end
                 end
+
+                highest_priority = priority
+                closest_depot = depot
+                closest_distance = distance
+                lowest_drone_count = drone_count
             end
         end
+
+        ::continue::
     end
 
     if not closest_depot then

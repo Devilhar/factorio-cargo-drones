@@ -21,6 +21,10 @@ data:extend({
 			{
 				type = "unlock-recipe",
 				recipe = "cargo-drone-mooring-constant-combinator-refueler"
+			},
+			{
+				type = "unlock-recipe",
+				recipe = "cargo-drone-depot-constant-combinator"
 			}
 		},
 		prerequisites = {
