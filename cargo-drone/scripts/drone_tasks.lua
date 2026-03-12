@@ -9,22 +9,15 @@ local task_types = {
 }
 
 local task_data = {
-    -- drone_count          = Should this task count towards the drone count?
-    -- muted_task           = Is this task considered unimportant to show the player?
+    -- override = Is prepended to the list of tasks rather than appended
     [task_types.cargo] = {
         override            = false,
-        drone_count         = true,
-        muted_task          = false,
     },
     [task_types.refuel] = {
         override            = true,
-        drone_count         = true,
-        muted_task          = false,
     },
     [task_types.depot] = {
         override            = false,
-        drone_count         = true,
-        muted_task          = true,
     },
 }
 
@@ -106,16 +99,9 @@ end
 
 local function get_drone_count(task_ids)
     local drone_count = 0
-    local tasks = get_tasks()
 
     for task_id, _ in pairs(task_ids) do
-        local task = tasks[task_id]
-
-        local type_data = task_data[task.type]
-
-        if type_data.drone_count then
-            drone_count = drone_count + 1
-        end
+        drone_count = drone_count + 1
     end
 
     return drone_count
@@ -130,13 +116,9 @@ local function assign_task_target(mooring, task)
 
     properties.task_ids[task.id] = true
 
-    local type_data = task_data[task.type]
+    local drone_count = get_drone_count(properties.task_ids)
 
-    if type_data.drone_count then
-        local drone_count = get_drone_count(properties.task_ids)
-
-        th.set_drone_count(mooring, drone_count)
-    end
+    th.set_drone_count(mooring, drone_count)
 end
 local function unassign_task_target(mooring, task)
     local properties = ep.get_entity_properties(mooring)
@@ -147,19 +129,13 @@ local function unassign_task_target(mooring, task)
 
     properties.task_ids[task.id] = nil
 
-    local type_data = task_data[task.type]
-
     if next(properties.task_ids) == nil then
         properties.task_ids = nil
-        if type_data.drone_count then
-            th.set_drone_count(mooring, 0)
-        end
+        th.set_drone_count(mooring, 0)
     else
-        if type_data.drone_count then
-            local drone_count = get_drone_count(properties.task_ids)
+        local drone_count = get_drone_count(properties.task_ids)
 
-            th.set_drone_count(mooring, drone_count)
-        end
+        th.set_drone_count(mooring, drone_count)
     end
 end
 
@@ -399,10 +375,6 @@ function drone_tasks.get_target(task)
     else
         return ep.get_managed_entity(task.depot_unit_number)
     end
-end
-
-function drone_tasks.is_muted(task)
-    return task_data[task.type].muted_task
 end
 
 function drone_tasks.cargo_unassign_provider(task_id)
