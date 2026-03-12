@@ -3,6 +3,7 @@
 
 local constants = require("constants")
 local ep        = require("entity_property")
+local th        = require("target_helper")
 local dt        = require("drone_tasks")
 local mh        = require("mooring_helper")
 local dh        = require("drone_helper")
@@ -18,7 +19,7 @@ local not_observed = {}
 local muted_task_weight = 1000
 
 local function get_drone_limit_signal_element(player_data, element)
-    local signal_id = mh.get_drone_limit_circuit_signal_id(player_data.entity)
+    local signal_id = th.get_drone_limit_circuit_signal_id(player_data.entity)
 
     if signal_id == nil then
         return nil
@@ -27,7 +28,7 @@ local function get_drone_limit_signal_element(player_data, element)
     return signal_id[element]
 end
 local function get_drone_count_signal_element(player_data, element)
-    local signal_id = mh.get_drone_count_circuit_signal_id(player_data.entity)
+    local signal_id = th.get_drone_count_circuit_signal_id(player_data.entity)
 
     if signal_id == nil then
         return nil
@@ -36,7 +37,7 @@ local function get_drone_count_signal_element(player_data, element)
     return signal_id[element]
 end
 local function get_priority_signal_element(player_data, element)
-    local signal_id = mh.get_priority_circuit_signal_id(player_data.entity)
+    local signal_id = th.get_priority_circuit_signal_id(player_data.entity)
 
     if signal_id == nil then
         return nil
@@ -70,9 +71,9 @@ end
 
 local observers = {
     is_drone_limit_enabled = {
-        get = function(player_data) return mh.is_drone_limit_enabled(player_data.entity) end,
+        get = function(player_data) return th.is_drone_limit_enabled(player_data.entity) end,
         updated = function(player_data, data)
-            if mh.is_drone_limit_circuit(player_data.entity) then
+            if th.is_drone_limit_circuit(player_data.entity) then
                 player_data.elements.drone_limit_checkbox.state = true
                 player_data.elements.drone_limit_checkbox.enabled = false
                 player_data.elements.drone_limit_slider.enabled = false
@@ -86,7 +87,7 @@ local observers = {
         end
     },
     is_drone_limit_circuit = {
-        get = function(player_data) return mh.is_drone_limit_circuit(player_data.entity) end,
+        get = function(player_data) return th.is_drone_limit_circuit(player_data.entity) end,
         updated = function(player_data, data)
             if data then
                 player_data.elements.drone_limit_checkbox.state = true
@@ -94,7 +95,7 @@ local observers = {
                 player_data.elements.drone_limit_slider.enabled = false
                 player_data.elements.drone_limit_field.enabled = false
             else
-                local drone_limit_enabled = mh.is_drone_limit_enabled(player_data.entity)
+                local drone_limit_enabled = th.is_drone_limit_enabled(player_data.entity)
 
                 player_data.elements.drone_limit_checkbox.state = drone_limit_enabled
                 player_data.elements.drone_limit_checkbox.enabled = true
@@ -108,7 +109,7 @@ local observers = {
         end
     },
     get_drone_limit = {
-        get = function(player_data) return mh.get_drone_limit(player_data.entity) end,
+        get = function(player_data) return th.get_drone_limit(player_data.entity) end,
         updated = function(player_data, data)
             if data == nil then
                 data = 0
@@ -122,7 +123,7 @@ local observers = {
     },
 
     is_priority_circuit = {
-        get = function(player_data) return mh.is_priority_circuit(player_data.entity) end,
+        get = function(player_data) return th.is_priority_circuit(player_data.entity) end,
         updated = function(player_data, data)
             player_data.elements.priority_field.enabled = not data
             player_data.elements.priority_slider.enabled = not data
@@ -133,19 +134,12 @@ local observers = {
         end
     },
     get_priority = {
-        get = function(player_data) return mh.get_priority(player_data.entity) end,
+        get = function(player_data) return th.get_priority(player_data.entity) end,
         updated = function(player_data, data)
             if player_data.elements.priority_field.text ~= tostring(data) then
                 player_data.elements.priority_field.text = tostring(data)
             end
             player_data.elements.priority_slider.slider_value = data
-        end
-    },
-
-    is_depot_enabled = {
-        get = function(player_data) return mh.is_depot_enabled(player_data.entity) end,
-        updated = function(player_data, data)
-            player_data.elements.depot_checkbox.state = data
         end
     },
 
@@ -201,24 +195,24 @@ local observers = {
     get_drone_limit_signal_element_type = {
         get = function(player_data) return get_drone_limit_signal_element(player_data, "type") end,
         updated = function(player_data, data)
-            player_data.elements.drone_limit_signal_choose_elem_button.elem_value = mh.get_drone_limit_circuit_signal_id(player_data.entity)
+            player_data.elements.drone_limit_signal_choose_elem_button.elem_value = th.get_drone_limit_circuit_signal_id(player_data.entity)
         end
     },
     get_drone_limit_signal_element_name = {
         get = function(player_data) return get_drone_limit_signal_element(player_data, "name") end,
         updated = function(player_data, data)
-            player_data.elements.drone_limit_signal_choose_elem_button.elem_value = mh.get_drone_limit_circuit_signal_id(player_data.entity)
+            player_data.elements.drone_limit_signal_choose_elem_button.elem_value = th.get_drone_limit_circuit_signal_id(player_data.entity)
         end
     },
     get_drone_limit_signal_element_quality = {
         get = function(player_data) return get_drone_limit_signal_element(player_data, "quality") end,
         updated = function(player_data, data)
-            player_data.elements.drone_limit_signal_choose_elem_button.elem_value = mh.get_drone_limit_circuit_signal_id(player_data.entity)
+            player_data.elements.drone_limit_signal_choose_elem_button.elem_value = th.get_drone_limit_circuit_signal_id(player_data.entity)
         end
     },
 
     is_drone_count_circuit = {
-        get = function(player_data) return mh.is_drone_count_circuit(player_data.entity) end,
+        get = function(player_data) return th.is_drone_count_circuit(player_data.entity) end,
         updated = function(player_data, data)
             player_data.elements.drone_count_circuit_checkbox.state = data
             player_data.elements.drone_count_signal_label.enabled = data
@@ -228,38 +222,38 @@ local observers = {
     get_drone_count_signal_element_type = {
         get = function(player_data) return get_drone_count_signal_element(player_data, "type") end,
         updated = function(player_data, data)
-            player_data.elements.drone_count_signal_choose_elem_button.elem_value = mh.get_drone_count_circuit_signal_id(player_data.entity)
+            player_data.elements.drone_count_signal_choose_elem_button.elem_value = th.get_drone_count_circuit_signal_id(player_data.entity)
         end
     },
     get_drone_count_signal_element_name = {
         get = function(player_data) return get_drone_count_signal_element(player_data, "name") end,
         updated = function(player_data, data)
-            player_data.elements.drone_count_signal_choose_elem_button.elem_value = mh.get_drone_count_circuit_signal_id(player_data.entity)
+            player_data.elements.drone_count_signal_choose_elem_button.elem_value = th.get_drone_count_circuit_signal_id(player_data.entity)
         end
     },
     get_drone_count_signal_element_quality = {
         get = function(player_data) return get_drone_count_signal_element(player_data, "quality") end,
         updated = function(player_data, data)
-            player_data.elements.drone_count_signal_choose_elem_button.elem_value = mh.get_drone_count_circuit_signal_id(player_data.entity)
+            player_data.elements.drone_count_signal_choose_elem_button.elem_value = th.get_drone_count_circuit_signal_id(player_data.entity)
         end
     },
 
     get_priority_signal_element_type = {
         get = function(player_data) return get_priority_signal_element(player_data, "type") end,
         updated = function(player_data, data)
-            player_data.elements.priority_signal_choose_elem_button.elem_value = mh.get_priority_circuit_signal_id(player_data.entity)
+            player_data.elements.priority_signal_choose_elem_button.elem_value = th.get_priority_circuit_signal_id(player_data.entity)
         end
     },
     get_priority_signal_element_name = {
         get = function(player_data) return get_priority_signal_element(player_data, "name") end,
         updated = function(player_data, data)
-            player_data.elements.priority_signal_choose_elem_button.elem_value = mh.get_priority_circuit_signal_id(player_data.entity)
+            player_data.elements.priority_signal_choose_elem_button.elem_value = th.get_priority_circuit_signal_id(player_data.entity)
         end
     },
     get_priority_signal_element_quality = {
         get = function(player_data) return get_priority_signal_element(player_data, "quality") end,
         updated = function(player_data, data)
-            player_data.elements.priority_signal_choose_elem_button.elem_value = mh.get_priority_circuit_signal_id(player_data.entity)
+            player_data.elements.priority_signal_choose_elem_button.elem_value = th.get_priority_circuit_signal_id(player_data.entity)
         end
     },
 
@@ -652,12 +646,12 @@ local callbacks = {
     end,
 
     [gui_prefix .. "drone-limit-checkbox"] = function(player_data, event)
-        mh.set_drone_limit_enabled(player_data.entity, player_data.elements.drone_limit_checkbox.state)
+        th.set_drone_limit_enabled(player_data.entity, player_data.elements.drone_limit_checkbox.state)
 
         update_gui(player_data)
     end,
     [gui_prefix .. "drone-limit-slider"] = function(player_data, event)
-        mh.set_drone_limit_value(player_data.entity, player_data.elements.drone_limit_slider.slider_value)
+        th.set_drone_limit_value(player_data.entity, player_data.elements.drone_limit_slider.slider_value)
 
         update_gui(player_data)
     end,
@@ -668,13 +662,13 @@ local callbacks = {
             return
         end
 
-        mh.set_drone_limit_value(player_data.entity, limit)
+        th.set_drone_limit_value(player_data.entity, limit)
 
         update_gui(player_data)
     end,
 
     [gui_prefix .. "priority-slider"] = function(player_data, event)
-        mh.set_priority_value(player_data.entity, player_data.elements.priority_slider.slider_value)
+        th.set_priority_value(player_data.entity, player_data.elements.priority_slider.slider_value)
 
         update_gui(player_data)
     end,
@@ -685,22 +679,16 @@ local callbacks = {
             return
         end
 
-        mh.set_priority_value(player_data.entity, priority)
-
-        update_gui(player_data)
-    end,
-
-    [gui_prefix .. "depot-checkbox"] = function(player_data, event)
-        mh.set_depot_enabled(player_data.entity, player_data.elements.depot_checkbox.state)
+        th.set_priority_value(player_data.entity, priority)
 
         update_gui(player_data)
     end,
 
     ---------- Circuit ----------
     [gui_prefix .. "set-drone-limit-checkbox"] = function(player_data, event)
-        mh.set_drone_limit_circuit(player_data.entity, player_data.elements.drone_limit_circuit_checkbox.state)
+        th.set_drone_limit_circuit(player_data.entity, player_data.elements.drone_limit_circuit_checkbox.state)
 
-        if not mh.is_drone_limit_circuit(player_data.entity) then
+        if not th.is_drone_limit_circuit(player_data.entity) then
             player_data.elements.drone_limit_checkbox.enabled = player_data.elements.drone_limit_checkbox.state
             player_data.elements.drone_limit_slider.enabled = player_data.elements.drone_limit_checkbox.state
             player_data.elements.drone_limit_field.enabled = player_data.elements.drone_limit_checkbox.state
@@ -709,25 +697,25 @@ local callbacks = {
         update_gui(player_data)
     end,
     [gui_prefix .. "drone-limit-signal-choose-elem-button"] = function(player_data, event)
-        mh.set_drone_limit_circuit_signal_id(player_data.entity, player_data.elements.drone_limit_signal_choose_elem_button.elem_value)
+        th.set_drone_limit_circuit_signal_id(player_data.entity, player_data.elements.drone_limit_signal_choose_elem_button.elem_value)
     end,
 
     [gui_prefix .. "read-drone-count-checkbox"] = function(player_data, event)
-        mh.set_drone_count_circuit(player_data.entity, player_data.elements.drone_count_circuit_checkbox.state)
+        th.set_drone_count_circuit(player_data.entity, player_data.elements.drone_count_circuit_checkbox.state)
 
         update_gui(player_data)
     end,
     [gui_prefix .. "drone-count-signal-choose-elem-button"] = function(player_data, event)
-        mh.set_drone_count_circuit_signal_id(player_data.entity, player_data.elements.drone_count_signal_choose_elem_button.elem_value)
+        th.set_drone_count_circuit_signal_id(player_data.entity, player_data.elements.drone_count_signal_choose_elem_button.elem_value)
     end,
 
     [gui_prefix .. "set-priority-checkbox"] = function(player_data, event)
-        mh.set_priority_circuit(player_data.entity, player_data.elements.priority_circuit_checkbox.state)
+        th.set_priority_circuit(player_data.entity, player_data.elements.priority_circuit_checkbox.state)
 
         update_gui(player_data)
     end,
     [gui_prefix .. "priority-signal-choose-elem-button"] = function(player_data, event)
-        mh.set_priority_circuit_signal_id(player_data.entity, player_data.elements.priority_signal_choose_elem_button.elem_value)
+        th.set_priority_circuit_signal_id(player_data.entity, player_data.elements.priority_signal_choose_elem_button.elem_value)
     end,
     [gui_prefix .. "read-requests-checkbox"] = function(player_data, event)
         mh.set_read_requests(player_data.entity, player_data.elements.read_requests_circuit_checkbox.state)
@@ -834,7 +822,7 @@ local function build_gui_mooring(player_data, mooring, mooring_name, parent)
         type = "checkbox",
         name = gui_prefix .. "drone-limit-checkbox",
         caption = { "cargo-drone-gui-mooring.enable-drone-limit" },
-        state = mh.is_drone_limit_enabled(mooring)
+        state = th.is_drone_limit_enabled(mooring)
     }
 
     local drone_limit_filler = drone_limit_flow.add{
@@ -895,7 +883,7 @@ local function build_gui_mooring(player_data, mooring, mooring_name, parent)
         style = "notched_slider",
         minimum_value = 0,
         maximum_value = 90,
-        value = mh.get_priority_value(mooring),
+        value = th.get_priority_value(mooring),
         value_step = 10
     }
 
@@ -903,7 +891,7 @@ local function build_gui_mooring(player_data, mooring, mooring_name, parent)
         type = "textfield",
         name = gui_prefix .. "priority-textfield",
         style = "slider_value_textfield",
-        text = tostring(mh.get_priority_value(mooring)),
+        text = tostring(th.get_priority_value(mooring)),
         numeric = true
     }
 
@@ -911,26 +899,6 @@ local function build_gui_mooring(player_data, mooring, mooring_name, parent)
 
     player_data.elements.priority_slider = priority_slider
     player_data.elements.priority_field = priority_field
-
-    ---------- Depot ----------
-    local depot_flow = mooring_frame.add{
-        type = "flow",
-        direction = "horizontal",
-    }
-
-    depot_flow.style.vertical_align = "center"
-    depot_flow.style.horizontal_spacing = 8
-    depot_flow.style.bottom_margin = 8
-
-    local depot_checkbox = depot_flow.add{
-        type = "checkbox",
-        name = gui_prefix .. "depot-checkbox",
-        caption = { "cargo-drone-gui-mooring.enable-depot" },
-        tooltip = { "cargo-drone-gui-mooring.enable-depot-tooltip" },
-        state = mh.is_depot_enabled(mooring)
-    }
-
-    player_data.elements.depot_checkbox = depot_checkbox
 
     ---------- Item Signals ----------
 
@@ -1142,7 +1110,7 @@ local function build_gui_circuit(player_data, mooring, mooring_name, parent)
         caption = { "cargo-drone-gui-control-behavior-modes.set-drone-limit" },
         tooltip = { "cargo-drone-gui-control-behavior-modes.set-drone-limit-description" },
         style = "subheader_caption_checkbox",
-        state = mh.is_drone_limit_circuit(mooring)
+        state = th.is_drone_limit_circuit(mooring)
     }
 
     drone_limit_circuit_checkbox.style.top_margin = 4
@@ -1194,7 +1162,7 @@ local function build_gui_circuit(player_data, mooring, mooring_name, parent)
         caption = { "cargo-drone-gui-control-behavior-modes.read-drone-count" },
         tooltip = { "cargo-drone-gui-control-behavior-modes.read-drone-count-description" },
         style = "subheader_caption_checkbox",
-        state = mh.is_drone_count_circuit(mooring)
+        state = th.is_drone_count_circuit(mooring)
     }
 
     drone_count_circuit_checkbox.style.top_margin = 4
@@ -1246,7 +1214,7 @@ local function build_gui_circuit(player_data, mooring, mooring_name, parent)
         caption = { "cargo-drone-gui-control-behavior-modes.set-priority" },
         tooltip = { "cargo-drone-gui-control-behavior-modes.set-priority-description" },
         style = "subheader_caption_checkbox",
-        state = mh.is_priority_circuit(mooring)
+        state = th.is_priority_circuit(mooring)
     }
 
     priority_circuit_checkbox.style.top_margin = 4
