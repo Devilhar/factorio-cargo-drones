@@ -15,7 +15,24 @@ local minimap_name = gui_prefix .. "drone-minimap"
 
 local window_gui_name = gui_prefix .. "window-mooring-main"
 
+local entity_types = {
+    provider    = 1,
+    requester   = 2,
+    refueler    = 3,
+    depot       = 4,
+}
+local entity_type_lookup = {
+    ["cargo-drone-mooring-constant-combinator-provider"]    = entity_types.provider,
+    ["cargo-drone-mooring-constant-combinator-requester"]   = entity_types.requester,
+    ["cargo-drone-mooring-constant-combinator-refueler"]    = entity_types.refueler,
+    ["cargo-drone-depot-constant-combinator"]               = entity_types.depot,
+}
+
 local not_observed = {}
+
+local function is_entity_type_mooring(entity_type)
+    return entity_type ~= entity_types.depot
+end
 
 local function get_drone_limit_signal_element(player_data, element)
     local signal_id = th.get_drone_limit_circuit_signal_id(player_data.entity)
@@ -257,7 +274,13 @@ local observers = {
     },
 
     get_read_requests_circuit = {
-        get = function(player_data) return mh.get_read_requests(player_data.entity) end,
+        get = function(player_data)
+            if not is_entity_type_mooring(player_data.entity_type) then
+                return nil
+            end
+
+            return mh.get_read_requests(player_data.entity)
+        end,
         updated = function(player_data, data)
             if player_data.elements.read_requests_circuit_checkbox then
                 player_data.elements.read_requests_circuit_checkbox.state = data
@@ -269,8 +292,18 @@ local observers = {
 for x = 1, 3 do
     for y = 1, 3 do
         observers["get_inventory_target_button_" .. x .. "_" .. y] = {
-            get = function(player_data) return mh.get_inventory_target(player_data.entity, x, y) end,
+            get = function(player_data)
+                if not is_entity_type_mooring(player_data.entity_type) then
+                    return nil
+                end
+
+                return mh.get_inventory_target(player_data.entity, x, y)
+            end,
             updated = function(player_data, data)
+                if not is_entity_type_mooring(player_data.entity_type) then
+                    return
+                end
+
                 local element = player_data.elements["inventory_target_button_" .. x .. "_" .. y]
                 local inventory_target = mh.get_inventory_target(player_data.entity, x, y)
 
@@ -895,10 +928,11 @@ local function build_gui_mooring(player_data, mooring, mooring_name, parent)
 
     ---------- Item Signals ----------
 
-    if mooring_name ~= "cargo-drone-mooring-constant-combinator-refueler" then
+    if player_data.entity_type == entity_types.provider
+        or player_data.entity_type == entity_types.requester then
         local label_caption = "cargo-drone-gui-mooring.provided-items"
 
-        if mooring.name == "cargo-drone-mooring-constant-combinator-requester" then
+        if player_data.entity_type == entity_types.requester then
             label_caption = "cargo-drone-gui-mooring.requested-items"
         end
 
@@ -938,68 +972,70 @@ local function build_gui_mooring(player_data, mooring, mooring_name, parent)
         direction = "horizontal",
     }
 
-    local inventory_targets_flow = footer_flow.add{
-        type = "flow",
-        direction = "vertical",
-    }
-
-    inventory_targets_flow.style.margin = 4
-
-    local inventory_targets_header = inventory_targets_flow.add{
-        type = "label",
-        style = "subheader_label",
-        caption = { "cargo-drone-gui-mooring.inventory-targets" }
-    }
-
-    inventory_targets_header.style.margin = 4
-
-    local inventory_targets_rows_flow = inventory_targets_flow.add{
-        type = "frame",
-        style = "inside_deep_frame",
-        direction = "vertical",
-    }
-
-    local inventory_targets_row_flow = nil
-
-    local function create_inventory_target_button(x, y)
-        local inventory_target = mh.get_inventory_target(mooring, x, y)
-
-        local inventory_target_button = inventory_targets_row_flow.add{
-            type = "sprite-button",
-            name = gui_prefix .. "inventory-target-button-" .. x .. "_" .. y,
-            sprite = get_inventory_target_icon(inventory_target),
-            tooltip = get_inventory_target_tooltip(inventory_target)
+    if is_entity_type_mooring(player_data.entity_type) then
+        local inventory_targets_flow = footer_flow.add{
+            type = "flow",
+            direction = "vertical",
         }
 
-        player_data.elements["inventory_target_button_" .. x .. "_" .. y] = inventory_target_button
+        inventory_targets_flow.style.margin = 4
+
+        local inventory_targets_header = inventory_targets_flow.add{
+            type = "label",
+            style = "subheader_label",
+            caption = { "cargo-drone-gui-mooring.inventory-targets" }
+        }
+
+        inventory_targets_header.style.margin = 4
+
+        local inventory_targets_rows_flow = inventory_targets_flow.add{
+            type = "frame",
+            style = "inside_deep_frame",
+            direction = "vertical",
+        }
+
+        local inventory_targets_row_flow = nil
+
+        local function create_inventory_target_button(x, y)
+            local inventory_target = mh.get_inventory_target(mooring, x, y)
+
+            local inventory_target_button = inventory_targets_row_flow.add{
+                type = "sprite-button",
+                name = gui_prefix .. "inventory-target-button-" .. x .. "_" .. y,
+                sprite = get_inventory_target_icon(inventory_target),
+                tooltip = get_inventory_target_tooltip(inventory_target)
+            }
+
+            player_data.elements["inventory_target_button_" .. x .. "_" .. y] = inventory_target_button
+        end
+
+        inventory_targets_row_flow = inventory_targets_rows_flow.add{
+            type = "flow",
+            direction = "horizontal",
+        }
+
+        create_inventory_target_button(1, 1)
+        create_inventory_target_button(2, 1)
+        create_inventory_target_button(3, 1)
+
+        inventory_targets_row_flow = inventory_targets_rows_flow.add{
+            type = "flow",
+            direction = "horizontal",
+        }
+
+        create_inventory_target_button(1, 2)
+        create_inventory_target_button(2, 2)
+        create_inventory_target_button(3, 2)
+
+        inventory_targets_row_flow = inventory_targets_rows_flow.add{
+            type = "flow",
+            direction = "horizontal",
+        }
+
+        create_inventory_target_button(1, 3)
+        create_inventory_target_button(2, 3)
+        create_inventory_target_button(3, 3)
     end
-
-    inventory_targets_row_flow = inventory_targets_rows_flow.add{
-        type = "flow",
-        direction = "horizontal",
-    }
-
-    create_inventory_target_button(1, 1)
-    create_inventory_target_button(2, 1)
-    create_inventory_target_button(3, 1)
-
-    inventory_targets_row_flow = inventory_targets_rows_flow.add{
-        type = "flow",
-        direction = "horizontal",
-    }
-
-    create_inventory_target_button(1, 2)
-    create_inventory_target_button(2, 2)
-    create_inventory_target_button(3, 2)
-
-    inventory_targets_row_flow = inventory_targets_rows_flow.add{
-        type = "flow",
-        direction = "horizontal",
-    }
-
-    create_inventory_target_button(1, 3)
-    create_inventory_target_button(2, 3)
-    create_inventory_target_button(3, 3)
 
     ---------- Filler ----------
     local mooring_filler = footer_flow.add{
@@ -1249,7 +1285,7 @@ local function build_gui_circuit(player_data, mooring, mooring_name, parent)
 
     ---------- Read requests ----------
 
-    if mooring_name == "cargo-drone-mooring-constant-combinator-provider" then
+    if player_data.entity_type == entity_types.provider then
         main_frame.add{
             type = "line",
         }
@@ -1272,12 +1308,13 @@ local function build_gui_circuit(player_data, mooring, mooring_name, parent)
     end
 end
 
-local function build_gui(player, mooring, mooring_name)
+local function build_gui(player, mooring, mooring_name, entity_type)
     local player_data = {
         player = player,
         entity = mooring,
         entity_unit_number = mooring.unit_number,
         entity_name = mooring_name,
+        entity_type = entity_type,
         surface_index = mooring.surface.index,
         position = mooring.position,
         elements = {},
@@ -1480,9 +1517,9 @@ function gui_mooring.on_gui_opened(event)
         entity_name = entity.ghost_name
     end
 
-	if entity_name ~= "cargo-drone-mooring-constant-combinator-provider"
-        and entity_name ~= "cargo-drone-mooring-constant-combinator-requester"
-        and entity_name ~= "cargo-drone-mooring-constant-combinator-refueler" then
+    local entity_type = entity_type_lookup[entity_name]
+
+	if not entity_type then
         return
 	end
 
@@ -1496,7 +1533,7 @@ function gui_mooring.on_gui_opened(event)
 
     add_to_lookup(player.index, entity.unit_number)
 
-    build_gui(player, entity, entity_name)
+    build_gui(player, entity, entity_name, entity_type)
 end
 function gui_mooring.on_gui_closed(event)
 	if event.gui_type ~= defines.gui_type.custom then
