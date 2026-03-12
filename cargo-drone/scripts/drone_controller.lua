@@ -3,6 +3,7 @@ local util      = require("util")
 
 local constants = require("constants")
 local ep        = require("entity_property")
+local th        = require("target_helper")
 local mh        = require("mooring_helper")
 local dt        = require("drone_tasks")
 local rc        = require("requester_cooldown")
@@ -129,8 +130,8 @@ local function get_closest_valid_refueler(mooring_table, entity)
     local closest_distance = constants.max_distance
 
     for id, data in pairs(mooring_table) do
-        if entity.surface.index == data.entity.surface.index and not mh.is_at_drone_limit(data.entity) then
-            local priority = mh.get_priority(data.entity)
+        if entity.surface.index == data.entity.surface.index and not th.is_at_drone_limit(data.entity) then
+            local priority = th.get_priority(data.entity)
 
             if highest_priority <= priority then
                 local distance = util.distance(entity.position, data.entity.position)

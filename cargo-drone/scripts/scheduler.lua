@@ -3,6 +3,7 @@ local util      = require("util")
 
 local constants = require("scripts.constants")
 local ep        = require("scripts.entity_property")
+local th        = require("scripts.target_helper")
 local deh       = require("scripts.depot_helper")
 local mh	    = require("scripts.mooring_helper")
 local rc        = require("scripts.requester_cooldown")
@@ -340,12 +341,12 @@ local function assign_depot_task()
     local lowest_drone_count = 10000000
 
     for _, depot in pairs(depots) do
-        if not deh.is_at_drone_limit(depot) then
-            local priority = deh.get_priority(depot)
+        if not th.is_at_drone_limit(depot) then
+            local priority = th.get_priority(depot)
 
             if priority >= highest_priority then
                 local distance = util.distance(drone.position, depot.position)
-                local drone_count = deh.get_drone_count(depot)
+                local drone_count = th.get_drone_count(depot)
 
                 if priority == highest_priority then
                     if drone_count > lowest_drone_count then
