@@ -16,7 +16,6 @@ local minimap_name = gui_prefix .. "drone-minimap"
 local window_gui_name = gui_prefix .. "window-mooring-main"
 
 local not_observed = {}
-local muted_task_weight = 1000
 
 local function get_drone_limit_signal_element(player_data, element)
     local signal_id = th.get_drone_limit_circuit_signal_id(player_data.entity)
@@ -419,12 +418,6 @@ local function update_drone_list(player_data)
         end
 
         local function insert_sorted(drone, task)
-            if dt.is_muted(task) then
-                table.insert(sorted_drone_task_list, { drone, task, muted_task_weight })
-
-                return
-            end
-
             local weight = get_weight(drone, task)
 
             for i, drone_task in ipairs(sorted_drone_task_list) do
