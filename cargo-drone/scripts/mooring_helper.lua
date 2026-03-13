@@ -281,9 +281,7 @@ end
 local function set_request_reader(mooring, drone)
     local unit_number = mooring.unit_number
 
-    if storage.mooring_helper.active_readers[unit_number] then
-        unset_request_reader(storage.mooring_helper.active_readers[unit_number])
-    end
+    unset_request_reader(unit_number)
 
     storage.mooring_helper.active_readers[unit_number] = {
         mooring             = mooring,
@@ -692,7 +690,7 @@ function mooring_helper.on_destroyed_entity(entity)
         return
     end
 
-    unset_request_reader(mooring)
+    unset_request_reader(mooring.unit_number)
 
     update_request_output(mooring)
 end
