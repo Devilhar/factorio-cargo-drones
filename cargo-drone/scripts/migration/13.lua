@@ -12,6 +12,17 @@ local function clear_filter_value(section, filter_name)
         end
     end
 end
+local function get_filter_value(section, filter_name)
+    local filters = section.filters
+
+    for i, filter in ipairs(filters) do
+        if filter.value and filter.value.name == filter_name then
+            return filter.min
+        end
+    end
+
+    return nil
+end
 
 local function migrate_mooring(mooring)
     local cb = mooring.get_control_behavior()
@@ -29,32 +40,37 @@ local function migrate_mooring(mooring)
 
 --[[
     fuel_inventory                  = 5 -> nil,
-    drone_count                     = 4 -> 5,
-    priority_circuit                = 3 -> 4,
-    drone_limit                     = 2 -> 3,
-    output                          = 6 -> 2,
-    inventory_targets               = 7 -> 6,
-    output_requests                 = 8 -> 7,
+    output                          = 6 -> nil,
+    inventory_targets               = 7 -> 5,
+    output_requests                 = 8 -> 6,
 ]]
     local sections = cb.sections
 
-    sections[5].filters = sections[4].filters
+    local drone_signal_set = get_filter_value(sections[4], "signal-H")
+    local drone_filter = sections[4].filters[1]
+    local drone_count = storage.managed_entities[mooring.unit_number].properties["drone_count"] or 0
 
-    sections[4].filters = sections[3].filters
+    if drone_filter then
+        drone_filter.min = drone_count
+    elseif drone_signal_set == nil then
+        drone_filter = {
+            value = { type = "virtual", name = "signal-C", quality = "normal" },
+            min = drone_count
+        }
+    end
 
-    sections[3].filters = sections[2].filters
+    sections[4].filters = { drone_filter }
 
-    sections[2].filters = sections[6].filters
+    sections[5].filters = sections[7].filters
 
-    sections[6].filters = sections[7].filters
+    sections[6].filters = sections[8].filters
 
-    sections[7].filters = sections[8].filters
-
-    sections[2].active = true
-    sections[6].active = false
-    sections[7].active = true
+    sections[4].active = true
+    sections[6].active = true
 
     cb.remove_section(8)
+
+    cb.remove_section(7)
 
     storage.depots = nil
 

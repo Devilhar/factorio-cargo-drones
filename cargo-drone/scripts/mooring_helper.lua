@@ -12,8 +12,8 @@ local settings_filter_name = {
 
 local section_index = {
     settings                        = 1,
-    inventory_targets               = 6,
-    output_requests                 = 7,
+    inventory_targets               = 5,
+    output_requests                 = 6,
 }
 
 local mooring_types = {
@@ -216,14 +216,14 @@ local function create_proxy_containers(mooring)
 end
 
 local function resize_and_activate_sections(control_behavior)
-    while control_behavior.sections_count < 7 do
+    while control_behavior.sections_count < 6 do
         control_behavior.add_section()
     end
-    while control_behavior.sections_count > 7 do
+    while control_behavior.sections_count > 6 do
         control_behavior.remove_section(7)
     end
 
-    for i = 6, 7 do
+    for i = 5, 6 do
         local section = control_behavior.get_section(i)
 
         section.active = false
