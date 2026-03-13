@@ -8,10 +8,9 @@ local signal_id_drone_count     = { type = "virtual", name = "signal-C", quality
 
 local section_index = {
     settings                        = 1,
-    output                          = 2,
-    drone_limit                     = 3,
-    priority_circuit                = 4,
-    drone_count                     = 5,
+    drone_limit                     = 2,
+    priority_circuit                = 3,
+    drone_count                     = 4,
 }
 
 local setting_names = {
@@ -35,13 +34,6 @@ local settings_filters = {
     [setting_names.drone_count_signal_id]           = "signal-H",
 }
 
--- NOTE: Some mods like "Sort me" causes filters to be condensed and sorted. Meaning this will break should there be more than one output index.
--- Also note that if two outputs has the same signal id, this implementation will also break.
--- The fix would be to keep track of what is being outputted by what, and update the signal id rather than the index. But this would be overcomplex for now.
-local output_index = {
-    drone_count                     = 1,
-}
-
 local function get_settings_section(target)
     local cb = target.get_control_behavior()
 
@@ -55,7 +47,7 @@ local function get_settings_value(target, setting_name)
     return fh.get_filter_value(get_settings_section(target), settings_filters[setting_name])
 end
 
-local function set_signal_id(target, index, signal_id)
+local function set_signal_id(target, index, signal_id, value)
     local section = target.get_control_behavior().get_section(index)
 
     if signal_id == nil then
@@ -71,7 +63,7 @@ local function set_signal_id(target, index, signal_id)
                 name = signal_id.name,
                 quality = signal_id.quality or "normal",
             },
-            min = 0
+            min = value
         }
     }
 end
@@ -115,7 +107,7 @@ local function get_drone_limit_circuit_signal_id(target)
 end
 local function set_drone_limit_circuit_signal_id(target, signal_id)
     set_settings_value(target, setting_names.drone_limit_circuit_signal_id, 0)
-    set_signal_id(target, section_index.drone_limit, signal_id)
+    set_signal_id(target, section_index.drone_limit, signal_id, 0)
 end
 
 local function get_priority(target)
@@ -155,7 +147,7 @@ local function get_priority_circuit_signal_id(target)
 end
 local function set_priority_circuit_signal_id(target, signal_id)
     set_settings_value(target, setting_names.priority_circuit_signal_id, 0)
-    set_signal_id(target, section_index.priority_circuit, signal_id)
+    set_signal_id(target, section_index.priority_circuit, signal_id, 0)
 end
 
 local function get_drone_count(target)
@@ -180,6 +172,14 @@ local function set_drone_count_circuit(target, flag)
     end
 end
 
+local function get_drone_count_output(target)
+    if not get_drone_count_circuit(target) then
+        return 0
+    end
+
+    return get_drone_count(target)
+end
+
 local function get_drone_count_circuit_signal_id(target)
     if get_settings_value(target, setting_names.drone_count_signal_id) == nil then
         return signal_id_drone_count
@@ -191,51 +191,57 @@ local function get_drone_count_circuit_signal_id(target)
 end
 local function set_drone_count_circuit_signal_id(target, signal_id)
     set_settings_value(target, setting_names.drone_count_signal_id, 0)
-    set_signal_id(target, section_index.drone_count, signal_id)
+    set_signal_id(target, section_index.drone_count, signal_id, get_drone_count_output(target))
 end
 
 local function update_drone_count_output(target)
     local cb = target.get_control_behavior()
 
-    local section = cb.get_section(section_index.output)
-
-    if not get_drone_count_circuit(target) then
-        section.clear_slot(output_index.drone_count)
-
-        return
-    end
+    local section = cb.get_section(section_index.drone_count)
 
     local signal_id = get_drone_count_circuit_signal_id(target)
-    local count = get_drone_count(target)
 
-    if signal_id == nil or count == 0 then
-        section.clear_slot(output_index.drone_count)
-
+    if not signal_id then
         return
     end
 
-    section.set_slot(output_index.drone_count, {
-        value = signal_id,
-        min = count
-    })
+    local count = get_drone_count_output(target)
+
+    section.filters = {
+        {
+            value = signal_id,
+            min = count
+        }
+    }
 end
 
 local function clean_sections(control_behavior)
-    for i = 1, 5 do
+    for i = 1, 4 do
         local section = control_behavior.get_section(i)
 
         section.active = false
         section.group = ""
     end
 
-    control_behavior.get_section(section_index.output).active = true
+    control_behavior.get_section(section_index.drone_count).active = true
 end
 local function clear_all_outputs(target)
     local cb = target.get_control_behavior()
 
-    local section = cb.get_section(section_index.output)
+    local section = cb.get_section(section_index.drone_count)
 
-    section.filters = {}
+    local signal_filter = section.filters[1]
+
+    if not signal_filter or not signal_filter.value then
+        return
+    end
+
+    section.filters = {
+        {
+            value = signal_filter.value,
+            min = 0
+        }
+    }
 end
 local function clean_settings(target)
     local cb = target.get_control_behavior()
@@ -396,8 +402,6 @@ function target_helper.get_drone_count_circuit_signal_id(target)
 end
 function target_helper.set_drone_count_circuit_signal_id(target, signal_id)
     set_drone_count_circuit_signal_id(target, signal_id)
-
-    update_drone_count_output(target)
 end
 
 function target_helper.is_at_drone_limit(target)
