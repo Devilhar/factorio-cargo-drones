@@ -5,9 +5,11 @@ local th        = require("target_helper")
 
 local setting_names = {
     read_requests                   = "read_requests",
+    depot                           = "depot",
 }
 local settings_filter_name = {
     [setting_names.read_requests]   = "signal-M",
+    [setting_names.depot]           = "signal-L",
 }
 
 local section_index = {
@@ -246,6 +248,8 @@ local function clean_settings_ghost(mooring)
 
     resize_and_activate_sections(cb)
 
+    set_settings_value(mooring, setting_names.depot, nil)
+
     th.clean_settings(mooring)
 
     clear_all_outputs(mooring)
@@ -254,6 +258,8 @@ local function clean_settings(mooring)
     local cb = mooring.get_control_behavior()
 
     resize_and_activate_sections(cb)
+
+    set_settings_value(mooring, setting_names.depot, nil)
 
     th.clean_settings(mooring)
 
@@ -425,6 +431,13 @@ function mooring_helper.unset_request_reader(mooring)
     unset_request_reader(mooring.unit_number)
 
     update_request_output(mooring)
+end
+
+function mooring_helper.remove_depot_flag(mooring)
+    set_settings_value(mooring, setting_names.depot, nil)
+end
+function mooring_helper.has_depot_flag(mooring)
+    return get_settings_value(mooring, setting_names.depot) ~= nil
 end
 
 return mooring_helper

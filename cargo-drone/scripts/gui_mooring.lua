@@ -206,7 +206,7 @@ local observers = {
             end
         end
     },
-    
+
     ---------- Circuit ----------
     get_drone_limit_signal_element_type = {
         get = function(player_data) return get_drone_limit_signal_element(player_data, "type") end,
@@ -710,6 +710,11 @@ local callbacks = {
         update_gui(player_data)
     end,
 
+    [gui_prefix .. "depot-alert-button"] = function(player_data, event)
+        mh.remove_depot_flag(player_data.entity)
+        player_data.elements.depot_alert_button.visible = false
+    end,
+
     ---------- Circuit ----------
     [gui_prefix .. "set-drone-limit-checkbox"] = function(player_data, event)
         th.set_drone_limit_circuit(player_data.entity, player_data.elements.drone_limit_circuit_checkbox.state)
@@ -926,6 +931,25 @@ local function build_gui_mooring(player_data, mooring, mooring_name, parent)
     player_data.elements.priority_slider = priority_slider
     player_data.elements.priority_field = priority_field
 
+    ---------- Depot ----------
+    local depot_flow = mooring_frame.add{
+        type = "flow",
+        direction = "horizontal",
+    }
+
+    depot_flow.style.vertical_align = "center"
+    depot_flow.style.horizontal_spacing = 8
+    depot_flow.style.bottom_margin = 8
+
+    local depot_alert_button = depot_flow.add{
+        type = "button",
+        name = gui_prefix .. "depot-alert-button",
+        caption = { "cargo-drone-gui-mooring.depot-alert-button" },
+        tooltip = { "cargo-drone-gui-mooring.depot-alert-button-tooltip" },
+        visible = mh.has_depot_flag(mooring)
+    }
+
+    player_data.elements.depot_alert_button = depot_alert_button
     ---------- Item Signals ----------
 
     if player_data.entity_type == entity_types.provider

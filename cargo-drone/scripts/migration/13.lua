@@ -32,7 +32,6 @@ local function migrate_mooring(mooring)
     clear_filter_value(section, "signal-I") -- fuel_inventory
     clear_filter_value(section, "signal-J") -- fuel_inventory_output
     clear_filter_value(section, "signal-K") -- fuel_inventory_signal_id
-    clear_filter_value(section, "signal-L") -- depot
 
     section = cb.get_section(6) -- output
 
