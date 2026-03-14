@@ -67,7 +67,8 @@ local function begin_frame()
     storage.scheduler.update_stage = 0
 
     storage.scheduler.should_perform_mooring_scan =
-        settings.global["cargo-drone-mooring-no-wire-connection-alert"].value
+        (settings.global["cargo-drone-mooring-no-wire-connection-alert"].value
+            or settings.global["cargo-drone-mooring-mooring-depot-alert"].value)
         and storage.scheduler.last_mooring_scan_tick + mooring_scan_interval < storage.scheduler.last_schedule_tick
 
     storage.scheduler.idling_cargo_drones = {}
@@ -124,13 +125,19 @@ local function scan_moorings(moorings)
         return false
     end
 
-    if mooring.get_circuit_network(defines.wire_connector_id.circuit_red) ~= nil
-        or mooring.get_circuit_network(defines.wire_connector_id.circuit_green) ~= nil then
-        return false
+    if settings.global["cargo-drone-mooring-no-wire-connection-alert"].value
+        and mooring.get_circuit_network(defines.wire_connector_id.circuit_red) == nil
+        and mooring.get_circuit_network(defines.wire_connector_id.circuit_green) == nil then
+        for i = 1, #game.players do
+            game.players[i].add_custom_alert(mooring, { type = "virtual", name = "signal-alert" }, { "cargo-drone-alerts.mooring-no-wire-connection" }, true)
+        end
     end
 
-    for i = 1, #game.players do
-        game.players[i].add_custom_alert(mooring, { type = "virtual", name = "signal-alert" }, { "cargo-drone-alerts.mooring-no-wire-connection" }, true)
+    if settings.global["cargo-drone-mooring-mooring-depot-alert"].value
+        and mh.has_depot_flag(mooring) then
+        for i = 1, #game.players do
+            game.players[i].add_custom_alert(mooring, { type = "virtual", name = "signal-alert" }, { "cargo-drone-alerts.mooring-depot-flag" }, true)
+        end
     end
 
     return false
