@@ -26,10 +26,16 @@ constants.drones_tickrates = {
 -- Depots
 constants.depot_cable_sprite_size = { 8, 2 }
 constants.depot_cable_attachment_offsets = {
-    { -1.5, -1.5 },
-    { 1.5, -1.5 },
-    { -1.5, 1.5 },
-    { 1.5, 1.5 },
+    { -1.0, -1.0 },
+    { 1.0, -1.0 },
+    { -1.0, 1.0 },
+    { 1.0, 1.0 },
+}
+constants.depot_cable_attachment_heights = {
+    1,
+    1,
+    1,
+    1,
 }
 
 -- Utils

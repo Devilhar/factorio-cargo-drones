@@ -56,17 +56,19 @@ end
 local function get_closest_depot_attachment_offset(delta)
     local closest_offset = { 0, 0 }
     local closest_distance = 100
+    local closest_height = 0
 
-    for _, offset in pairs(constants.depot_cable_attachment_offsets) do
+    for i, offset in pairs(constants.depot_cable_attachment_offsets) do
         local distance = util.distance(delta, offset)
 
         if distance < closest_distance then
             closest_offset = offset
             closest_distance = distance
+            closest_height = constants.depot_cable_attachment_heights[i]
         end
     end
 
-    return closest_offset
+    return closest_offset, closest_height
 end
 
 local function calculate_depot_cable_render_params(drone, depot, drone_offset, is_shadow)
@@ -75,7 +77,7 @@ local function calculate_depot_cable_render_params(drone, depot, drone_offset, i
 
     local delta = { position_drone.x - position_depot.x, position_drone.y - position_depot.y }
 
-    local depot_offset = get_closest_depot_attachment_offset(delta)
+    local depot_offset, depot_offset_height = get_closest_depot_attachment_offset(delta)
 
     local should_flip = is_shadow and position_drone.y < position_depot.y
 
@@ -84,14 +86,18 @@ local function calculate_depot_cable_render_params(drone, depot, drone_offset, i
     position_depot.x = position_depot.x + depot_offset[1]
     position_depot.y = position_depot.y + depot_offset[2]
 
+    if not is_shadow then
+        position_depot.y = position_depot.y - depot_offset_height
+    end
+
     local distance = util.distance(position_drone, position_depot)
     local delta_offset = { position_drone.x - position_depot.x, position_drone.y - position_depot.y }
 
     local orientation = vector_to_orientation_xy(delta_offset[1], delta_offset[2])
 
     local offset = {
-        -delta[1] / 2 + drone_offset.x / 2,
-        -delta[2] / 2 + drone_offset.y / 2
+        -delta[1] / 2 + drone_offset.x / 2 + depot_offset[1] / 2,
+        -delta[2] / 2 + drone_offset.y / 2 + depot_offset[2] / 2
     }
 
     local cable_sprite_half_height = constants.depot_cable_sprite_size[2] / 2
