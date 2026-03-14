@@ -53,6 +53,59 @@ local function orientation_delta_from_to(a, b)
 end
 -- End steal mode
 
+local function calculate_depot_cable_render_params(drone, depot, drone_offset, is_shadow)
+    local position_drone = drone.position
+    local position_depot = depot.position
+
+    local should_flip = is_shadow and position_drone.y < position_depot.y
+
+    position_drone.x = position_drone.x + drone_offset.x
+    position_drone.y = position_drone.y + drone_offset.y
+
+    local distance = util.distance(position_drone, position_depot)
+    local delta = { position_drone.x - position_depot.x, position_drone.y - position_depot.y }
+
+    local orientation = vector_to_orientation_xy(delta[1], delta[2])
+
+    local offset = {
+        -(drone.position.x - position_depot.x) / 2 + drone_offset.x / 2,
+        -(drone.position.y - position_depot.y) / 2 + drone_offset.y / 2
+    }
+
+    local cable_sprite_half_height = constants.depot_cable_sprite_size[2] / 2
+
+    if orientation < 0.5 then
+        orientation = orientation + 0.25
+    else
+        orientation = orientation - 0.25
+    end
+
+    orientation = orientation % 1
+
+    local tau = math.pi * 2
+
+    local rad = orientation * tau
+
+    local x_scale = -distance / constants.depot_cable_sprite_size[1]
+
+    local y_scale = -math.max(math.min(1, math.abs(x_scale)), 0.75)
+
+    if is_shadow then
+        x_scale = -x_scale
+    end
+
+    if should_flip then
+        y_scale = -y_scale
+        offset[1] = offset[1] - math.sin(rad) * cable_sprite_half_height
+        offset[2] = offset[2] + math.cos(rad) * cable_sprite_half_height
+    else
+        offset[1] = offset[1] + math.sin(rad) * cable_sprite_half_height
+        offset[2] = offset[2] - math.cos(rad) * cable_sprite_half_height
+    end
+
+    return offset, x_scale, y_scale, orientation
+end
+
 local function move_to_position(drone_position, drone_orientation, drone_speed, state, target_position)
     local distance_to_target = util.distance(drone_position, target_position)
 
@@ -362,16 +415,27 @@ local function perform_task_depot(drone, state, task, game_tick)
     local drone_position = drone.position
     local mooring_position = mooring.position
 
-    local offset_direction = ((drone.unit_number * 281) % 100) / 100
-    local offset_distance = ((drone.unit_number * 13) % 100) / (100 / 15) + 2
+    local offset_orientation = ((drone.unit_number * 281) % 100) / 200
+    local offset_distance = ((drone.unit_number * 13) % 100) / (100 / 8) + 7
 
-    local offset = util.rotate_position({ offset_distance, 0 }, offset_direction)
+    if offset_orientation >= 0.375 then
+        offset_orientation = offset_orientation + 0.4375
+    elseif offset_orientation >= 0.25 then
+        offset_orientation = offset_orientation + 0.3125
+    elseif offset_orientation >= 0.125 then
+        offset_orientation = offset_orientation + 0.1875
+    else
+        offset_orientation = offset_orientation + 0.0625
+    end
+
+    local offset = util.rotate_position({ offset_distance, 0 }, offset_orientation)
 
     local target_position = { x = mooring_position.x + offset.x, y = mooring_position.y + offset.y }
 
     if util.distance(drone_position, target_position) < 1 then
         state.parked_depot = mooring
         state.tickrate = constants.drones_tickrates.minimal
+        drone.speed = 0
 
         return false
     end
@@ -487,8 +551,55 @@ local function tick_drone(drone, game_tick)
         ep.set_entity_property(state.docking_mooring, "docking_drone", drone)
     end
 
+    local old_parked_depot = ep.get_entity_property(drone, "parked_depot")
+
+    if old_parked_depot ~= state.parked_depot then
+        local cable_renderer = ep.get_entity_property(drone, "cable_renderer")
+        local cable_shadow_renderer = ep.get_entity_property(drone, "cable_shadow_renderer")
+
+        if cable_renderer and cable_renderer.valid then
+            cable_renderer.destroy()
+
+            cable_renderer = nil
+        end
+        if cable_shadow_renderer and cable_shadow_renderer.valid then
+            cable_shadow_renderer.destroy()
+
+            cable_shadow_renderer = nil
+        end
+
+        if state.parked_depot then
+            local offset, x_scale, y_scale, orientation = calculate_depot_cable_render_params(drone, state.parked_depot, { x = 0, y = -constants.drone_sprite_flying_offset }, false)
+
+            cable_renderer = rendering.draw_sprite{
+                sprite = "cargo-drone-depot-cable",
+                target = { entity = drone, offset = offset },
+                surface = drone.surface,
+                render_layer = "wires",
+                x_scale = x_scale,
+                y_scale = y_scale,
+                orientation = orientation
+            }
+
+            offset, x_scale, y_scale, orientation = calculate_depot_cable_render_params(drone, state.parked_depot, { x = constants.drone_sprite_shadow_offset, y = 0 }, true)
+
+            cable_shadow_renderer = rendering.draw_sprite{
+                sprite = "cargo-drone-depot-cable-shadow",
+                target = { entity = drone, offset = offset },
+                surface = drone.surface,
+                --render_layer = "floor",
+                x_scale = x_scale,
+                y_scale = y_scale,
+                orientation = orientation
+            }
+        end
+
+        ep.set_entity_property(drone, "cable_renderer", cable_renderer)
+        ep.set_entity_property(drone, "cable_shadow_renderer", cable_shadow_renderer)
+        ep.set_entity_property(drone, "parked_depot", state.parked_depot)
+    end
+
     ep.set_entity_property(drone, "queuing_mooring", state.queuing_mooring)
-    ep.set_entity_property(drone, "parked_depot", state.parked_depot)
 
     return state.tickrate
 end

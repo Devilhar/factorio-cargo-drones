@@ -105,8 +105,30 @@ local depot_recipe = {
 	results = {{type="item", name="cargo-drone-depot-constant-combinator", amount=1}}
 }
 
+local depot_cable_sprite = {
+	type = "sprite",
+	name = "cargo-drone-depot-cable",
+	filename = "__cargo-drone__/graphics/depot-cable.png",
+	priority = "very-low",
+	width = 256,
+	height = 64,
+	mipmap_count = 2,
+}
+local depot_cable_shadow_sprite = {
+	type = "sprite",
+	name = "cargo-drone-depot-cable-shadow",
+	filename = "__cargo-drone__/graphics/depot-cable.png",
+	priority = "very-low",
+	draw_as_shadow = true,
+	width = 256,
+	height = 64,
+	mipmap_count = 2,
+}
+
 data:extend({
 	depot_entity,
 	depot_item,
 	depot_recipe,
+	depot_cable_sprite,
+	depot_cable_shadow_sprite,
 })
