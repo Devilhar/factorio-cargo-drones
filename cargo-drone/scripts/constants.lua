@@ -8,8 +8,8 @@ constants.current_mod_state = 13
 constants.drone_has_burnt_result = prototypes.entity["cargo-drone"].burner_prototype.burnt_inventory_size > 0
 
 -- Cargo drones
-constants.drone_sprite_flying_offset = 9
-constants.drone_sprite_shadow_offset = 14
+constants.drone_sprite_offset = { x = 0, y = -9 }
+constants.drone_sprite_shadow_offset = { x = 14, y = 0 }
 constants.drone_queue_distance = 20
 constants.random_tick_interval = 60
 
@@ -25,6 +25,12 @@ constants.drones_tickrates = {
 
 -- Depots
 constants.depot_cable_sprite_size = { 8, 2 }
+constants.depot_cable_attachment_offsets = {
+    { -1.5, -1.5 },
+    { 1.5, -1.5 },
+    { -1.5, 1.5 },
+    { 1.5, 1.5 },
+}
 
 -- Utils
 

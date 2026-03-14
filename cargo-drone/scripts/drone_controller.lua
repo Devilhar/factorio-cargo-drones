@@ -53,23 +53,45 @@ local function orientation_delta_from_to(a, b)
 end
 -- End steal mode
 
+local function get_closest_depot_attachment_offset(delta)
+    local closest_offset = { 0, 0 }
+    local closest_distance = 100
+
+    for _, offset in pairs(constants.depot_cable_attachment_offsets) do
+        local distance = util.distance(delta, offset)
+
+        if distance < closest_distance then
+            closest_offset = offset
+            closest_distance = distance
+        end
+    end
+
+    return closest_offset
+end
+
 local function calculate_depot_cable_render_params(drone, depot, drone_offset, is_shadow)
     local position_drone = drone.position
     local position_depot = depot.position
+
+    local delta = { position_drone.x - position_depot.x, position_drone.y - position_depot.y }
+
+    local depot_offset = get_closest_depot_attachment_offset(delta)
 
     local should_flip = is_shadow and position_drone.y < position_depot.y
 
     position_drone.x = position_drone.x + drone_offset.x
     position_drone.y = position_drone.y + drone_offset.y
+    position_depot.x = position_depot.x + depot_offset[1]
+    position_depot.y = position_depot.y + depot_offset[2]
 
     local distance = util.distance(position_drone, position_depot)
-    local delta = { position_drone.x - position_depot.x, position_drone.y - position_depot.y }
+    local delta_offset = { position_drone.x - position_depot.x, position_drone.y - position_depot.y }
 
-    local orientation = vector_to_orientation_xy(delta[1], delta[2])
+    local orientation = vector_to_orientation_xy(delta_offset[1], delta_offset[2])
 
     local offset = {
-        -(drone.position.x - position_depot.x) / 2 + drone_offset.x / 2,
-        -(drone.position.y - position_depot.y) / 2 + drone_offset.y / 2
+        -delta[1] / 2 + drone_offset.x / 2,
+        -delta[2] / 2 + drone_offset.y / 2
     }
 
     local cable_sprite_half_height = constants.depot_cable_sprite_size[2] / 2
@@ -569,7 +591,7 @@ local function tick_drone(drone, game_tick)
         end
 
         if state.parked_depot then
-            local offset, x_scale, y_scale, orientation = calculate_depot_cable_render_params(drone, state.parked_depot, { x = 0, y = -constants.drone_sprite_flying_offset }, false)
+            local offset, x_scale, y_scale, orientation = calculate_depot_cable_render_params(drone, state.parked_depot, constants.drone_sprite_offset, false)
 
             cable_renderer = rendering.draw_sprite{
                 sprite = "cargo-drone-depot-cable",
@@ -581,13 +603,12 @@ local function tick_drone(drone, game_tick)
                 orientation = orientation
             }
 
-            offset, x_scale, y_scale, orientation = calculate_depot_cable_render_params(drone, state.parked_depot, { x = constants.drone_sprite_shadow_offset, y = 0 }, true)
+            offset, x_scale, y_scale, orientation = calculate_depot_cable_render_params(drone, state.parked_depot, constants.drone_sprite_shadow_offset, true)
 
             cable_shadow_renderer = rendering.draw_sprite{
                 sprite = "cargo-drone-depot-cable-shadow",
                 target = { entity = drone, offset = offset },
                 surface = drone.surface,
-                --render_layer = "floor",
                 x_scale = x_scale,
                 y_scale = y_scale,
                 orientation = orientation
