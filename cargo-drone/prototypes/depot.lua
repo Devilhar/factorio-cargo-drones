@@ -32,8 +32,8 @@ local depot_entity = merge_tables(table.deepcopy(data.raw["constant-combinator"]
 	minable = { mining_time = 0.2, result = "cargo-drone-depot-constant-combinator" },
 	flags = { "hide-alt-info", "not-upgradable", "placeable-neutral", "player-creation" },
 	max_health = 350,
---	collision_box = {{-1.35, -1.35}, {1.35, 1.35}},
---	selection_box = {{-1.5, -1.5}, {1.5, 1.5}},
+	collision_box = {{-0.85, -0.85}, {0.85, 0.85}},
+	selection_box = {{-1.0, -1.0}, {1.0, 1.0}},
 	impact_category = "metal",
 	icon_draw_specification = {scale = 0.7},
 	corpse = "steel-chest-remnants",
@@ -50,28 +50,28 @@ local depot_entity = merge_tables(table.deepcopy(data.raw["constant-combinator"]
 			percent = 60
 		}
 	},
-	--[[
 	sprites = {
 		layers = {
 			{
 				filename = "__cargo-drone__/graphics/cargo-drone-depot.png",
 				priority = "low",
-				width = 270,
-				height = 800,
-				shift = util.by_pixel(0, -200+64),
-				scale = 0.44
+				width = 128,
+				height = 128,
+				shift = util.by_pixel(0, 0),
+				scale = 0.5
 			},
 			{
 				filename = "__cargo-drone__/graphics/cargo-drone-depot-shadow.png",
 				priority = "low",
-				width = 1000,
-				height = 200,
-				shift = util.by_pixel(194, 2),
+				width = 192,
+				height = 128,
+				shift = util.by_pixel(17, 4),
 				draw_as_shadow = true,
-				scale = 0.5016
+				scale = 0.475
 			}
 		}
 	},
+	--[[
 	circuit_wire_connection_points = {
 		mooring_circuit_wire_connection_point,
 		mooring_circuit_wire_connection_point,
@@ -108,7 +108,7 @@ local depot_recipe = {
 local depot_cable_sprite = {
 	type = "sprite",
 	name = "cargo-drone-depot-cable",
-	filename = "__cargo-drone__/graphics/depot-cable.png",
+	filename = "__cargo-drone__/graphics/cargo-drone-depot-cable.png",
 	priority = "very-low",
 	width = 256,
 	height = 64,
@@ -117,7 +117,7 @@ local depot_cable_sprite = {
 local depot_cable_shadow_sprite = {
 	type = "sprite",
 	name = "cargo-drone-depot-cable-shadow",
-	filename = "__cargo-drone__/graphics/depot-cable.png",
+	filename = "__cargo-drone__/graphics/cargo-drone-depot-cable.png",
 	priority = "very-low",
 	draw_as_shadow = true,
 	width = 256,
