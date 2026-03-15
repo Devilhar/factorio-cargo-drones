@@ -125,12 +125,13 @@ local function calculate_depot_cable_render_params(drone, depot, drone_offset, i
     end
 
     if should_flip then
+        offset[1] = offset[1] - math.sin(rad) * cable_sprite_half_height * math.abs(y_scale)
+        offset[2] = offset[2] + math.cos(rad) * cable_sprite_half_height * math.abs(y_scale)
+
         y_scale = -y_scale
-        offset[1] = offset[1] - math.sin(rad) * cable_sprite_half_height
-        offset[2] = offset[2] + math.cos(rad) * cable_sprite_half_height
     else
-        offset[1] = offset[1] + math.sin(rad) * cable_sprite_half_height
-        offset[2] = offset[2] - math.cos(rad) * cable_sprite_half_height
+        offset[1] = offset[1] + math.sin(rad) * cable_sprite_half_height * math.abs(y_scale)
+        offset[2] = offset[2] - math.cos(rad) * cable_sprite_half_height * math.abs(y_scale)
     end
 
     return offset, x_scale, y_scale, orientation
