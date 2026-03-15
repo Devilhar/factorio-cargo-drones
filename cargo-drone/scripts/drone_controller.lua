@@ -88,6 +88,8 @@ local function calculate_depot_cable_render_params(drone, depot, drone_offset, i
 
     if not is_shadow then
         position_depot.y = position_depot.y - depot_offset_height
+    else
+        position_depot.x = position_depot.x + depot_offset_height
     end
 
     local distance = util.distance(position_drone, position_depot)
