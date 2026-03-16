@@ -1,3 +1,7 @@
+  Minor Features:
+    - Added a dedicated Depot structure.
+  Changes:
+    - Moorings can no longer act as depots. This behavior has been replaced with the Depot structure.
 ---------------------------------------------------------------------------------------------------
 Version: 1.7.4
 Date: 13. 03. 2026
