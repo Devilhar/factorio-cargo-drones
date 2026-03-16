@@ -829,8 +829,6 @@ local function build_gui_mooring(player_data, mooring, mooring_name, parent)
 
     header_frame.style.horizontally_stretchable = true
     header_frame.style.vertical_align = "center"
-    header_frame.style.horizontally_stretchable = true
-    header_frame.style.vertical_align = "center"
 
     local header_filller = header_frame.add{
         type = "empty-widget",
