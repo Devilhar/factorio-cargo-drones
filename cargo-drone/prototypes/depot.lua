@@ -13,18 +13,16 @@ local function merge_tables(placeholder, overwrite_table)
 	return placeholder
 end
 
---[[
-local mooring_circuit_wire_connection_point = {
+local depot_circuit_wire_connection_point = {
 	shadow = {
 		red = util.by_pixel(12, 15),
 		green = util.by_pixel(14, 15)
 	},
 	wire = {
-		red = util.by_pixel(8, 4),
-		green = util.by_pixel(10, 12)
+		red = util.by_pixel(8, -17),
+		green = util.by_pixel(10, -12)
 	}
 }
-]]
 
 local depot_entity = merge_tables(table.deepcopy(data.raw["constant-combinator"]["constant-combinator"]), {
 	name = "cargo-drone-depot-constant-combinator",
@@ -71,13 +69,12 @@ local depot_entity = merge_tables(table.deepcopy(data.raw["constant-combinator"]
 			}
 		}
 	},
-	--[[
 	circuit_wire_connection_points = {
-		mooring_circuit_wire_connection_point,
-		mooring_circuit_wire_connection_point,
-		mooring_circuit_wire_connection_point,
-		mooring_circuit_wire_connection_point
-	},]]
+		depot_circuit_wire_connection_point,
+		depot_circuit_wire_connection_point,
+		depot_circuit_wire_connection_point,
+		depot_circuit_wire_connection_point
+	},
 	circuit_connector = circuit_connector_definitions["chest"],
 	circuit_wire_max_distance = default_circuit_wire_max_distance
 })
