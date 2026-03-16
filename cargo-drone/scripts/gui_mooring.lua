@@ -671,6 +671,10 @@ local callbacks = {
         player_data.player.opened = nil
     end,
 
+    [gui_prefix .. "open-on-map"] = function(player_data, event)
+        player_data.player.centered_on = player_data.entity
+    end,
+
     [gui_prefix .. "drone-limit-checkbox"] = function(player_data, event)
         th.set_drone_limit_enabled(player_data.entity, player_data.elements.drone_limit_checkbox.state)
 
@@ -816,11 +820,44 @@ local function build_gui_mooring(player_data, mooring, mooring_name, parent)
         direction = "vertical",
     }
 
-    mooring_frame.style.width = 432
-    mooring_frame.style.padding = 16
+    ---------- Header ----------
+    local header_frame = mooring_frame.add{
+        type = "frame",
+        style = "subheader_frame",
+        direction = "horizontal",
+    }
+
+    header_frame.style.horizontally_stretchable = true
+    header_frame.style.vertical_align = "center"
+    header_frame.style.horizontally_stretchable = true
+    header_frame.style.vertical_align = "center"
+
+    local header_filller = header_frame.add{
+        type = "empty-widget",
+    }
+
+    header_filller.style.horizontally_stretchable = true
+
+    local open_on_map_button = header_frame.add{
+        type = "sprite-button",
+        name = gui_prefix .. "open-on-map",
+        style = "tool_button",
+        sprite = "utility/map",
+        tooltip = { "gui-train.open-in-map" }
+    }
+
+    open_on_map_button.style.margin = 2
+
+    local mooring_flow = mooring_frame.add{
+        type = "flow",
+        direction = "vertical"
+    }
+
+    mooring_flow.style.width = 432
+    mooring_flow.style.padding = 16
 
     ---------- Entity preview ----------
-    local preview_frame = mooring_frame.add{
+    local preview_frame = mooring_flow.add{
         type = "frame",
         direction = "horizontal",
         style = "inside_deep_frame"
@@ -840,7 +877,7 @@ local function build_gui_mooring(player_data, mooring, mooring_name, parent)
     player_data.elements.preview = preview
 
     ---------- Drone limit ----------
-    local drone_limit_flow = mooring_frame.add{
+    local drone_limit_flow = mooring_flow.add{
         type = "flow",
         direction = "horizontal",
     }
@@ -888,7 +925,7 @@ local function build_gui_mooring(player_data, mooring, mooring_name, parent)
     drone_limit_field.enabled = drone_limit_checkbox.state
 
     ---------- Priority ----------
-    local priority_flow = mooring_frame.add{
+    local priority_flow = mooring_flow.add{
         type = "flow",
         direction = "horizontal",
     }
@@ -932,7 +969,7 @@ local function build_gui_mooring(player_data, mooring, mooring_name, parent)
     player_data.elements.priority_field = priority_field
 
     ---------- Depot ----------
-    local depot_flow = mooring_frame.add{
+    local depot_flow = mooring_flow.add{
         type = "flow",
         direction = "horizontal",
     }
@@ -960,7 +997,7 @@ local function build_gui_mooring(player_data, mooring, mooring_name, parent)
             label_caption = "cargo-drone-gui-mooring.requested-items"
         end
 
-        local items_header = mooring_frame.add{
+        local items_header = mooring_flow.add{
             type = "label",
             style = "subheader_label",
             caption = { label_caption }
@@ -968,7 +1005,7 @@ local function build_gui_mooring(player_data, mooring, mooring_name, parent)
 
         items_header.style.margin = 4
 
-        local items_frame = mooring_frame.add{
+        local items_frame = mooring_flow.add{
             type = "frame",
             style = "inside_deep_frame",
             direction = "horizontal"
@@ -991,7 +1028,7 @@ local function build_gui_mooring(player_data, mooring, mooring_name, parent)
 
     ---------- Item Signals ----------
 
-    local footer_flow = mooring_frame.add{
+    local footer_flow = mooring_flow.add{
         type = "flow",
         direction = "horizontal",
     }

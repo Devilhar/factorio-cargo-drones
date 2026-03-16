@@ -1,3 +1,5 @@
+  Minor Features:
+    - Added a button in the mooring and Depot GUI that shows the location of the structure on the map.
 ---------------------------------------------------------------------------------------------------
 Version: 1.8.0
 Date: 16. 03. 2026
