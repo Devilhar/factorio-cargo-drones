@@ -88,4 +88,6 @@ return function()
 	for _, entity_data in pairs(storage.cargo_drone_refuel_mooring) do
 		migrate_mooring(entity_data.entity)
 	end
+
+    game.print({ "cargo-drone-migration.warning-enable-as-depot-removed" })
 end
