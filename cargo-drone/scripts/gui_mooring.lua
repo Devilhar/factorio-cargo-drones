@@ -932,9 +932,16 @@ local function build_gui_mooring(player_data, mooring, mooring_name, parent)
     priority_flow.style.horizontal_spacing = 8
     priority_flow.style.bottom_margin = 8
 
+    local priority_tooltip = { "cargo-drone-gui-mooring.priority-mooring-tooltip" }
+
+    if not is_entity_type_mooring(player_data.entity_type) then
+        priority_tooltip = { "cargo-drone-gui-mooring.priority-depot-tooltip" }
+    end
+
     priority_flow.add{
         type = "label",
         caption = { "cargo-drone-gui-mooring.priority" },
+        tooltip = priority_tooltip,
     }
 
     local priority_filler = priority_flow.add{
