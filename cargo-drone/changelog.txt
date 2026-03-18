@@ -1,3 +1,5 @@
+  Bugfixes:
+    - Fixed migration running erroneously causing errors.
 ---------------------------------------------------------------------------------------------------
 Version: 1.9.0
 Date: 16. 03. 2026
