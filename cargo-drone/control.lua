@@ -1,4 +1,5 @@
 
+local constants	= require("scripts.constants")
 local ep		= require("scripts.entity_property")
 local deh		= require("scripts.depot_helper")
 local rc    	= require("scripts.requester_cooldown")
@@ -30,6 +31,8 @@ local function unmanage_entity(entity)
 end
 
 function on_init()
+	storage.mod_state = constants.current_mod_state
+
 	ep.init()
 
 	deh.init()

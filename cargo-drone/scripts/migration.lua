@@ -45,7 +45,12 @@ local patches = {
 local migration = {}
 
 function migration.run_migration()
-	if storage.mod_state and storage.mod_state >= constants.current_mod_state then
+	if not storage.mod_state and storage.depot_helper then
+         -- The state was never set when creating a new save in version 1.9.0. So assume that if it's nil and the depot_helper is set, it was that version.
+        storage.mod_state = 13
+    end
+
+    if storage.mod_state and storage.mod_state >= constants.current_mod_state then
         return
     end
 
