@@ -1,3 +1,5 @@
+  Bugfixes:
+    - Fixed error when placing Cargo drone when the save is migrated from a pre-1.8.0 version of the mod.
 ---------------------------------------------------------------------------------------------------
 Version: 1.9.1
 Date: 18. 03. 2026
