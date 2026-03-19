@@ -70,12 +70,6 @@ local function migrate_mooring(mooring)
     cb.remove_section(8)
 
     cb.remove_section(7)
-
-    storage.depots = nil
-
-    storage.depot_helper = {}
-
-    storage.depot_helper.depots = {}
 end
 
 return function()
@@ -88,6 +82,12 @@ return function()
 	for _, entity_data in pairs(storage.cargo_drone_refuel_mooring) do
 		migrate_mooring(entity_data.entity)
 	end
+
+    storage.depots = nil
+
+    storage.depot_helper = {}
+
+    storage.depot_helper.depots = {}
 
     game.print({ "cargo-drone-migration.warning-enable-as-depot-removed" })
 end
