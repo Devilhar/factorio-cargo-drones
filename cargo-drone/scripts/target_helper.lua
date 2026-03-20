@@ -50,22 +50,7 @@ end
 local function set_signal_id(target, index, signal_id, value)
     local section = target.get_control_behavior().get_section(index)
 
-    if signal_id == nil then
-        section.filters = {}
-
-        return
-    end
-
-    section.filters = {
-        {
-            value = {
-                type = signal_id.type,
-                name = signal_id.name,
-                quality = signal_id.quality or "normal",
-            },
-            min = value
-        }
-    }
+    fh.set_signal_id_value(section, signal_id, value)
 end
 
 local function set_drone_limit(target, limit)

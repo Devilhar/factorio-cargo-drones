@@ -545,7 +545,7 @@ local function tick_drone(drone, game_tick)
                 end
             end
 
-            ep.set_entity_property(old_docked_mooring, "docked_drone", nil)
+            mh.set_docked_drone(old_docked_mooring, nil)
             mh.unset_request_reader(old_docked_mooring)
         end
 
@@ -562,7 +562,7 @@ local function tick_drone(drone, game_tick)
         end
         ep.set_entity_property(drone, "docked_mooring", state.docked_mooring)
         ep.set_entity_property(drone, "docked_game_tick", game_tick)
-        ep.set_entity_property(state.docked_mooring, "docked_drone", drone)
+        mh.set_docked_drone(state.docked_mooring, drone)
 
         if mh.get_read_requests(state.docked_mooring) then
             mh.set_request_reader(state.docked_mooring, drone)
@@ -645,6 +645,8 @@ function drone_controller.drone_destroyed(unit_number)
         for _, proxy_container in ipairs(proxy_containers) do
             proxy_container.proxy_target_entity = nil
         end
+
+        mh.set_docked_drone(old_docked_mooring, nil)
     end
 end
 
