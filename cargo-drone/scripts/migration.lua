@@ -44,6 +44,10 @@ local patches = {
         mod_state = 14,
         apply = create_apply_patch("migration.14")
     },
+    {
+        mod_state = 15,
+        apply = create_apply_patch("migration.15")
+    },
 }
 
 local migration = {}

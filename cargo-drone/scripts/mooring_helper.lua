@@ -3,19 +3,26 @@ local ep        = require("entity_property")
 local fh        = require("filter_helper")
 local th        = require("target_helper")
 
+local signal_id_drone_id        = { type = "virtual", name = "signal-T", quality = "normal" }
+
 local setting_names = {
-    read_requests                   = "read_requests",
     depot                           = "depot",
+    read_requests                   = "read_requests",
+    drone_id_circuit                = "drone_id_circuit",
+    drone_id_circuit_signal_id      = "drone_id_circuit_signal_id",
 }
 local settings_filter_name = {
-    [setting_names.read_requests]   = "signal-M",
-    [setting_names.depot]           = "signal-L",
+    [setting_names.depot]                       = "signal-L",
+    [setting_names.read_requests]               = "signal-M",
+    [setting_names.drone_id_circuit]            = "signal-O",
+    [setting_names.drone_id_circuit_signal_id]  = "signal-I",
 }
 
 local section_index = {
     settings                        = 1,
     inventory_targets               = 5,
     output_requests                 = 6,
+    drone_id_output                 = 7,
 }
 
 local mooring_types = {
@@ -120,6 +127,68 @@ local function update_request_output(mooring)
     section.filters = filters
 end
 
+local function get_drone_id_circuit(mooring)
+    return get_settings_value(mooring, setting_names.drone_id_circuit) ~= nil
+end
+local function set_drone_id_circuit(mooring, flag)
+    if flag then
+        set_settings_value(mooring, setting_names.drone_id_circuit, 0)
+    else
+        set_settings_value(mooring, setting_names.drone_id_circuit, nil)
+    end
+end
+
+local function get_drone_id(mooring)
+    if not get_drone_id_circuit(mooring) then
+        return 0
+    end
+
+    local drone = ep.get_entity_property(mooring, "docked_drone")
+
+    if not drone or not drone.valid then
+        return 0
+    end
+
+    return drone.unit_number
+end
+
+local function get_drone_id_circuit_signal_id(mooring)
+    if get_settings_value(mooring, setting_names.drone_id_circuit_signal_id) == nil then
+        return signal_id_drone_id
+    end
+
+    local section = mooring.get_control_behavior().get_section(section_index.drone_id_output)
+
+    return section.get_slot(1).value
+end
+local function set_drone_id_circuit_signal_id(mooring, signal_id)
+    set_settings_value(mooring, setting_names.drone_id_circuit_signal_id, 0)
+    local section = mooring.get_control_behavior().get_section(section_index.drone_id_output)
+
+    fh.set_signal_id_value(section, signal_id, get_drone_id(mooring))
+end
+
+local function update_drone_id_output(mooring)
+    local cb = mooring.get_control_behavior()
+
+    local section = cb.get_section(section_index.drone_id_output)
+
+    local signal_id = get_drone_id_circuit_signal_id(mooring)
+
+    if not signal_id then
+        return
+    end
+
+    local id = get_drone_id(mooring)
+
+    section.filters = {
+        {
+            value = signal_id,
+            min = id
+        }
+    }
+end
+
 local function get_inventory_target(mooring, x, y)
     local index = x + (y - 1) * 3
     local section = mooring.get_control_behavior().get_section(section_index.inventory_targets)
@@ -218,14 +287,14 @@ local function create_proxy_containers(mooring)
 end
 
 local function resize_and_activate_sections(control_behavior)
-    while control_behavior.sections_count < 6 do
+    while control_behavior.sections_count < 7 do
         control_behavior.add_section()
     end
-    while control_behavior.sections_count > 6 do
-        control_behavior.remove_section(7)
+    while control_behavior.sections_count > 7 do
+        control_behavior.remove_section(8)
     end
 
-    for i = 5, 6 do
+    for i = 5, 7 do
         local section = control_behavior.get_section(i)
 
         section.active = false
@@ -233,6 +302,7 @@ local function resize_and_activate_sections(control_behavior)
     end
 
     control_behavior.get_section(section_index.output_requests).active = true
+    control_behavior.get_section(section_index.drone_id_output).active = true
 end
 local function clear_all_outputs(mooring)
     th.clear_all_outputs(mooring)
@@ -242,6 +312,21 @@ local function clear_all_outputs(mooring)
     local section = cb.get_section(section_index.output_requests)
 
     section.filters = {}
+
+    section = cb.get_section(section_index.drone_id_output)
+
+    local signal_filter = section.filters[1]
+
+    if not signal_filter or not signal_filter.value then
+        return
+    end
+
+    section.filters = {
+        {
+            value = signal_filter.value,
+            min = 0
+        }
+    }
 end
 local function clean_settings_ghost(mooring)
     local cb = mooring.get_control_behavior()
@@ -267,6 +352,7 @@ local function clean_settings(mooring)
         set_read_requests(mooring, false)
     end
 
+    update_drone_id_output(mooring)
     update_request_reader(mooring)
     update_request_output(mooring)
     update_proxy_container_inventories(mooring)
@@ -438,6 +524,31 @@ function mooring_helper.remove_depot_flag(mooring)
 end
 function mooring_helper.has_depot_flag(mooring)
     return get_settings_value(mooring, setting_names.depot) ~= nil
+end
+
+function mooring_helper.get_docked_drone(mooring)
+    return ep.get_entity_property(mooring, "docked_drone")
+end
+function mooring_helper.set_docked_drone(mooring, drone)
+    ep.set_entity_property(mooring, "docked_drone", drone)
+
+    update_drone_id_output(mooring)
+end
+
+function mooring_helper.get_drone_id_circuit(mooring)
+    return get_drone_id_circuit(mooring)
+end
+function mooring_helper.set_drone_id_circuit(mooring, flag)
+    set_drone_id_circuit(mooring, flag)
+
+    update_drone_id_output(mooring)
+end
+
+function mooring_helper.get_drone_id_circuit_signal_id(mooring)
+    return get_drone_id_circuit_signal_id(mooring)
+end
+function mooring_helper.set_drone_id_circuit_signal_id(mooring, signal_id)
+    set_drone_id_circuit_signal_id(mooring, signal_id)
 end
 
 return mooring_helper

@@ -43,4 +43,32 @@ function filter_helper.get_filter_value(section, filter_name)
     return nil
 end
 
+function filter_helper.set_signal_id_value(section, signal_id, value)
+    if signal_id == nil then
+        section.filters = {}
+
+        return
+    end
+
+    section.filters = {
+        {
+            value = {
+                type = signal_id.type,
+                name = signal_id.name,
+                quality = signal_id.quality or "normal",
+            },
+            min = value
+        }
+    }
+end
+function filter_helper.get_signal_id_value(section)
+    local filter = section.filters[1]
+
+    if not filter then
+        return nil, 0
+    end
+
+    return filter.value, filter.min
+end
+
 return filter_helper

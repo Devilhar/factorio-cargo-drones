@@ -52,6 +52,15 @@ local function get_drone_count_signal_element(player_data, element)
 
     return signal_id[element]
 end
+local function get_drone_id_signal_element(player_data, element)
+    local signal_id = mh.get_drone_id_circuit_signal_id(player_data.entity)
+
+    if signal_id == nil then
+        return nil
+    end
+
+    return signal_id[element]
+end
 local function get_priority_signal_element(player_data, element)
     local signal_id = th.get_priority_circuit_signal_id(player_data.entity)
 
@@ -224,6 +233,61 @@ local observers = {
         get = function(player_data) return get_drone_limit_signal_element(player_data, "quality") end,
         updated = function(player_data, data)
             player_data.elements.drone_limit_signal_choose_elem_button.elem_value = th.get_drone_limit_circuit_signal_id(player_data.entity)
+        end
+    },
+
+    get_drone_id_circuit = {
+        get = function(player_data)
+            if not is_entity_type_mooring(player_data.entity_type) then
+                return nil
+            end
+
+            return mh.get_drone_id_circuit(player_data.entity)
+        end,
+        updated = function(player_data, data)
+            if not is_entity_type_mooring(player_data.entity_type) then
+                return
+            end
+
+            player_data.elements.drone_id_circuit_checkbox.state = data
+            player_data.elements.drone_id_signal_label.enabled = data
+            player_data.elements.drone_id_signal_choose_elem_button.enabled = data
+        end
+    },
+    get_drone_id_signal_element_type = {
+        get = function(player_data)
+            if not is_entity_type_mooring(player_data.entity_type) then
+                return nil
+            end
+
+            return get_drone_id_signal_element(player_data, "type")
+        end,
+        updated = function(player_data, data)
+            player_data.elements.drone_id_signal_choose_elem_button.elem_value = mh.get_drone_id_circuit_signal_id(player_data.entity)
+        end
+    },
+    get_drone_id_signal_element_name = {
+        get = function(player_data)
+            if not is_entity_type_mooring(player_data.entity_type) then
+                return nil
+            end
+
+            return get_drone_id_signal_element(player_data, "name")
+        end,
+        updated = function(player_data, data)
+            player_data.elements.drone_id_signal_choose_elem_button.elem_value = mh.get_drone_id_circuit_signal_id(player_data.entity)
+        end
+    },
+    get_drone_id_signal_element_quality = {
+        get = function(player_data)
+            if not is_entity_type_mooring(player_data.entity_type) then
+                return nil
+            end
+
+            return get_drone_id_signal_element(player_data, "quality")
+        end,
+        updated = function(player_data, data)
+            player_data.elements.drone_id_signal_choose_elem_button.elem_value = mh.get_drone_id_circuit_signal_id(player_data.entity)
         end
     },
 
@@ -735,6 +799,15 @@ local callbacks = {
         th.set_drone_limit_circuit_signal_id(player_data.entity, player_data.elements.drone_limit_signal_choose_elem_button.elem_value)
     end,
 
+    [gui_prefix .. "drone-id-checkbox"] = function(player_data, event)
+        mh.set_drone_id_circuit(player_data.entity, player_data.elements.drone_id_circuit_checkbox.state)
+
+        update_gui(player_data)
+    end,
+    [gui_prefix .. "drone-id-signal-choose-elem-button"] = function(player_data, event)
+        mh.set_drone_id_circuit_signal_id(player_data.entity, player_data.elements.drone_id_signal_choose_elem_button.elem_value)
+    end,
+
     [gui_prefix .. "read-drone-count-checkbox"] = function(player_data, event)
         th.set_drone_count_circuit(player_data.entity, player_data.elements.drone_count_circuit_checkbox.state)
 
@@ -1244,6 +1317,60 @@ local function build_gui_circuit(player_data, mooring, mooring_name, parent)
     player_data.elements.drone_limit_circuit_checkbox = drone_limit_circuit_checkbox
     player_data.elements.drone_limit_signal_label = drone_limit_signal_label
     player_data.elements.drone_limit_signal_choose_elem_button = drone_limit_signal_choose_elem_button
+
+    ---------- Drone ID ----------
+
+    if is_entity_type_mooring(player_data.entity_type) then
+        main_frame.add{
+            type = "line",
+        }
+
+        local drone_id_circuit_checkbox = main_frame.add{
+            type = "checkbox",
+            name = gui_prefix .. "drone-id-checkbox",
+            caption = { "cargo-drone-gui-control-behavior-modes.read-docked-drone" },
+            tooltip = { "cargo-drone-gui-control-behavior-modes.read-docked-drone-description" },
+            style = "subheader_caption_checkbox",
+            state = mh.get_drone_id_circuit(mooring)
+        }
+
+        drone_id_circuit_checkbox.style.top_margin = 4
+        drone_id_circuit_checkbox.style.bottom_margin = 4
+        drone_id_circuit_checkbox.style.left_margin = 12
+        drone_id_circuit_checkbox.style.right_margin = 12
+
+        local drone_id_signal_flow = main_frame.add{
+            type = "flow",
+            direction = "horizontal"
+        }
+
+        drone_id_signal_flow.style.vertical_align = "center"
+        drone_id_signal_flow.style.top_margin = 4
+        drone_id_signal_flow.style.bottom_margin = 4
+        drone_id_signal_flow.style.left_margin = 12
+        drone_id_signal_flow.style.right_margin = 12
+
+        local drone_id_signal_label = drone_id_signal_flow.add{
+            type = "label",
+            caption = { "cargo-drone-gui-control-behavior-modes.drone-id" }
+        }
+
+        local drone_id_signal_filler = drone_id_signal_flow.add{
+            type = "empty-widget",
+        }
+
+        drone_id_signal_filler.style.horizontally_stretchable = true
+
+        local drone_id_signal_choose_elem_button = drone_id_signal_flow.add{
+            type = "choose-elem-button",
+            name = gui_prefix .. "drone-id-signal-choose-elem-button",
+            elem_type = "signal"
+        }
+
+        player_data.elements.drone_id_circuit_checkbox = drone_id_circuit_checkbox
+        player_data.elements.drone_id_signal_label = drone_id_signal_label
+        player_data.elements.drone_id_signal_choose_elem_button = drone_id_signal_choose_elem_button
+    end
 
     ---------- Drone Count ----------
 
