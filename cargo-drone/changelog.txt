@@ -1,5 +1,7 @@
   Minor Features:
     - Added an option in moorings to read the docked Cargo drones unique id as a signal.
+  Bugfixes:
+    - Fixed drone count being incorrectly outputted by moorings after migration.
 ---------------------------------------------------------------------------------------------------
 Version: 1.9.2
 Date: 19. 03. 2026
