@@ -263,6 +263,10 @@ local observers = {
             return get_drone_id_signal_element(player_data, "type")
         end,
         updated = function(player_data, data)
+            if not is_entity_type_mooring(player_data.entity_type) then
+                return
+            end
+
             player_data.elements.drone_id_signal_choose_elem_button.elem_value = mh.get_drone_id_circuit_signal_id(player_data.entity)
         end
     },
@@ -275,6 +279,10 @@ local observers = {
             return get_drone_id_signal_element(player_data, "name")
         end,
         updated = function(player_data, data)
+            if not is_entity_type_mooring(player_data.entity_type) then
+                return
+            end
+
             player_data.elements.drone_id_signal_choose_elem_button.elem_value = mh.get_drone_id_circuit_signal_id(player_data.entity)
         end
     },
@@ -287,6 +295,10 @@ local observers = {
             return get_drone_id_signal_element(player_data, "quality")
         end,
         updated = function(player_data, data)
+            if not is_entity_type_mooring(player_data.entity_type) then
+                return
+            end
+
             player_data.elements.drone_id_signal_choose_elem_button.elem_value = mh.get_drone_id_circuit_signal_id(player_data.entity)
         end
     },
