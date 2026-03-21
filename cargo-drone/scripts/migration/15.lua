@@ -14,7 +14,9 @@ end
 local function migrate_mooring(mooring)
     local cb = mooring.get_control_behavior()
 
-    cb.add_section()
+    local section = cb.add_section()
+
+    section.active = true
 
 	-- The drone count was not migrated correctly, causing it to output the count even when not enabled. So migrate again.
     local section_settings = cb.get_section(1)
