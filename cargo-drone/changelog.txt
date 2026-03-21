@@ -1,3 +1,6 @@
+---------------------------------------------------------------------------------------------------
+Version: 1.10.0
+Date: 21. 03. 2026
   Minor Features:
     - Added an option in moorings to read the docked Cargo drones unique id as a signal.
   Bugfixes:
