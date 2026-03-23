@@ -1,3 +1,6 @@
+---------------------------------------------------------------------------------------------------
+Version: 1.10.2
+Date: 23. 03. 2026
   Changes:
     - Changed the amount of columns for provided and requested items in the mooring GUI 11 from to 10.
     - The provided and requested items in the mooring GUI now has a maximium height and scrollbar when there's too many items to display.
