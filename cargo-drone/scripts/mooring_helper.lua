@@ -10,12 +10,14 @@ local setting_names = {
     read_requests                   = "read_requests",
     drone_id_circuit                = "drone_id_circuit",
     drone_id_circuit_signal_id      = "drone_id_circuit_signal_id",
+    request_mode                    = "request_mode",
 }
 local settings_filter_name = {
     [setting_names.depot]                       = "signal-L",
     [setting_names.read_requests]               = "signal-M",
     [setting_names.drone_id_circuit]            = "signal-O",
     [setting_names.drone_id_circuit_signal_id]  = "signal-I",
+    [setting_names.request_mode]                = "signal-J",
 }
 
 local section_index = {
@@ -35,6 +37,12 @@ local mooring_type_lookup = {
 	["cargo-drone-mooring-constant-combinator-provider"]    = mooring_types.provider,
 	["cargo-drone-mooring-constant-combinator-requester"]   = mooring_types.requester,
 	["cargo-drone-mooring-constant-combinator-refueler"]    = mooring_types.refueler,
+}
+
+local request_modes = {
+    any     = 0,
+    stack   = 1,
+    fuzzy   = 2,
 }
 
 local function get_settings_section(mooring)
@@ -189,6 +197,17 @@ local function update_drone_id_output(mooring)
     }
 end
 
+local function get_request_mode(mooring)
+    return get_settings_value(mooring, setting_names.request_mode) or request_modes.any
+end
+local function set_request_mode(mooring, request_mode)
+    if request_mode == request_modes.any then
+        set_settings_value(mooring, setting_names.request_mode, nil)
+    else
+        set_settings_value(mooring, setting_names.request_mode, request_mode)
+    end
+end
+
 local function get_inventory_target(mooring, x, y)
     local index = x + (y - 1) * 3
     local section = mooring.get_control_behavior().get_section(section_index.inventory_targets)
@@ -328,12 +347,24 @@ local function clear_all_outputs(mooring)
         }
     }
 end
+local function clean_settings_all(mooring)
+    set_settings_value(mooring, setting_names.depot, nil)
+    if mooring_type_lookup[mooring.name] == mooring_types.requester then
+        local request_mode = get_request_mode(mooring)
+
+        if request_mode < request_modes.any or request_mode > request_modes.fuzzy then
+            set_settings_value(mooring, setting_names.request_mode, nil)
+        end
+    else
+        set_settings_value(mooring, setting_names.request_mode, nil)
+    end
+end
 local function clean_settings_ghost(mooring)
     local cb = mooring.get_control_behavior()
 
     resize_and_activate_sections(cb)
 
-    set_settings_value(mooring, setting_names.depot, nil)
+    clean_settings_all(mooring)
 
     th.clean_settings(mooring)
 
@@ -344,7 +375,7 @@ local function clean_settings(mooring)
 
     resize_and_activate_sections(cb)
 
-    set_settings_value(mooring, setting_names.depot, nil)
+    clean_settings_all(mooring)
 
     th.clean_settings(mooring)
 
@@ -374,6 +405,8 @@ local function flip_horizontal(mooring)
 end
 
 local mooring_helper = {}
+
+mooring_helper.request_modes = request_modes
 
 function mooring_helper.init()
     storage.mooring_helper = storage.mooring_helper or {}
@@ -549,6 +582,13 @@ function mooring_helper.get_drone_id_circuit_signal_id(mooring)
 end
 function mooring_helper.set_drone_id_circuit_signal_id(mooring, signal_id)
     set_drone_id_circuit_signal_id(mooring, signal_id)
+end
+
+function mooring_helper.get_request_mode(mooring)
+    return get_request_mode(mooring)
+end
+function mooring_helper.set_request_mode(mooring, request_mode)
+    set_request_mode(mooring, request_mode)
 end
 
 return mooring_helper
