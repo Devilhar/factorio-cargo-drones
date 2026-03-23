@@ -936,7 +936,7 @@ local function build_gui_mooring(player_data, mooring, mooring_name, parent)
         direction = "vertical"
     }
 
-    mooring_flow.style.width = 432
+    mooring_flow.style.width = 412
     mooring_flow.style.padding = 16
 
     ---------- Entity preview ----------
@@ -954,7 +954,7 @@ local function build_gui_mooring(player_data, mooring, mooring_name, parent)
     }
 
     preview.entity = mooring
-    preview.style.width = 400
+    preview.style.width = 380
     preview.style.height = 150
 
     player_data.elements.preview = preview
@@ -1104,16 +1104,25 @@ local function build_gui_mooring(player_data, mooring, mooring_name, parent)
         items_frame.style.margin = 4
         items_frame.style.horizontally_stretchable = true
 
-        local items_table = items_frame.add{
-            type = "table",
-            column_count = 11
+        local items_scroll = items_frame.add{
+            type = "scroll-pane",
+            style = "naked_scroll_pane",
+            horizontal_scroll_policy = "never",
+            vertical_scroll_policy = "auto"
         }
+
+        items_scroll.style.maximal_height = 100
+
+        local items_table = items_scroll.add{
+            type = "table",
+            column_count = 10
+        }
+        items_table.style.minimal_height = 40
+        items_table.style.horizontally_stretchable = true
+        items_table.style.padding = 4
 
         player_data.elements.items_table = items_table
         player_data.elements.signal_item_indices = {}
-
-        items_table.style.minimal_height = 40
-        items_table.style.padding = 4
     end
 
     ---------- Item Signals ----------
