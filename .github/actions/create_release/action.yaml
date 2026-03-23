@@ -26,5 +26,5 @@ runs:
         gh release create "$TAG" \
           ${{ inputs.build-file-path }} \
           --title "$TAG" \
-          --notes "${{ inputs.changelog }}"
+          --notes "${{ inputs.changelog }}" \
           --draft
