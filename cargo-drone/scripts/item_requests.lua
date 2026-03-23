@@ -187,7 +187,21 @@ local function add_items(mooring, mooring_items, item_mooring_lookup)
     return true
 end
 
-local function get_closest_provider(requester, item_name, item_quality, item_provider_lookup, heuristic_target_count_cost)
+local function get_minimum_item_request_amount(item_name, count, request_mode)
+    if request_mode == mh.request_modes.any then
+        return 1
+    end
+
+    local stack_size = prototypes.item[item_name].stack_size
+
+    if request_mode == mh.request_modes.stack or count >= stack_size then
+        return stack_size
+    end
+
+    return count
+end
+
+local function get_closest_provider(requester, item_name, item_quality, minimum_amount, item_provider_lookup, heuristic_target_count_cost)
     if not item_provider_lookup[item_name] or not item_provider_lookup[item_name][item_quality] then
         return nil
     end
@@ -201,7 +215,7 @@ local function get_closest_provider(requester, item_name, item_quality, item_pro
     for _, item_data in ipairs(providers) do
         local provider = item_data.mooring
 
-        if item_data.count > 0 and provider.valid and not th.is_at_drone_limit(provider) then
+        if item_data.count >= minimum_amount and provider.valid and not th.is_at_drone_limit(provider) then
             if provider.surface.index == requester.surface.index then
                 if highest_priority <= item_data.priority then
                     local cost = util.distance(provider.position, requester.position) + th.get_drone_count(provider) * heuristic_target_count_cost
@@ -219,10 +233,12 @@ local function get_closest_provider(requester, item_name, item_quality, item_pro
     return closest_provider
 end
 
-local function get_common_items(requester, requester_items, selected_provider_items)
+local function get_common_items(requester, request_mode, requester_items, selected_provider_items)
     local items = {}
 
     for item_name, r_quality in pairs(requester_items[requester]) do
+        local stack_size = prototypes.item[item_name].stack_size
+
         for item_quality, r_item_data in pairs(r_quality) do
             local p_quality_count = selected_provider_items[item_name]
 
@@ -232,7 +248,13 @@ local function get_common_items(requester, requester_items, selected_provider_it
 
             local p_item_data = p_quality_count[item_quality]
 
-            if p_item_data == nil or p_item_data.count <= 0 then
+            if p_item_data == nil then
+                goto continue
+            end
+
+            local minimum_amount = get_minimum_item_request_amount(item_name, r_item_data.count, request_mode)
+
+            if p_item_data.count < minimum_amount then
                 goto continue
             end
 
@@ -240,7 +262,13 @@ local function get_common_items(requester, requester_items, selected_provider_it
                 items[item_name] = {}
             end
 
-            items[item_name][item_quality] = math.min(r_item_data.count, p_item_data.count)
+            local request_amount = r_item_data.count
+
+            if request_mode == mh.request_modes.stack then
+                request_amount = math.ceil(request_amount / stack_size) * stack_size
+            end
+
+            items[item_name][item_quality] = math.min(math.max(request_amount, minimum_amount), p_item_data.count)
 
             ::continue::
         end
@@ -344,8 +372,9 @@ function item_requests.get_next_item_request(surface_buffer, heuristic_target_co
 
     while sb.key_index do
         selected_requester = sb.sorted_requesters[sb.key_index].requester
-        
+
         if selected_requester.valid and not th.is_at_drone_limit(selected_requester) then
+            local request_mode = mh.get_request_mode(selected_requester)
             local requester_items = sb.requester_items[selected_requester]
 
             sb.key_item_name = next(requester_items, sb.key_item_name)
@@ -359,14 +388,16 @@ function item_requests.get_next_item_request(surface_buffer, heuristic_target_co
                     local item_data = selected_name[sb.key_item_quality]
 
                     if item_data.count > 0 then
-                        selected_provider = get_closest_provider(selected_requester, sb.key_item_name, sb.key_item_quality, sb.item_provider_lookup, heuristic_target_count_cost)
+                        local minimum_amount = get_minimum_item_request_amount(sb.key_item_name, item_data.count, request_mode)
+
+                        selected_provider = get_closest_provider(selected_requester, sb.key_item_name, sb.key_item_quality, minimum_amount, sb.item_provider_lookup, heuristic_target_count_cost)
 
                         if selected_provider then
                             local request = {}
 
                             request.requester = selected_requester
                             request.provider = selected_provider
-                            request.items = get_common_items(selected_requester, sb.requester_items, sb.provider_items[selected_provider])
+                            request.items = get_common_items(selected_requester, request_mode, sb.requester_items, sb.provider_items[selected_provider])
 
                             sb.key_index = old_key_index
                             sb.key_item_name = old_key_item_name
