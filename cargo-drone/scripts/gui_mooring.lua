@@ -168,6 +168,23 @@ local observers = {
         end
     },
 
+    get_request_mode = {
+        get = function(player_data)
+            if player_data.entity_type ~= entity_types.requester then
+                return
+            end
+
+            return mh.get_request_mode(player_data.entity)
+        end,
+        updated = function(player_data, data)
+            if player_data.entity_type ~= entity_types.requester then
+                return
+            end
+
+            player_data.elements.request_mode_drop_down.selected_index = mh.get_request_mode(player_data.entity) + 1
+        end
+    },
+
     get_circuit_network_red_green = {
         get = function(player_data)
             return player_data.entity.get_circuit_network(defines.wire_connector_id.circuit_red) ~= nil
@@ -790,6 +807,19 @@ local callbacks = {
         update_gui(player_data)
     end,
 
+    [gui_prefix .. "request-mode-drop-down"] = function(player_data, event)
+        local index = player_data.elements.request_mode_drop_down.selected_index
+
+        -- Not set, ignore
+        if index == 0 then
+            return
+        end
+
+        mh.set_request_mode(player_data.entity, index - 1)
+
+        update_gui(player_data)
+    end,
+
     [gui_prefix .. "depot-alert-button"] = function(player_data, event)
         mh.remove_depot_flag(player_data.entity)
         player_data.elements.depot_alert_button.visible = false
@@ -1057,6 +1087,43 @@ local function build_gui_mooring(player_data, mooring, mooring_name, parent)
 
     player_data.elements.priority_slider = priority_slider
     player_data.elements.priority_field = priority_field
+
+    ---------- Request mode ----------
+    if player_data.entity_type == entity_types.requester then
+        local request_mode_flow = mooring_flow.add{
+            type = "flow",
+            direction = "horizontal",
+        }
+
+        request_mode_flow.style.vertical_align = "center"
+        request_mode_flow.style.horizontal_spacing = 8
+        request_mode_flow.style.bottom_margin = 8
+
+        request_mode_flow.add{
+            type = "label",
+            caption = { "cargo-drone-gui-mooring.request-mode" },
+            tooltip = { "cargo-drone-gui-mooring.request-mode-tooltip" },
+        }
+
+        local request_mode_filler = request_mode_flow.add{
+            type = "empty-widget",
+        }
+
+        request_mode_filler.style.horizontally_stretchable = true
+
+        local request_mode_drop_down = request_mode_flow.add{
+            type = "drop-down",
+            name = gui_prefix .. "request-mode-drop-down",
+            items = {
+                { "cargo-drone-gui-mooring.request-mode-any" },
+                { "cargo-drone-gui-mooring.request-mode-stack" },
+                { "cargo-drone-gui-mooring.request-mode-fuzzy" },
+            },
+            selected_index = mh.get_request_mode(mooring) + 1
+        }
+
+        player_data.elements.request_mode_drop_down = request_mode_drop_down
+    end
 
     ---------- Depot ----------
     local depot_flow = mooring_flow.add{
@@ -1800,6 +1867,9 @@ function gui_mooring.on_gui_text_changed(event)
     handle_event(event)
 end
 function gui_mooring.on_gui_elem_changed(event)
+    handle_event(event)
+end
+function gui_mooring.on_gui_selection_state_changed(event)
     handle_event(event)
 end
 
