@@ -27,3 +27,4 @@ runs:
           ${{ inputs.build-file-path }} \
           --title "$TAG" \
           --notes "${{ inputs.changelog }}"
+          --draft
