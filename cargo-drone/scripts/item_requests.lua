@@ -262,13 +262,17 @@ local function get_common_items(requester, request_mode, requester_items, select
                 items[item_name] = {}
             end
 
-            local request_amount = r_item_data.count
+            local request_amount = math.min(r_item_data.count, p_item_data.count)
 
             if request_mode == mh.request_modes.stack then
                 request_amount = math.ceil(request_amount / stack_size) * stack_size
+
+                if request_amount > p_item_data.count then
+                    request_amount = math.floor(p_item_data.count / stack_size) * stack_size
+                end
             end
 
-            items[item_name][item_quality] = math.min(math.max(request_amount, minimum_amount), p_item_data.count)
+            items[item_name][item_quality] = request_amount
 
             ::continue::
         end
