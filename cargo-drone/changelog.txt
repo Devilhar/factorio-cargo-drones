@@ -1,3 +1,5 @@
+  Minor Features:
+    - Added Request mode to Requester moorings, with the modes of Any, Stack, and Fuzzy.
 ---------------------------------------------------------------------------------------------------
 Version: 1.10.2
 Date: 23. 03. 2026
