@@ -347,9 +347,9 @@ local function clear_all_outputs(mooring)
         }
     }
 end
-local function clean_settings_all(mooring)
+local function clean_settings_all(mooring, mooring_name)
     set_settings_value(mooring, setting_names.depot, nil)
-    if mooring_type_lookup[mooring.name] == mooring_types.requester then
+    if mooring_type_lookup[mooring_name] == mooring_types.requester then
         local request_mode = get_request_mode(mooring)
 
         if request_mode < request_modes.any or request_mode > request_modes.fuzzy then
@@ -364,7 +364,7 @@ local function clean_settings_ghost(mooring)
 
     resize_and_activate_sections(cb)
 
-    clean_settings_all(mooring)
+    clean_settings_all(mooring, mooring.ghost_name)
 
     th.clean_settings(mooring)
 
@@ -375,7 +375,7 @@ local function clean_settings(mooring)
 
     resize_and_activate_sections(cb)
 
-    clean_settings_all(mooring)
+    clean_settings_all(mooring, mooring.name)
 
     th.clean_settings(mooring)
 
