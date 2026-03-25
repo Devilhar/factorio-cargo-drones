@@ -1,5 +1,6 @@
   Changes:
     - Halved the size of Cargo drones on the map.
+    - Made moorings collide with Elevated rails.
 ---------------------------------------------------------------------------------------------------
 Version: 1.11.0
 Date: 24. 03. 2026

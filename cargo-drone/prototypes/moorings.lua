@@ -30,6 +30,7 @@ local mooring_entity_cc = merge_tables(table.deepcopy(data.raw["constant-combina
 	minable = { mining_time = 0.2, result = "cargo-drone-mooring-constant-combinator-{NAME}" },
 	flags = { "hide-alt-info", "not-upgradable", "placeable-neutral", "player-creation" },
 	max_health = 350,
+	collision_mask = { layers = { item = true, object = true, player = true, water_tile = true, is_object = true, is_lower_object = true, elevated_rail = true } },
 	collision_box = {{-1.35, -1.35}, {1.35, 1.35}},
 	selection_box = {{-1.5, -1.5}, {1.5, 1.5}},
 	impact_category = "metal",
