@@ -60,7 +60,7 @@ local mooring_entity_cc = merge_tables(table.deepcopy(data.raw["constant-combina
 				scale = 0.44
 			},
 			{
-				filename = "__cargo-drone__/graphics/cargo-drone-mooring-shadow.png",
+				filename = "__cargo-drone__/graphics/cargo-drone-mooring-shadow-bottom.png",
 				priority = "low",
 				width = 1000,
 				height = 200,
@@ -126,6 +126,17 @@ local mooring_top_sprite = {
 	shift = util.by_pixel(0, -200+64-(200 * 0.44)),
 	scale = 0.44,
 }
+local mooring_top_shadow_sprite = {
+	type = "sprite",
+	name = "cargo-drone-mooring-top-shadow-sprite",
+	filename = "__cargo-drone__/graphics/cargo-drone-mooring-shadow-top.png",
+	priority = "low",
+	width = 1000,
+	height = 200,
+	shift = util.by_pixel(194, 2),
+	draw_as_shadow = true,
+	scale = 0.5016
+}
 
 local function make_mooring(placeholder, name)
 	local scan = nil
@@ -181,6 +192,8 @@ data:extend({
 	mooring_item_refueler,
 	make_mooring(mooring_recipe,		"refueler"),
 	make_mooring(mooring_top_sprite,	"refueler"),
+
+	mooring_top_shadow_sprite,
 })
 
 local proxy_containers = {}
