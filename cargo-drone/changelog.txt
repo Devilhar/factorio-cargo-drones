@@ -1,3 +1,5 @@
+  Changes:
+    - Added sprites of the top half of moorings that is rendered on a higher layer. This is to make the top half render above Elevated rails.
 ---------------------------------------------------------------------------------------------------
 Version: 1.11.1
 Date: 25. 03. 2026
