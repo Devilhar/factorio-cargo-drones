@@ -441,6 +441,12 @@ function mooring_helper.try_setup_mooring(mooring)
         surface = mooring.surface,
         render_layer = "elevated-higher-object",
     }
+    rendering.draw_sprite{
+        sprite = "cargo-drone-mooring-top-shadow-sprite",
+        target = mooring,
+        surface = mooring.surface,
+        render_layer = "object",
+    }
 
 	ep.entity_manage(mooring)
 
