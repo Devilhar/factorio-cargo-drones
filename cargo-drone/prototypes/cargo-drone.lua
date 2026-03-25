@@ -136,7 +136,7 @@ cargo_drone.minimap_representation = {
 	filename = "__cargo-drone__/graphics/cargo-drone-map.png",
 	flags = { "icon" },
 	size = { 128, 128 },
-	scale = 0.5,
+	scale = 0.25,
 }
 
 cargo_drone.working_sound =
