@@ -116,10 +116,20 @@ local mooring_recipe = {
 	},
 	results = {{type="item", name="cargo-drone-mooring-constant-combinator-{NAME}", amount=1}}
 }
+local mooring_top_sprite = {
+	type = "sprite",
+	name = "cargo-drone-mooring-top-sprite-{NAME}",
+	filename = "__cargo-drone__/graphics/cargo-drone-mooring-{NAME}.png",
+	priority = "low",
+	width = 270,
+	height = 400,
+	shift = util.by_pixel(0, -200+64-(200 * 0.44)),
+	scale = 0.44,
+}
 
 local function make_mooring(placeholder, name)
 	local scan = nil
-	
+
 	scan = function(current_table)
 		for key, element in pairs(current_table) do
 			if type(element) == "string" then
@@ -150,24 +160,27 @@ end
 
 local mooring_item_provider		= make_mooring(mooring_item, "provider")
 local mooring_item_requester	= make_mooring(mooring_item, "requester")
-local mooring_item_refuel		= make_mooring(mooring_item, "refueler")
+local mooring_item_refueler		= make_mooring(mooring_item, "refueler")
 
 mooring_item_provider.order		= mooring_item_provider.order:gsub("{ORDER_CHAR}", "b")
 mooring_item_requester.order	= mooring_item_requester.order:gsub("{ORDER_CHAR}", "c")
-mooring_item_refuel.order		= mooring_item_refuel.order:gsub("{ORDER_CHAR}", "d")
+mooring_item_refueler.order		= mooring_item_refueler.order:gsub("{ORDER_CHAR}", "d")
 
 data:extend({
-	make_mooring(mooring_entity_cc,	"provider"),
+	make_mooring(mooring_entity_cc,		"provider"),
 	mooring_item_provider,
-	make_mooring(mooring_recipe,	"provider"),
+	make_mooring(mooring_recipe,		"provider"),
+	make_mooring(mooring_top_sprite,	"provider"),
 
-	make_mooring(mooring_entity_cc,	"requester"),
+	make_mooring(mooring_entity_cc,		"requester"),
 	mooring_item_requester,
-	make_mooring(mooring_recipe,	"requester"),
+	make_mooring(mooring_recipe,		"requester"),
+	make_mooring(mooring_top_sprite,	"requester"),
 
-	make_mooring(mooring_entity_cc,	"refueler"),
-	mooring_item_refuel,
-	make_mooring(mooring_recipe,	"refueler"),
+	make_mooring(mooring_entity_cc,		"refueler"),
+	mooring_item_refueler,
+	make_mooring(mooring_recipe,		"refueler"),
+	make_mooring(mooring_top_sprite,	"refueler"),
 })
 
 local proxy_containers = {}

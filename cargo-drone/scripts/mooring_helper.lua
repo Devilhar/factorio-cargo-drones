@@ -39,6 +39,12 @@ local mooring_type_lookup = {
 	["cargo-drone-mooring-constant-combinator-refueler"]    = mooring_types.refueler,
 }
 
+local mooring_top_sprites = {
+	[mooring_types.provider]    = "cargo-drone-mooring-top-sprite-provider",
+	[mooring_types.requester]   = "cargo-drone-mooring-top-sprite-requester",
+	[mooring_types.refueler]    = "cargo-drone-mooring-top-sprite-refueler",
+}
+
 local request_modes = {
     any     = 0,
     stack   = 1,
@@ -428,6 +434,13 @@ function mooring_helper.try_setup_mooring(mooring)
     if proxy_containers == nil then
         return false
     end
+
+    rendering.draw_sprite{
+        sprite = mooring_top_sprites[mooring_type],
+        target = mooring,
+        surface = mooring.surface,
+        render_layer = "elevated-higher-object",
+    }
 
 	ep.entity_manage(mooring)
 
