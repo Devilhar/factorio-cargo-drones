@@ -1,3 +1,6 @@
+---------------------------------------------------------------------------------------------------
+Version: 1.12.0
+Date: 26. 03. 2026
   Minor Features:
     - Added the Request mode Full.
     - Added the amount of incoming Cargo drones inside moorings and Depots.
