@@ -194,6 +194,10 @@ local function get_minimum_item_request_amount(item_name, count, request_mode)
 
     local stack_size = prototypes.item[item_name].stack_size
 
+    if request_mode == mh.request_modes.full then
+        return constants.drone_trunk_size * stack_size
+    end
+
     if request_mode == mh.request_modes.stack or count >= stack_size then
         return stack_size
     end
@@ -260,6 +264,12 @@ local function get_common_items(requester, request_mode, requester_items, select
 
             if not items[item_name] then
                 items[item_name] = {}
+            end
+
+            if request_mode == mh.request_modes.full then
+                items[item_name][item_quality] = minimum_amount
+
+                goto continue
             end
 
             local request_amount = math.min(r_item_data.count, p_item_data.count)
@@ -391,7 +401,15 @@ function item_requests.get_next_item_request(surface_buffer, heuristic_target_co
                 while sb.key_item_quality do
                     local item_data = selected_name[sb.key_item_quality]
 
-                    if item_data.count > 0 then
+                    local minimum_req_amount = 1
+
+                    if request_mode == mh.request_modes.full then
+                        local stack_size = prototypes.item[sb.key_item_name].stack_size
+
+                        minimum_req_amount = constants.drone_trunk_size * stack_size
+                    end
+
+                    if item_data.count >= minimum_req_amount then
                         local minimum_amount = get_minimum_item_request_amount(sb.key_item_name, item_data.count, request_mode)
 
                         selected_provider = get_closest_provider(selected_requester, sb.key_item_name, sb.key_item_quality, minimum_amount, sb.item_provider_lookup, heuristic_target_count_cost)
@@ -485,7 +503,7 @@ end
 function item_requests.assign_item_request(surface_buffer, drone, item_request)
 	local inventory = drone.get_inventory(defines.inventory.car_trunk)
 
-	local slot_count = #inventory
+	local slot_count = constants.drone_trunk_size
 	local items_to_fetch = {}
 	local inventory_filters = {}
 
