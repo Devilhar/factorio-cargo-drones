@@ -771,6 +771,8 @@ local callbacks = {
 
     [gui_prefix .. "open-on-map"] = function(player_data, event)
         player_data.player.centered_on = player_data.entity
+
+        player_data.player.opened = nil
     end,
 
     [gui_prefix .. "drone-limit-checkbox"] = function(player_data, event)

@@ -1,3 +1,7 @@
+  Minor Features:
+    - Added a button in the Cargo drone GUI that shows the location of the drone on the map.
+  Changes:
+    - The Show this location button in the mooring and Depot GUI now closes the window when pressed.
 ---------------------------------------------------------------------------------------------------
 Version: 1.12.0
 Date: 26. 03. 2026

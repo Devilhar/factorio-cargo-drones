@@ -167,7 +167,7 @@ function gui_cargo_drone.on_gui_opened(event)
         direction = "horizontal"
     }
 
-    title_flow.style.height = 24
+    title_flow.style.height = 26
     title_flow.style.horizontally_stretchable = true
     title_flow.style.left_margin = 4
     title_flow.style.right_margin = 4
@@ -177,6 +177,20 @@ function gui_cargo_drone.on_gui_opened(event)
         type = "label",
         caption = { "cargo-drone-gui-cargo-drone.targets" },
         style = "frame_title"
+    }
+
+    local title_filller = title_flow.add{
+        type = "empty-widget",
+    }
+
+    title_filller.style.horizontally_stretchable = true
+
+    title_flow.add{
+        type = "sprite-button",
+        name = gui_prefix .. "open-on-map",
+        style = "tool_button",
+        sprite = "utility/map",
+        tooltip = { "gui-train.open-in-map" }
     }
 
     local main_frame = targets_frame.add{
@@ -307,11 +321,13 @@ function gui_cargo_drone.on_gui_click(event)
         return
     end
 
-    if element.name ~= minimap_name then
-        return
-    end
+    if element.name == minimap_name then
+        player.opened = element.entity
+    elseif element.name == gui_prefix .. "open-on-map" then
+        player.centered_on = storage.gui_cargo_drone[event.player_index]
 
-    player.opened = element.entity
+        player.opened = nil
+    end
 end
 
 return gui_cargo_drone
