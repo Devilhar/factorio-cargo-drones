@@ -1,3 +1,6 @@
+---------------------------------------------------------------------------------------------------
+Version: 1.13.0
+Date: 26. 03. 2026
   Minor Features:
     - Added a button in the Cargo drone GUI that shows the location of the drone on the map.
   Changes:
