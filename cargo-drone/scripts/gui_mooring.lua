@@ -498,6 +498,8 @@ local function update_drone_list(player_data)
     local task_ids = dt.get_entity_task_ids(mooring)
     local sorted_drone_task_list = {}
 
+    local drone_count = 0
+
     if task_ids then
         local function get_weight(drone, task)
             local target = dh.get_docked_mooring(drone)
@@ -700,8 +702,9 @@ local function update_drone_list(player_data)
         end
 
         for task_id, _ in pairs(task_ids) do
+            drone_count = drone_count + 1
             local task = dt.get(task_id)
-            
+
             local drone = ep.get_managed_entity(task.drone_unit_number)
 
             insert_sorted(drone, task)
@@ -735,6 +738,8 @@ local function update_drone_list(player_data)
         index = index + 1
         element.destroy()
     end
+
+    player_data.elements.drone_header.caption = { "cargo-drone-gui-mooring.tasked-cargo-drone", drone_count }
 end
 
 local function update_gui(player_data)
@@ -1295,9 +1300,9 @@ local function build_gui_drones(player_data, parent)
     subheader_frame.style.horizontally_stretchable = true
     subheader_frame.style.vertical_align = "center"
 
-    subheader_frame.add{
+    local drone_header = subheader_frame.add{
         type = "label",
-        caption = { "cargo-drone-gui-mooring.tasked-cargo-drone" },
+        caption = { "cargo-drone-gui-mooring.tasked-cargo-drone", 0 },
         style = "subheader_label"
     }
 
@@ -1320,6 +1325,7 @@ local function build_gui_drones(player_data, parent)
     drone_table.style.horizontally_stretchable = true
     drone_table.style.margin = 0
 
+    player_data.elements.drone_header = drone_header
     player_data.elements.drone_table = drone_table
 end
 
