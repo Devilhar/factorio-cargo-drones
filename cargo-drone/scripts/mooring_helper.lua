@@ -49,6 +49,7 @@ local request_modes = {
     any     = 0,
     stack   = 1,
     fuzzy   = 2,
+    full    = 3,
 }
 
 local function get_settings_section(mooring)
@@ -358,7 +359,7 @@ local function clean_settings_all(mooring, mooring_name)
     if mooring_type_lookup[mooring_name] == mooring_types.requester then
         local request_mode = get_request_mode(mooring)
 
-        if request_mode < request_modes.any or request_mode > request_modes.fuzzy then
+        if request_mode < request_modes.any or request_mode > request_modes.full then
             set_settings_value(mooring, setting_names.request_mode, nil)
         end
     else

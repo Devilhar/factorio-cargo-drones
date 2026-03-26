@@ -8,6 +8,7 @@ constants.current_mod_state = 16
 constants.drone_has_burnt_result = prototypes.entity["cargo-drone"].burner_prototype.burnt_inventory_size > 0
 
 -- Cargo drones
+constants.drone_trunk_size = prototypes.entity["cargo-drone"].get_inventory_size(defines.inventory.car_trunk)
 constants.drone_sprite_offset = { x = 0, y = -9 }
 constants.drone_sprite_shadow_offset = { x = 14, y = 0 }
 constants.drone_queue_distance = 20

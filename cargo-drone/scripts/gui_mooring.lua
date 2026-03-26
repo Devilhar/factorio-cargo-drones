@@ -1118,6 +1118,7 @@ local function build_gui_mooring(player_data, mooring, mooring_name, parent)
                 { "cargo-drone-gui-mooring.request-mode-any" },
                 { "cargo-drone-gui-mooring.request-mode-stack" },
                 { "cargo-drone-gui-mooring.request-mode-fuzzy" },
+                { "cargo-drone-gui-mooring.request-mode-full" },
             },
             selected_index = mh.get_request_mode(mooring) + 1
         }
