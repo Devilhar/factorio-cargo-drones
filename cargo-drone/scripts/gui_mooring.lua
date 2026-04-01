@@ -2,6 +2,7 @@
 -- If you're here looking for a good way to handle GUI. Go elsewhere. There's nothing for you here. Naught but despair
 
 local constants = require("constants")
+local ccse      = require("cc_string_encoder")
 local ep        = require("entity_property")
 local th        = require("target_helper")
 local dt        = require("drone_tasks")
@@ -95,6 +96,15 @@ local function get_inventory_target_tooltip(inventory_target)
 end
 
 local observers = {
+    get_name = {
+        get = function(player_data)
+            return th.get_name(player_data.entity)
+        end,
+        updated = function(player_data, data)
+            player_data.elements.name_label.caption = data
+        end
+    },
+
     is_drone_limit_enabled = {
         get = function(player_data) return th.is_drone_limit_enabled(player_data.entity) end,
         updated = function(player_data, data)
@@ -580,31 +590,31 @@ local function update_drone_list(player_data)
 
             if dh.get_docked_mooring(drone) == target_mooring then
                 if mooring_type == 1 then
-                    task_label.caption = { "cargo-drone-status.docked-with-provider" }
+                    task_label.caption = { "cargo-drone-status.docked-with-provider", th.get_name(target_mooring) }
                 elseif mooring_type == 2 then
-                    task_label.caption = { "cargo-drone-status.docked-with-requester" }
+                    task_label.caption = { "cargo-drone-status.docked-with-requester", th.get_name(target_mooring) }
                 else
-                    task_label.caption = { "cargo-drone-status.docked-with-refueler" }
+                    task_label.caption = { "cargo-drone-status.docked-with-refueler", th.get_name(target_mooring) }
                 end
             elseif dh.get_queuing_mooring(drone) == target_mooring then
                 if mooring_type == 1 then
-                    task_label.caption = { "cargo-drone-status.queuing-at-provider", math.floor(util.distance(drone.position, target_mooring.position)) }
+                    task_label.caption = { "cargo-drone-status.queuing-at-provider", th.get_name(target_mooring), math.floor(util.distance(drone.position, target_mooring.position)) }
                 elseif mooring_type == 2 then
-                    task_label.caption = { "cargo-drone-status.queuing-at-requester", math.floor(util.distance(drone.position, target_mooring.position)) }
+                    task_label.caption = { "cargo-drone-status.queuing-at-requester", th.get_name(target_mooring), math.floor(util.distance(drone.position, target_mooring.position)) }
                 else
-                    task_label.caption = { "cargo-drone-status.queuing-at-refueler", math.floor(util.distance(drone.position, target_mooring.position)) }
+                    task_label.caption = { "cargo-drone-status.queuing-at-refueler", th.get_name(target_mooring), math.floor(util.distance(drone.position, target_mooring.position)) }
                 end
             elseif dh.get_parked_depot(drone) == target_mooring then
-                task_label.caption = { "cargo-drone-status.parked-by-depot" }
+                task_label.caption = { "cargo-drone-status.parked-by-depot", th.get_name(target_mooring) }
             else
                 if mooring_type == 1 then
-                    task_label.caption = { "cargo-drone-status.heading-to-provider", math.floor(util.distance(drone.position, target_mooring.position)) }
+                    task_label.caption = { "cargo-drone-status.heading-to-provider", th.get_name(target_mooring), math.floor(util.distance(drone.position, target_mooring.position)) }
                 elseif mooring_type == 2 then
-                    task_label.caption = { "cargo-drone-status.heading-to-requester", math.floor(util.distance(drone.position, target_mooring.position)) }
+                    task_label.caption = { "cargo-drone-status.heading-to-requester", th.get_name(target_mooring), math.floor(util.distance(drone.position, target_mooring.position)) }
                 elseif mooring_type == 3 then
-                    task_label.caption = { "cargo-drone-status.heading-to-refueler", math.floor(util.distance(drone.position, target_mooring.position)) }
+                    task_label.caption = { "cargo-drone-status.heading-to-refueler", th.get_name(target_mooring), math.floor(util.distance(drone.position, target_mooring.position)) }
                 else
-                    task_label.caption = { "cargo-drone-status.heading-to-depot", math.floor(util.distance(drone.position, target_mooring.position)) }
+                    task_label.caption = { "cargo-drone-status.heading-to-depot", th.get_name(target_mooring), math.floor(util.distance(drone.position, target_mooring.position)) }
                 end
             end
 
@@ -666,6 +676,8 @@ local function update_drone_list(player_data)
                 name = gui_prefix .. "task-label",
                 style = "subheader_label"
             }
+
+            task_label.style.maximal_width = 250
 
             update_elements(drone, minimap, task_label)
 
@@ -759,6 +771,18 @@ local function update_gui(player_data)
     update_drone_list(player_data)
 end
 
+local function try_set_name(player_data)
+    if player_data.elements.name_textfield.text == "" then
+        return
+    end
+
+    th.set_name(player_data.entity, player_data.elements.name_textfield.text)
+    player_data.elements.name_label.visible = true
+    player_data.elements.name_edit.visible = true
+    player_data.elements.name_textfield.visible = false
+    player_data.elements.name_textfield_confirm.visible = false
+end
+
 local callbacks = {
     ---------- Mooring ----------
     [gui_prefix .. "mooring-close-button"] = function(player_data, event)
@@ -769,6 +793,44 @@ local callbacks = {
         player_data.player.opened = nil
     end,
 
+    [gui_prefix .. "name-edit"] = function(player_data, event)
+        player_data.elements.name_label.visible = false
+        player_data.elements.name_edit.visible = false
+        player_data.elements.name_textfield.visible = true
+        player_data.elements.name_textfield_confirm.visible = true
+    end,
+    [gui_prefix .. "name-textfield"] = function(player_data, event)
+        if event.name == defines.events.on_gui_confirmed then
+            try_set_name(player_data)
+
+            return
+        end
+
+        local new_text = player_data.elements.name_textfield.text
+
+        if new_text == "" then
+            player_data.elements.name_textfield.style = "invalid_value_textfield"
+
+            return
+        end
+
+        local dummy_section = {}
+
+        ccse.encode(player_data.elements.name_textfield.text, dummy_section)
+
+        local parsed_text = ccse.decode(dummy_section)
+
+        if parsed_text ~= new_text then
+            player_data.elements.name_textfield.style = "invalid_value_textfield"
+
+            return
+        end
+
+        player_data.elements.name_textfield.style = "textbox"
+    end,
+    [gui_prefix .. "name-textfield-confirm"] = function(player_data, event)
+        try_set_name(player_data)
+    end,
     [gui_prefix .. "open-on-map"] = function(player_data, event)
         player_data.player.centered_on = player_data.entity
 
@@ -951,6 +1013,48 @@ local function build_gui_mooring(player_data, mooring, mooring_name, parent)
 
     header_frame.style.horizontally_stretchable = true
     header_frame.style.vertical_align = "center"
+
+    local name_label = header_frame.add{
+        type = "label",
+        name = gui_prefix .. "name-label",
+        style = "heading_2_label",
+        caption = th.get_name(player_data.entity),
+    }
+    local name_edit = header_frame.add{
+        type = "sprite-button",
+        name = gui_prefix .. "name-edit",
+        style = "tool_button_without_padding",
+        sprite = "utility/rename_icon",
+    }
+    local name_textfield = header_frame.add{
+        type = "textfield",
+        name = gui_prefix .. "name-textfield",
+        style = "textbox",
+        text = th.get_name(player_data.entity),
+        lose_focus_on_confirm = true,
+        icon_selector = true,
+        visible = false,
+    }
+    local name_textfield_confirm = header_frame.add{
+        type = "sprite-button",
+        name = gui_prefix .. "name-textfield-confirm",
+        style = "item_and_count_select_confirm",
+        sprite = "utility/enter",
+        visible = false,
+    }
+
+    name_edit.style.size = 16
+    name_edit.style.margin = 3
+    name_label.style.margin = 2
+    name_label.style.maximal_width = 300
+    name_textfield_confirm.style.margin = 2
+
+    name_label.style.left_margin = 4
+
+    player_data.elements.name_label = name_label
+    player_data.elements.name_edit = name_edit
+    player_data.elements.name_textfield = name_textfield
+    player_data.elements.name_textfield_confirm = name_textfield_confirm
 
     local header_filller = header_frame.add{
         type = "empty-widget",
@@ -1879,6 +1983,9 @@ function gui_mooring.on_gui_elem_changed(event)
     handle_event(event)
 end
 function gui_mooring.on_gui_selection_state_changed(event)
+    handle_event(event)
+end
+function gui_mooring.on_gui_confirmed(event)
     handle_event(event)
 end
 
