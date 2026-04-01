@@ -1,4 +1,6 @@
 
+local name_list = require("name_list")
+local ccse      = require("cc_string_encoder")
 local ep        = require("entity_property")
 local fh        = require("filter_helper")
 
@@ -11,6 +13,7 @@ local section_index = {
     drone_limit                     = 2,
     priority_circuit                = 3,
     drone_count                     = 4,
+    name                            = 5,
 }
 
 local setting_names = {
@@ -51,6 +54,41 @@ local function set_signal_id(target, index, signal_id, value)
     local section = target.get_control_behavior().get_section(index)
 
     fh.set_signal_id_value(section, signal_id, value)
+end
+
+local function get_name_from_section(target)
+    local cb = target.get_control_behavior()
+
+    local section = cb.get_section(section_index.name)
+
+    return ccse.decode(section)
+end
+local function get_name(target)
+    return ep.get_entity_property(target, "target_name")
+end
+local function set_name(target, name)
+    local cb = target.get_control_behavior()
+
+    local section = cb.get_section(section_index.name)
+
+    ccse.encode(name, section)
+
+    ep.set_entity_property(target, "target_name", get_name_from_section(target))
+end
+
+local function update_name(target)
+    local cb = target.get_control_behavior()
+
+    local section_name = cb.get_section(section_index.name)
+
+    local name = ccse.decode(section_name)
+
+    if name == "" then
+        name = name_list[math.random(#name_list)]
+    end
+
+    ccse.encode(name, section_name)
+    ep.set_entity_property(target, "target_name", name)
 end
 
 local function set_drone_limit(target, limit)
@@ -201,7 +239,7 @@ local function update_drone_count_output(target)
 end
 
 local function clean_sections(control_behavior)
-    for i = 1, 4 do
+    for i = 1, 5 do
         local section = control_behavior.get_section(i)
 
         section.active = false
@@ -236,6 +274,7 @@ local function clean_settings(target)
     clear_all_outputs(target)
 
     update_drone_count_output(target)
+    update_name(target)
 end
 
 local target_helper = {}
@@ -245,6 +284,13 @@ function target_helper.clean_settings(target)
 end
 function target_helper.clear_all_outputs(target)
     clear_all_outputs(target)
+end
+
+function target_helper.get_name(target)
+    return get_name(target)
+end
+function target_helper.set_name(target, name)
+    set_name(target, name)
 end
 
 function target_helper.is_drone_limit_enabled(target)

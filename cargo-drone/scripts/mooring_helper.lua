@@ -22,9 +22,9 @@ local settings_filter_name = {
 
 local section_index = {
     settings                        = 1,
-    inventory_targets               = 5,
-    output_requests                 = 6,
-    drone_id_output                 = 7,
+    inventory_targets               = 6,
+    output_requests                 = 7,
+    drone_id_output                 = 8,
 }
 
 local mooring_types = {
@@ -313,14 +313,14 @@ local function create_proxy_containers(mooring)
 end
 
 local function resize_and_activate_sections(control_behavior)
-    while control_behavior.sections_count < 7 do
+    while control_behavior.sections_count < 8 do
         control_behavior.add_section()
     end
-    while control_behavior.sections_count > 7 do
-        control_behavior.remove_section(8)
+    while control_behavior.sections_count > 8 do
+        control_behavior.remove_section(9)
     end
 
-    for i = 5, 7 do
+    for i = 5, 8 do
         local section = control_behavior.get_section(i)
 
         section.active = false
@@ -355,6 +355,12 @@ local function clear_all_outputs(mooring)
     }
 end
 local function clean_settings_all(mooring, mooring_name)
+    local cb = mooring.get_control_behavior()
+
+    resize_and_activate_sections(cb)
+
+    th.clean_settings(mooring)
+
     set_settings_value(mooring, setting_names.depot, nil)
     if mooring_type_lookup[mooring_name] == mooring_types.requester then
         local request_mode = get_request_mode(mooring)
@@ -367,24 +373,12 @@ local function clean_settings_all(mooring, mooring_name)
     end
 end
 local function clean_settings_ghost(mooring)
-    local cb = mooring.get_control_behavior()
-
-    resize_and_activate_sections(cb)
-
     clean_settings_all(mooring, mooring.ghost_name)
-
-    th.clean_settings(mooring)
 
     clear_all_outputs(mooring)
 end
 local function clean_settings(mooring)
-    local cb = mooring.get_control_behavior()
-
-    resize_and_activate_sections(cb)
-
     clean_settings_all(mooring, mooring.name)
-
-    th.clean_settings(mooring)
 
     if not ep.is_provider_mooring(mooring.unit_number) then
         set_read_requests(mooring, false)

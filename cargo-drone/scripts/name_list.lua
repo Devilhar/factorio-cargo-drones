@@ -1,0 +1,17 @@
+return {
+    "Assertores",
+    "Cameron",
+    "Captain",
+    "CaptFishmouth",
+    "Cimmy",
+    "Cora",
+    "Devilhar",
+    "EastOfEden",
+    "Ernest Zulczyk",
+    "itsarabbit",
+    "Kali",
+    "Kessie",
+    "Kriss",
+    "Mister Furious",
+    "xDarkZax",
+}
