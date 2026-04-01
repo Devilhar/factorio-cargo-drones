@@ -1,4 +1,5 @@
 
+require("prototypes.style")
 require("prototypes.cargo-drone")
 require("prototypes.moorings")
 require("prototypes.depot")

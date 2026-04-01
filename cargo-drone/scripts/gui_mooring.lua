@@ -408,6 +408,8 @@ for x = 1, 3 do
 end
 
 local function update_item_signals(player_data)
+    local request_mode = mh.get_request_mode(player_data.entity)
+
     local function update_item_element(index, name, quality, count)
         local item_sprite = player_data.elements.signal_item_indices[index]
 
@@ -420,11 +422,28 @@ local function update_item_signals(player_data)
             player_data.elements.signal_item_indices[index] = item_sprite
         end
 
+        local item_prototype = prototypes.item[name]
+        local minimum_count = 1
+
+        if request_mode == mh.request_modes.stack then
+            minimum_count = item_prototype.stack_size
+        elseif request_mode == mh.request_modes.fuzzy then
+            minimum_count = math.min(item_prototype.stack_size, count)
+        elseif request_mode == mh.request_modes.full then
+            minimum_count = item_prototype.stack_size * constants.drone_trunk_size
+        end
+
         item_sprite.sprite = "item/" .. name
         item_sprite.quality = quality
         item_sprite.number = count
-        item_sprite.tooltip = prototypes.item[name].localised_name
+        item_sprite.tooltip = item_prototype.localised_name
         item_sprite.visible = true
+
+        if count < minimum_count then
+            item_sprite.style = "cargo-drone-items"
+        else
+            item_sprite.style = "cargo-drone-requested"
+        end
     end
 
     local mooring_signals = player_data.entity.get_signals(defines.wire_connector_id.circuit_red, defines.wire_connector_id.circuit_green)
@@ -1194,7 +1213,7 @@ local function build_gui_mooring(player_data, mooring, mooring_name, parent)
         }
         items_table.style.minimal_height = 40
         items_table.style.horizontally_stretchable = true
-        items_table.style.padding = 4
+        items_table.style.padding = 2
 
         player_data.elements.items_table = items_table
         player_data.elements.signal_item_indices = {}
