@@ -2,6 +2,7 @@
 local ep = require("entity_property")
 local dt = require("drone_tasks")
 local dh = require("drone_helper")
+local th = require("target_helper")
 
 local gui_prefix = "cargo-drone-"
 
@@ -25,37 +26,37 @@ local function update_gui(player, drone)
 
         if dh.get_docked_mooring(drone) == mooring then
             if mooring_type == 1 then
-                label.caption = { "cargo-drone-status.docked-with-provider" }
+                label.caption = { "cargo-drone-status.docked-with-provider", th.get_name(mooring) }
             elseif mooring_type == 2 then
-                label.caption = { "cargo-drone-status.docked-with-requester" }
+                label.caption = { "cargo-drone-status.docked-with-requester", th.get_name(mooring) }
             else
-                label.caption = { "cargo-drone-status.docked-with-refueler" }
+                label.caption = { "cargo-drone-status.docked-with-refueler", th.get_name(mooring) }
             end
         elseif dh.get_queuing_mooring(drone) == mooring then
             if mooring_type == 1 then
-                label.caption = { "cargo-drone-status.queuing-at-provider", math.floor(util.distance(drone.position, mooring.position)) }
+                label.caption = { "cargo-drone-status.queuing-at-provider", th.get_name(mooring), math.floor(util.distance(drone.position, mooring.position)) }
             elseif mooring_type == 2 then
-                label.caption = { "cargo-drone-status.queuing-at-requester", math.floor(util.distance(drone.position, mooring.position)) }
+                label.caption = { "cargo-drone-status.queuing-at-requester", th.get_name(mooring), math.floor(util.distance(drone.position, mooring.position)) }
             else
-                label.caption = { "cargo-drone-status.queuing-at-refueler", math.floor(util.distance(drone.position, mooring.position)) }
+                label.caption = { "cargo-drone-status.queuing-at-refueler", th.get_name(mooring), math.floor(util.distance(drone.position, mooring.position)) }
             end
         elseif dh.get_parked_depot(drone) == mooring then
-            label.caption = { "cargo-drone-status.parked-by-depot" }
+            label.caption = { "cargo-drone-status.parked-by-depot", th.get_name(mooring) }
         elseif current_mooring_index == 1 then
             if mooring_type == 1 then
-                label.caption = { "cargo-drone-status.heading-to-provider", math.floor(util.distance(drone.position, mooring.position)) }
+                label.caption = { "cargo-drone-status.heading-to-provider", th.get_name(mooring), math.floor(util.distance(drone.position, mooring.position)) }
             elseif mooring_type == 2 then
-                label.caption = { "cargo-drone-status.heading-to-requester", math.floor(util.distance(drone.position, mooring.position)) }
+                label.caption = { "cargo-drone-status.heading-to-requester", th.get_name(mooring), math.floor(util.distance(drone.position, mooring.position)) }
             elseif mooring_type == 3 then
-                label.caption = { "cargo-drone-status.heading-to-refueler", math.floor(util.distance(drone.position, mooring.position)) }
+                label.caption = { "cargo-drone-status.heading-to-refueler", th.get_name(mooring), math.floor(util.distance(drone.position, mooring.position)) }
             else
-                label.caption = { "cargo-drone-status.heading-to-depot", math.floor(util.distance(drone.position, mooring.position)) }
+                label.caption = { "cargo-drone-status.heading-to-depot", th.get_name(mooring), math.floor(util.distance(drone.position, mooring.position)) }
             end
         else
             if mooring_type == 1 then
-                label.caption = { "cargo-drone-status.provider" }
+                label.caption = { "cargo-drone-status.provider", th.get_name(mooring) }
             else
-                label.caption = { "cargo-drone-status.requester" }
+                label.caption = { "cargo-drone-status.requester", th.get_name(mooring) }
             end
         end
 
@@ -281,11 +282,13 @@ function gui_cargo_drone.on_gui_opened(event)
         task_header_frame.style.horizontally_stretchable = true
         task_header_frame.style.vertical_align = "center"
 
-        task_header_frame.add{
+        local task_label = task_header_frame.add{
             type = "label",
             name = gui_prefix .. "task-label",
             style = "subheader_label"
         }
+
+        task_label.style.maximal_width = 270
     end
 
     create_mooring_element(1)

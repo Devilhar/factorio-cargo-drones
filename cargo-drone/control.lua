@@ -236,6 +236,9 @@ end
 function on_gui_selection_state_changed(event)
 	gm.on_gui_selection_state_changed(event)
 end
+function on_gui_confirmed(event)
+	gm.on_gui_confirmed(event)
+end
 
 local build_event_filters = {
 	{ filter = "name", name = "cargo-drone" },
@@ -299,6 +302,7 @@ script.on_event(defines.events.on_gui_value_changed, on_gui_value_changed)
 script.on_event(defines.events.on_gui_text_changed, on_gui_text_changed)
 script.on_event(defines.events.on_gui_elem_changed, on_gui_elem_changed)
 script.on_event(defines.events.on_gui_selection_state_changed, on_gui_selection_state_changed)
+script.on_event(defines.events.on_gui_confirmed, on_gui_confirmed)
 
 for _, event in ipairs(build_events) do
 	script.set_event_filter(event, build_event_filters)
