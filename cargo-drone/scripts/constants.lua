@@ -2,7 +2,7 @@
 local constants = {}
 
 -- Mods
-constants.current_mod_state = 16
+constants.current_mod_state = 17
 
 -- Settings
 constants.drone_has_burnt_result = prototypes.entity["cargo-drone"].burner_prototype.burnt_inventory_size > 0
