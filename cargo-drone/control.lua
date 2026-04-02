@@ -83,6 +83,8 @@ function on_built_entity(event)
 	local entity = event.entity
 
 	if entity.name == "entity-ghost" then
+		ep.entity_manage(entity)
+
 		mh.clean_settings_ghost(entity)
 
 		return
@@ -244,6 +246,7 @@ local build_event_filters = {
 	{ filter = "ghost_name", name = "cargo-drone-mooring-constant-combinator-provider" },
 	{ filter = "ghost_name", name = "cargo-drone-mooring-constant-combinator-requester" },
 	{ filter = "ghost_name", name = "cargo-drone-mooring-constant-combinator-refueler" },
+	{ filter = "ghost_name", name = "cargo-drone-depot-constant-combinator" },
 }
 local build_events = {
 	defines.events.on_built_entity,
@@ -258,6 +261,10 @@ local destroy_event_filters = {
 	{ filter = "name", name = "cargo-drone-mooring-constant-combinator-requester" },
 	{ filter = "name", name = "cargo-drone-mooring-constant-combinator-refueler" },
 	{ filter = "name", name = "cargo-drone-depot-constant-combinator" },
+	{ filter = "ghost_name", name = "cargo-drone-mooring-constant-combinator-provider" },
+	{ filter = "ghost_name", name = "cargo-drone-mooring-constant-combinator-requester" },
+	{ filter = "ghost_name", name = "cargo-drone-mooring-constant-combinator-refueler" },
+	{ filter = "ghost_name", name = "cargo-drone-depot-constant-combinator" },
 }
 local destroy_events = {
 	defines.events.on_entity_died,
