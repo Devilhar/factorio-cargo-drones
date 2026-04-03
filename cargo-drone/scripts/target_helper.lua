@@ -13,7 +13,8 @@ local section_index = {
     drone_limit                     = 2,
     priority_circuit                = 3,
     drone_count                     = 4,
-    name                            = 5,
+    name_filters                    = 5,
+    name                            = 6,
 }
 
 local setting_names = {
@@ -36,6 +37,12 @@ local settings_filters = {
     [setting_names.drone_count_circuit]             = "signal-G",
     [setting_names.drone_count_signal_id]           = "signal-H",
 }
+
+-- The max bytes, divided by the minimum length of a icon: [item=a]
+local max_icons_in_name = 18
+
+-- Offset the bits so that the numbers are less likely to collide with other numbers when altering parameters in blueprints.
+local name_icon_instance_offset = 10
 
 local function get_settings_section(target)
     local cb = target.get_control_behavior()
@@ -64,7 +71,7 @@ local function get_name_from_section(target)
     return ccse.decode(section)
 end
 local function get_name(target)
-    return ep.get_entity_property(target, "target_name")
+    return ep.get_entity_property(target, "target_name") or ""
 end
 local function set_name(target, name)
     local cb = target.get_control_behavior()
@@ -76,6 +83,162 @@ local function set_name(target, name)
     ep.set_entity_property(target, "target_name", get_name_from_section(target))
 end
 
+-- The icons used in names are a bit magical. These functions are here to allow the user to change icons in the name when making changes to blueprint parameters.
+local function get_first_filter_instances(name)
+    local first_instances = {}
+    local last_begin = -1
+    local last_assign = -1
+    local char = ""
+    local instance = 0
+
+    for i = 1, #name do
+        char = string.sub(name, i, i)
+
+        if char == "[" then
+            last_begin = i
+        elseif last_begin ~= -1 and char == "=" then
+            if last_assign == -1 then
+                last_assign = i
+            else
+                last_begin = -1
+            end
+        elseif last_assign ~= -1 and char == "]" then
+            local filter = string.sub(name, last_begin, i)
+            instance = instance + 1
+
+            if first_instances[filter] == nil then
+                first_instances[filter] = { last_begin, last_assign, i, instance }
+            end
+
+            last_begin = -1
+            last_assign = -1
+        end
+    end
+
+    return first_instances
+end
+local function get_filter_instances(name)
+    local instances = {}
+    local last_begin = -1
+    local last_assign = -1
+    local instance = 0
+
+    for i = 1, #name do
+        local char = string.sub(name, i, i)
+
+        if char == "[" then
+            last_begin = i
+        elseif last_begin ~= -1 and char == "=" then
+            if last_assign == -1 then
+                last_assign = i
+            else
+                last_begin = -1
+            end
+        elseif last_assign ~= -1 and char == "]" then
+            local filter = string.sub(name, last_begin, i)
+            instance = instance + 1
+
+            instances[instance] = { filter, last_begin, i }
+
+            last_begin = -1
+            last_assign = -1
+        end
+    end
+
+    return instances
+end
+local function update_name_filters(target)
+    local type_map = {
+        ["item"]            = { type = "item",      prototype = "item" },
+        ["fluid"]           = { type = "fluid",     prototype = "fluid" },
+        ["virtual-signal"]  = { type = "virtual",   prototype = "virtual_signal" },
+        ["entity"]          = { type = "entity",    prototype = "entity" },
+    }
+    local name = get_name(target)
+
+    local first_instances = get_first_filter_instances(name)
+    local filters = {}
+
+    for _, indices in pairs(first_instances) do
+        local type_data = type_map[string.sub(name, indices[1] + 1, indices[2] - 1)]
+
+        if type_data ~= nil then
+            local f_name = string.sub(name, indices[2] + 1, indices[3] - 1)
+
+            if prototypes[type_data.prototype][f_name] ~= nil then
+                local shifted_instance = math.pow(2, name_icon_instance_offset)
+
+                for _ = 1, max_icons_in_name - indices[4] do
+                    shifted_instance = shifted_instance * 2
+                end
+
+                table.insert(filters, {
+                    value = {
+                        type = type_data.type,
+                        name = f_name,
+                        quality = "normal",
+                    },
+                    min = shifted_instance
+                })
+            end
+        end
+    end
+
+    local cb = target.get_control_behavior()
+
+    local section = cb.get_section(section_index.name_filters)
+
+    section.filters = filters
+end
+local function get_updated_name_from_filters(section, name)
+    local filter_instances = {}
+
+    for _, filter in ipairs(section.filters) do
+        if filter.value then
+            local shifted_instance = filter.min
+
+            for _ = 1, name_icon_instance_offset do
+                shifted_instance = math.floor(shifted_instance / 2)
+            end
+
+            for instance = max_icons_in_name, 1, -1 do
+                if shifted_instance % 2 == 1 then
+                    filter_instances[instance] = "[" .. filter.value.type .. "=" .. filter.value.name .. "]"
+                end
+
+                shifted_instance = math.floor(shifted_instance / 2)
+            end
+        end
+    end
+
+    local instances = get_filter_instances(name)
+    local replacements = {}
+
+    for instance, filter in pairs(filter_instances) do
+        if instances[instance] then
+            replacements[instances[instance][1]] = filter
+        end
+    end
+
+    for instance = max_icons_in_name, 1, -1 do
+        if instances[instance] then
+            local replacement_filter = replacements[instances[instance][1]]
+
+            if replacement_filter ~= instances[instance][1] then
+                local replace_begin = instances[instance][2]
+                local replace_end = instances[instance][3]
+
+                if replacement_filter == nil then
+                    name = string.sub(name, 1, replace_begin - 1) .. string.sub(name, replace_end + 1)
+                else
+                    name = string.sub(name, 1, replace_begin - 1) .. replacement_filter .. string.sub(name, replace_end + 1)
+                end
+            end
+        end
+    end
+
+    return name
+end
 local function update_name(target)
     local cb = target.get_control_behavior()
 
@@ -87,8 +250,12 @@ local function update_name(target)
         name = name_list[math.random(#name_list)]
     end
 
+    name = get_updated_name_from_filters(cb.get_section(section_index.name_filters), name)
+
     ccse.encode(name, section_name)
     ep.set_entity_property(target, "target_name", name)
+
+    update_name_filters(target)
 end
 
 local function set_drone_limit(target, limit)
@@ -239,7 +406,7 @@ local function update_drone_count_output(target)
 end
 
 local function clean_sections(control_behavior)
-    for i = 1, 5 do
+    for i = 1, 6 do
         local section = control_behavior.get_section(i)
 
         section.active = false
@@ -291,6 +458,8 @@ function target_helper.get_name(target)
 end
 function target_helper.set_name(target, name)
     set_name(target, name)
+
+    update_name_filters(target)
 end
 
 function target_helper.is_drone_limit_enabled(target)
