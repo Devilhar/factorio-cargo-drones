@@ -30,11 +30,11 @@ end
 local function clean_settings(depot)
     local cb = depot.get_control_behavior()
 
-    while cb.sections_count < 5 do
+    while cb.sections_count < 6 do
         cb.add_section()
     end
-    while cb.sections_count > 5 do
-        cb.remove_section(6)
+    while cb.sections_count > 6 do
+        cb.remove_section(7)
     end
 
     th.clean_settings(depot)

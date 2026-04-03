@@ -103,22 +103,24 @@ end
 
 local function migrate_mooring(mooring)
 --[[
-    name                            = nil -> 5,
-    inventory_targets               = 5 -> 6,
-    output_requests                 = 6 -> 7,
-    drone_id_output                 = 7 -> 8,
+    name_filters                    = nil -> 5,
+    name                            = nil -> 6,
+    inventory_targets               = 5 -> 7,
+    output_requests                 = 6 -> 8,
+    drone_id_output                 = 7 -> 9,
 ]]
     local cb = mooring.get_control_behavior()
 
     cb.add_section()
+    cb.add_section()
 
     local sections = cb.sections
 
-    sections[8].filters = sections[7].filters
+    sections[9].filters = sections[7].filters
 
-    sections[7].filters = sections[6].filters
+    sections[8].filters = sections[6].filters
 
-    sections[6].filters = sections[5].filters
+    sections[7].filters = sections[5].filters
 
     local type_name = mooring_names[mooring.name]
 
@@ -131,10 +133,14 @@ local function migrate_mooring(mooring)
     storage.managed_entities[mooring.unit_number].properties["target_name"] = type_name.name
 
     sections[6].active = false
+    sections[7].active = false
     sections[8].active = true
+    sections[9].active = true
 end
 local function migrate_depot(depot)
     local cb = depot.get_control_behavior()
+
+    cb.add_section()
 
     local section_name = cb.add_section()
 
