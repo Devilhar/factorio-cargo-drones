@@ -798,6 +798,9 @@ local callbacks = {
         player_data.elements.name_edit.visible = false
         player_data.elements.name_textfield.visible = true
         player_data.elements.name_textfield_confirm.visible = true
+        player_data.elements.name_textfield_confirm.enabled = true
+
+        player_data.elements.name_textfield.focus()
     end,
     [gui_prefix .. "name-textfield"] = function(player_data, event)
         if event.name == defines.events.on_gui_confirmed then
@@ -810,6 +813,8 @@ local callbacks = {
 
         if new_text == "" then
             player_data.elements.name_textfield.style = "invalid_value_textfield"
+            player_data.elements.name_textfield.tooltip = { "cargo-drone-gui-mooring.rename-tooltip-error-empty" }
+            player_data.elements.name_textfield_confirm.enabled = false
 
             return
         end
@@ -822,11 +827,15 @@ local callbacks = {
 
         if parsed_text ~= new_text then
             player_data.elements.name_textfield.style = "invalid_value_textfield"
+            player_data.elements.name_textfield.tooltip = { "cargo-drone-gui-mooring.rename-tooltip-error-too-big" }
+            player_data.elements.name_textfield_confirm.enabled = false
 
             return
         end
 
         player_data.elements.name_textfield.style = "textbox"
+        player_data.elements.name_textfield.tooltip = nil
+        player_data.elements.name_textfield_confirm.enabled = true
     end,
     [gui_prefix .. "name-textfield-confirm"] = function(player_data, event)
         try_set_name(player_data)
@@ -1041,6 +1050,7 @@ local function build_gui_mooring(player_data, mooring, mooring_name, parent)
         style = "item_and_count_select_confirm",
         sprite = "utility/enter",
         visible = false,
+        tooltip = { "cargo-drone-gui-mooring.rename-tooltip-apply" }
     }
 
     name_edit.style.size = 16
