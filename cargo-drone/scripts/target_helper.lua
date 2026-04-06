@@ -191,22 +191,33 @@ local function update_name_filters(target)
     section.filters = filters
 end
 local function get_updated_name_from_filters(section, name)
+    local type_map = {
+        ["item"]    = "item",
+        ["fluid"]   = "fluid",
+        ["virtual"] = "virtual-signal",
+        ["entity"]  = "entity",
+    }
+
     local filter_instances = {}
 
     for _, filter in ipairs(section.filters) do
         if filter.value then
-            local shifted_instance = filter.min
+            local type_data = type_map[filter.value.type]
 
-            for _ = 1, name_icon_instance_offset do
-                shifted_instance = math.floor(shifted_instance / 2)
-            end
+            if type_data ~= nil then
+                local shifted_instance = filter.min
 
-            for instance = max_icons_in_name, 1, -1 do
-                if shifted_instance % 2 == 1 then
-                    filter_instances[instance] = "[" .. filter.value.type .. "=" .. filter.value.name .. "]"
+                for _ = 1, name_icon_instance_offset do
+                    shifted_instance = math.floor(shifted_instance / 2)
                 end
 
-                shifted_instance = math.floor(shifted_instance / 2)
+                for instance = max_icons_in_name, 1, -1 do
+                    if shifted_instance % 2 == 1 then
+                        filter_instances[instance] = "[" .. type_data .. "=" .. filter.value.name .. "]"
+                    end
+
+                    shifted_instance = math.floor(shifted_instance / 2)
+                end
             end
         end
     end
