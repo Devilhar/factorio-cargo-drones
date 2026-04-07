@@ -39,3 +39,4 @@ jobs:
           full-version: '${{ steps.create-build.outputs.full-version }}'
           build-file-path: '${{ steps.create-build.outputs.build-path }}'
           changelog: '${{ steps.read-changelog.outputs.changes }}'
+        secrets: inherit
