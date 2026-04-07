@@ -10,15 +10,17 @@ inputs:
   changelog:
     description: "The log for the changes included in this release"
     required: true
+  github-token:
+    description: "GitHub token for authentication"
+    required: true
 
 runs:
   using: "composite"
   steps:
     - name: Create Release
-      id: create-release
       shell: bash
       env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        GITHUB_TOKEN: ${{ inputs.github-token }}
       run: |
         VERSION="${{ inputs.full-version }}"
         TAG="v$VERSION"
