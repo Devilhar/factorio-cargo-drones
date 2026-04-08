@@ -129,7 +129,7 @@ local function migrate_mooring(mooring)
         manage_entity(mooring)
     end
 
-    sections[5].filters = type_name.filters
+    sections[6].filters = type_name.filters
     storage.managed_entities[mooring.unit_number].properties["target_name"] = type_name.name
 
     sections[6].active = false
