@@ -82,6 +82,9 @@ local function set_name(target, name)
 
     ep.set_entity_property(target, "target_name", get_name_from_section(target))
 end
+local function reload_name(target)
+    ep.set_entity_property(target, "target_name", get_name_from_section(target))
+end
 
 -- The icons used in names are a bit magical. These functions are here to allow the user to change icons in the name when making changes to blueprint parameters.
 local function get_first_filter_instances(name)
@@ -471,6 +474,9 @@ function target_helper.set_name(target, name)
     set_name(target, name)
 
     update_name_filters(target)
+end
+function target_helper.reload_name(target)
+    reload_name(target)
 end
 
 function target_helper.is_drone_limit_enabled(target)

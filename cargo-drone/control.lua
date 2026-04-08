@@ -1,6 +1,7 @@
 
 local constants	= require("scripts.constants")
 local ep		= require("scripts.entity_property")
+local th		= require("scripts.target_helper")
 local deh		= require("scripts.depot_helper")
 local rc    	= require("scripts.requester_cooldown")
 local mh		= require("scripts.mooring_helper")
@@ -29,6 +30,66 @@ local function unmanage_entity(entity)
 
 	ep.entity_unmanage(unit_number)
 end
+
+local undo_redo_ghost_name_array = {
+	"cargo-drone-mooring-constant-combinator-provider",
+	"cargo-drone-mooring-constant-combinator-requester",
+	"cargo-drone-mooring-constant-combinator-refueler",
+	"cargo-drone-depot-constant-combinator",
+}
+local undo_redo_entity_filter = {
+	["cargo-drone-mooring-constant-combinator-provider"] = true,
+	["cargo-drone-mooring-constant-combinator-requester"] = true,
+	["cargo-drone-mooring-constant-combinator-refueler"] = true,
+	["cargo-drone-depot-constant-combinator"] = true,
+	["entity-ghost"] = true,
+}
+
+local function undo_redo_copy_settings(action)
+	if not undo_redo_entity_filter[action.target.name] then
+		return
+	end
+
+	local filter = {
+		name		= action.target.name,
+		position	= action.target.position,
+		limit		= 1,
+	}
+
+	local function run_on_entities()
+		local entities = game.get_surface(action.surface_index).find_entities_filtered(filter)
+
+		for _, entity in ipairs(entities) do
+			if not ep.is_managed(entity.unit_number) then
+				return
+			end
+
+			th.reload_name(entity)
+		end
+	end
+
+	local entity_is_ghost = action.target.name == "entity-ghost"
+
+	-- When running redo, and the entity is a ghost, it will give the name as the ghost_name instead.
+	-- So run on all colliding entities of the correct types. There's no harm in updating the wrong
+	-- target anyway.
+
+	if not entity_is_ghost then
+		run_on_entities()
+	end
+
+	filter.name = "entity-ghost"
+	filter.ghost_name = undo_redo_ghost_name_array
+
+	run_on_entities()
+end
+
+local undo_actions = {
+	["copy-entity-settings"] = undo_redo_copy_settings
+}
+local redo_actions = {
+	["copy-entity-settings"] = undo_redo_copy_settings
+}
 
 function on_init()
 	storage.mod_state = constants.current_mod_state
@@ -201,6 +262,24 @@ function on_entity_settings_pasted(event)
 		deh.clean_settings(event.destination)
 	end
 end
+function on_undo_applied(event)
+	for _, action in ipairs(event.actions) do
+		local func = undo_actions[action.type]
+
+		if func then
+			func(action)
+		end
+	end
+end
+function on_redo_applied(event)
+	for _, action in ipairs(event.actions) do
+		local func = redo_actions[action.type]
+
+		if func then
+			func(action)
+		end
+	end
+end
 function script_raised_teleported(event)
 	if event.old_surface_index == event.entity.surface.index then
 		return
@@ -292,6 +371,8 @@ script.on_event(destroy_events, on_destroyed_entity)
 script.on_event(defines.events.on_player_rotated_entity, on_player_rotated_entity)
 script.on_event(defines.events.on_player_flipped_entity, on_player_flipped_entity)
 script.on_event(defines.events.on_entity_settings_pasted, on_entity_settings_pasted)
+script.on_event(defines.events.on_undo_applied, on_undo_applied)
+script.on_event(defines.events.on_redo_applied, on_redo_applied)
 script.on_event(defines.events.script_raised_teleported, script_raised_teleported)
 
 script.on_event(defines.events.on_gui_opened, on_gui_opened)
