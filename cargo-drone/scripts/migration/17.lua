@@ -111,8 +111,9 @@ local function migrate_mooring(mooring)
 ]]
     local cb = mooring.get_control_behavior()
 
-    cb.add_section()
-    cb.add_section()
+    for _ = cb.sections_count, 9 do
+        cb.add_section()
+    end
 
     local sections = cb.sections
 
@@ -140,9 +141,11 @@ end
 local function migrate_depot(depot)
     local cb = depot.get_control_behavior()
 
-    cb.add_section()
+    for _ = cb.sections_count, 6 do
+        cb.add_section()
+    end
 
-    local section_name = cb.add_section()
+    local section_name = cb.get_section(6)
 
     if depot.name == "entity-ghost" then
         manage_entity(depot)
