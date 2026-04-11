@@ -1,3 +1,6 @@
+---------------------------------------------------------------------------------------------------
+Version: 1.14.1
+Date: 11. 04. 2026
   Bugfixes:
     - Fixed maximum name length for moorings and depots being 140 instead of 144.
     - Fixed crash when changing icons used in mooring and depot names using blueprint parameters when the new icon types have a longer names causing the whole name to be bigger than 140 bytes.
