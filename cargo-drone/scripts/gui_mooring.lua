@@ -819,13 +819,7 @@ local callbacks = {
             return
         end
 
-        local dummy_section = {}
-
-        ccse.encode(player_data.elements.name_textfield.text, dummy_section)
-
-        local parsed_text = ccse.decode(dummy_section)
-
-        if parsed_text ~= new_text then
+        if ccse.byte_length(player_data.elements.name_textfield.text) > ccse.max_bytes then
             player_data.elements.name_textfield.style = "invalid_value_textfield"
             player_data.elements.name_textfield.tooltip = { "cargo-drone-gui-mooring.rename-tooltip-error-too-big" }
             player_data.elements.name_textfield_confirm.enabled = false

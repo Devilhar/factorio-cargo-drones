@@ -1,5 +1,5 @@
 
-local signal_chars = "1234567890ABCDEFGHIJKLMNOPQRSTUWXYZ"
+local signal_chars = "1234567890ABCDEFGHIJKLMNOPQRSTUVWXYZ"
 
 local signals = {}
 
