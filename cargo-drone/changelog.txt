@@ -1,3 +1,6 @@
+---------------------------------------------------------------------------------------------------
+Version: 1.15.0
+Date: 25. 06. 2026
   Changes:
     - Updated to Factorio 2.1
     - Cargo drones sound volume is now no longer based on the tile it is hovering over.
