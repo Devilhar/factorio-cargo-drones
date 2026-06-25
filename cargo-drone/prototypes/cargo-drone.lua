@@ -140,6 +140,7 @@ cargo_drone.minimap_representation = {
 	scale = 0.25,
 }
 
+cargo_drone.driving_sound_volume_modifier = 0
 cargo_drone.working_sound =
 {
 	main_sounds =
