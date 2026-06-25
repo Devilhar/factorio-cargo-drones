@@ -20,7 +20,8 @@ cargo_drone.flags = {
 }
 cargo_drone.is_military_target = false
 cargo_drone.corpse = ""
-cargo_drone.braking_power = "200kW"
+cargo_drone.braking_force = (200 * 1000) / 60
+cargo_drone.friction_force = 2e-3
 cargo_drone.consumption = "100kW"
 cargo_drone.collision_box = {{0, 0}, {0, 0}}
 cargo_drone.selection_box = {{-1.5, -1.4}, {1.5, 1.4}}
