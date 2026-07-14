@@ -3,9 +3,7 @@ local item_sounds	= require("__base__.prototypes.item_sounds")
 
 local util			= require("util")
 
-local flight_height_pixels = 265
-
-local flight_height_tiles = util.by_pixel(0, flight_height_pixels)[2]
+local constants		= require("constants")
 
 local cargo_drone = table.deepcopy(data.raw.car.car)
 cargo_drone.name = "cargo-drone"
@@ -44,7 +42,7 @@ cargo_drone.energy_source.smoke = {
 		position = {0, 0.98},
 		starting_frame = 0,
 		starting_frame_deviation = 60,
-		height = flight_height_tiles
+		height = constants.drone_flight_height
 	}
 }
 cargo_drone.rotation_speed = 0.0010
@@ -66,7 +64,7 @@ cargo_drone.stop_trigger = {
 }
 cargo_drone.alert_icon_shift = { 0, 0 }
 
-cargo_drone.drawing_box_vertical_extension = flight_height_tiles
+cargo_drone.drawing_box_vertical_extension = constants.drone_flight_height
 cargo_drone.render_layer = "air-object"
 cargo_drone.light_animation = nil
 cargo_drone.animation =
@@ -79,7 +77,7 @@ cargo_drone.animation =
 			frame_count = 1,
 			scale = 0.5,
 			direction_count = 64,
-			shift = util.by_pixel(0+2, -11.5+8.5-16-flight_height_pixels),
+			shift = constants.drone_shift,
 			animation_speed = 8,
 			max_advance = 0.2,
 			stripes =
@@ -99,7 +97,7 @@ cargo_drone.animation =
 			scale = 0.5,
 			draw_as_shadow = true,
 			direction_count = 64,
-			shift = { flight_height_tiles + 4 - 0.25, -0.5 },
+			shift = constants.drone_shadow_shift,
 			max_advance = 0.2,
 			stripes = util.multiplystripes(2,
 			{
@@ -190,6 +188,35 @@ local cargo_drone_sound_docking = {
 	speed = 0.5
 }
 
+local function make_directional_sprite(layer)
+	layer.type = "sprite"
+	layer.priority = "very-low"
+	layer.width = 502
+	if layer.height == nil then
+		layer.height = 502
+	end
+	layer.scale = 0.5
+	layer.mipmap_count = 2
+
+	return layer
+end
+
+local half_height = 502 / 2
+local half_shift = util.by_pixel(0, -502 / 8)
+
+local cargo_drone_sprite_north			= make_directional_sprite{ name = "cargo-drone-north",			filename = "__cargo-drone__/graphics/cargo-drone.png", 			y = 0 }
+local cargo_drone_sprite_east			= make_directional_sprite{ name = "cargo-drone-east",			filename = "__cargo-drone__/graphics/cargo-drone.png", 			y = 1004 }
+local cargo_drone_sprite_south			= make_directional_sprite{ name = "cargo-drone-south",			filename = "__cargo-drone__/graphics/cargo-drone.png", 			y = 2008 }
+local cargo_drone_sprite_west			= make_directional_sprite{ name = "cargo-drone-west",			filename = "__cargo-drone__/graphics/cargo-drone.png", 			y = 3012 }
+local cargo_drone_half_sprite_north		= make_directional_sprite{ name = "cargo-drone-half-north",		filename = "__cargo-drone__/graphics/cargo-drone.png",			y = 0,		height = half_height, shift = half_shift }
+local cargo_drone_half_sprite_east		= make_directional_sprite{ name = "cargo-drone-half-east",		filename = "__cargo-drone__/graphics/cargo-drone.png",			y = 1004,	height = half_height, shift = half_shift }
+local cargo_drone_half_sprite_south		= make_directional_sprite{ name = "cargo-drone-half-south",		filename = "__cargo-drone__/graphics/cargo-drone.png",			y = 2008,	height = half_height, shift = half_shift }
+local cargo_drone_half_sprite_west		= make_directional_sprite{ name = "cargo-drone-half-west",		filename = "__cargo-drone__/graphics/cargo-drone.png",			y = 3012,	height = half_height, shift = half_shift }
+local cargo_drone_shadow_sprite_north	= make_directional_sprite{ name = "cargo-drone-shadow-north",	filename = "__cargo-drone__/graphics/cargo-drone-shadow.png",	y = 0,		draw_as_shadow = true }
+local cargo_drone_shadow_sprite_east	= make_directional_sprite{ name = "cargo-drone-shadow-east",	filename = "__cargo-drone__/graphics/cargo-drone-shadow.png",	y = 1004,	draw_as_shadow = true }
+local cargo_drone_shadow_sprite_south	= make_directional_sprite{ name = "cargo-drone-shadow-south",	filename = "__cargo-drone__/graphics/cargo-drone-shadow.png",	y = 2008,	draw_as_shadow = true }
+local cargo_drone_shadow_sprite_west	= make_directional_sprite{ name = "cargo-drone-shadow-west",	filename = "__cargo-drone__/graphics/cargo-drone-shadow.png",	y = 3012,	draw_as_shadow = true }
+
 data:extend({
 	cargo_drone,
 	cargo_drone_sound_docking,
@@ -217,5 +244,18 @@ data:extend({
 			{ type = "item", name = "radar", amount = 1 }
 		},
 		results = { { type = "item", name = "cargo-drone", amount = 1 } }
-	}
+	},
+
+	cargo_drone_sprite_north,
+	cargo_drone_sprite_east,
+	cargo_drone_sprite_south,
+	cargo_drone_sprite_west,
+	cargo_drone_half_sprite_north,
+	cargo_drone_half_sprite_east,
+	cargo_drone_half_sprite_south,
+	cargo_drone_half_sprite_west,
+	cargo_drone_shadow_sprite_north,
+	cargo_drone_shadow_sprite_east,
+	cargo_drone_shadow_sprite_south,
+	cargo_drone_shadow_sprite_west,
 })

@@ -1,8 +1,9 @@
 
-local constants	= require("scripts.constants")
+local constants	= require("constants")
 local ep		= require("scripts.entity_property")
 local th		= require("scripts.target_helper")
 local deh		= require("scripts.depot_helper")
+local dlc		= require("scripts.deployer_controller")
 local rc    	= require("scripts.requester_cooldown")
 local mh		= require("scripts.mooring_helper")
 local dt		= require("scripts.drone_tasks")
@@ -97,6 +98,7 @@ function on_init()
 	ep.init()
 
 	deh.init()
+	dlc.init()
 
 	rc.init()
 
@@ -117,6 +119,8 @@ function on_tick(event)
 
 	scheduler.tick(event.tick)
 
+	dlc.tick(event.tick)
+
 	dc.tick(event.tick)
 
 	mc.tick()
@@ -134,11 +138,13 @@ function on_surface_deleted(event)
 	ep.remove_invalid_entities()
 
 	dt.surface_deleted(event.surface_index)
+	dlc.surface_deleted(event.surface_index)
 end
 function on_surface_cleared(event)
 	ep.remove_invalid_entities()
 
 	dt.surface_cleared(event.surface_index)
+	dlc.surface_cleared(event.surface_index)
 end
 function on_built_entity(event)
 	local entity = event.entity
@@ -170,6 +176,13 @@ function on_built_entity(event)
 
 		return
 	end
+	if entity.name == "cargo-drone-deployer-constant-combinator" then
+		dlc.created(entity)
+
+		script.register_on_object_destroyed(entity)
+
+		return
+	end
 
 	if not mh.try_setup_mooring(entity) then
 		entity.destroy()
@@ -186,6 +199,8 @@ function on_destroyed_entity(event)
 
 	if entity.name == "cargo-drone-depot-constant-combinator" then
 		deh.destroyed(entity)
+	elseif entity.name == "cargo-drone-deployer-constant-combinator" then
+		dlc.destroyed(entity)
 	end
 
 	mc.on_destroyed_entity(entity)
@@ -195,6 +210,10 @@ end
 function on_player_rotated_entity(event)
 	if not event.entity or not event.entity.valid then
 		return
+	end
+
+	if event.entity.name == "cargo-drone-deployer-constant-combinator" then
+		dlc.direction_changed(event.entity)
 	end
 
 	local entity_name = event.entity.name
@@ -210,6 +229,10 @@ end
 function on_player_flipped_entity(event)
 	if not event.entity or not event.entity.valid then
 		return
+	end
+
+	if event.entity.name == "cargo-drone-deployer-constant-combinator" then
+		dlc.direction_changed(event.entity)
 	end
 
 	local entity_name = event.entity.name
@@ -325,6 +348,7 @@ local build_event_filters = {
 	{ filter = "name", name = "cargo-drone-mooring-constant-combinator-requester" },
 	{ filter = "name", name = "cargo-drone-mooring-constant-combinator-refueler" },
 	{ filter = "name", name = "cargo-drone-depot-constant-combinator" },
+	{ filter = "name", name = "cargo-drone-deployer-constant-combinator" },
 	{ filter = "ghost_name", name = "cargo-drone-mooring-constant-combinator-provider" },
 	{ filter = "ghost_name", name = "cargo-drone-mooring-constant-combinator-requester" },
 	{ filter = "ghost_name", name = "cargo-drone-mooring-constant-combinator-refueler" },
@@ -343,6 +367,7 @@ local destroy_event_filters = {
 	{ filter = "name", name = "cargo-drone-mooring-constant-combinator-requester" },
 	{ filter = "name", name = "cargo-drone-mooring-constant-combinator-refueler" },
 	{ filter = "name", name = "cargo-drone-depot-constant-combinator" },
+	{ filter = "name", name = "cargo-drone-deployer-constant-combinator" },
 	{ filter = "ghost_name", name = "cargo-drone-mooring-constant-combinator-provider" },
 	{ filter = "ghost_name", name = "cargo-drone-mooring-constant-combinator-requester" },
 	{ filter = "ghost_name", name = "cargo-drone-mooring-constant-combinator-refueler" },

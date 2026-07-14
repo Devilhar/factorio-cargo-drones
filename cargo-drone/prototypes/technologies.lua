@@ -25,7 +25,11 @@ data:extend({
 			{
 				type = "unlock-recipe",
 				recipe = "cargo-drone-depot-constant-combinator"
-			}
+			},
+			{
+				type = "unlock-recipe",
+				recipe = "cargo-drone-deployer-constant-combinator"
+			},
 		},
 		prerequisites = {
 			"radar",
