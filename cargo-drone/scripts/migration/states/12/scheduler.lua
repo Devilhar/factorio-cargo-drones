@@ -1,12 +1,12 @@
 
 local util      = require("util")
 
-local constants = require("scripts.constants")
-local ep        = require("scripts.entity_property")
-local mh	    = require("scripts.mooring_helper")
-local rc        = require("scripts.requester_cooldown")
-local dt        = require("scripts.drone_tasks")
-local ir	    = require("scripts.item_requests")
+local constants = require("constants")
+local ep        = require("entity_property")
+local mh	    = require("mooring_helper")
+local rc        = require("requester_cooldown")
+local dt        = require("drone_tasks")
+local ir	    = require("item_requests")
 
 local mooring_scan_interval = 300
 

@@ -1,0 +1,92 @@
+local item_sounds	= require("__base__.prototypes.item_sounds")
+
+local function merge_tables(placeholder, overwrite_table)
+	for k, v in pairs(overwrite_table) do
+		placeholder[k] = v
+	end
+
+	return placeholder
+end
+
+local deployer_entity = merge_tables(table.deepcopy(data.raw["constant-combinator"]["constant-combinator"]), {
+	name = "cargo-drone-deployer-constant-combinator",
+	sprites = make_4way_animation_from_spritesheet({
+		layers = {
+			{
+				filename = "__cargo-drone__/graphics/cargo-drone-deployer.png",
+				width = 256,
+				height = 256,
+			},
+		},
+	}),
+	collision_box = {{-3.85, -3.85}, {3.85, 3.85}},
+	selection_box = {{-4, -4}, {4, 4}},
+	minable = { mining_time = 0.2, result = "cargo-drone-deployer-constant-combinator" },
+	flags = { "hide-alt-info", "not-upgradable", "placeable-neutral", "player-creation" },
+})
+
+local deployer_item = {
+	type = "item",
+	name = "cargo-drone-deployer-constant-combinator",
+	icon = "__cargo-drone__/graphics/cargo-drone-depot-icon.png",
+	subgroup = "logistic-network",
+	order = "g[cargo-drone]-f[cargo-drone-deployer-constant-combinator]",
+	inventory_move_sound = item_sounds.metal_chest_inventory_move,
+	pick_sound = item_sounds.metal_chest_inventory_pickup,
+	drop_sound = item_sounds.metal_chest_inventory_move,
+	place_result = "cargo-drone-deployer-constant-combinator",
+	stack_size = 50
+}
+local deployer_recipe = {
+	type = "recipe",
+	name = "cargo-drone-deployer-constant-combinator",
+	enabled = false,
+	ingredients = {
+		{ type = "item", name = "steel-plate", amount = 20 },
+		{ type = "item", name = "radar", amount = 1 }
+	},
+	results = {{type="item", name="cargo-drone-deployer-constant-combinator", amount=1}}
+}
+
+local function make_overlap_sprite(direction, x)
+	return {
+		type = "sprite",
+		name = "deployer-overlap-" .. direction,
+		filename = "__cargo-drone__/graphics/cargo-drone-deployer-overlap.png",
+		priority = "very-low",
+		x = x,
+		width = 256,
+		height = 256,
+		mipmap_count = 2,
+	}
+end
+
+local deployer_overlap_sprite_north	= make_overlap_sprite("north",	0)
+local deployer_overlap_sprite_east	= make_overlap_sprite("east",	256)
+local deployer_overlap_sprite_south	= make_overlap_sprite("south",	512)
+local deployer_overlap_sprite_west	= make_overlap_sprite("west",	768)
+
+local deployer_raise_drone = {
+	type = "sound",
+	name = "cargo-drone-deployer-raise-drone",
+	filename = "__cargo-drone__/sound/cargo-drone-deployer-raise-drone.ogg",
+}
+local deployer_drone_release = {
+	type = "sound",
+	name = "cargo-drone-deployer-drone-release",
+	filename = "__cargo-drone__/sound/cargo-drone-deployer-drone-release.ogg",
+}
+
+data:extend({
+	deployer_entity,
+	deployer_item,
+	deployer_recipe,
+
+	deployer_overlap_sprite_north,
+	deployer_overlap_sprite_east,
+	deployer_overlap_sprite_south,
+	deployer_overlap_sprite_west,
+
+	deployer_raise_drone,
+	deployer_drone_release,
+})
