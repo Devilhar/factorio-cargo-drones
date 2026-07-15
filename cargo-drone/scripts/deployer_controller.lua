@@ -115,6 +115,23 @@ local function get_releasing_drone_count(surface_index)
     return surface_buffer.releasing_drones
 end
 
+local function update_drone_count(surface_index)
+    local surface_buffer = storage.deployer_controller.surfaces[surface_index]
+
+    if not surface_buffer then
+        return
+    end
+
+    local drone_count = dc.drone_count(surface_index) + get_releasing_drone_count(surface_index)
+
+    for _, deployer in pairs(surface_buffer.inactive) do
+        dlh.set_drone_count(deployer, drone_count)
+    end
+    for _, deployer in pairs(surface_buffer.active) do
+        dlh.set_drone_count(deployer, drone_count)
+    end
+end
+
 local function update_or_create_overlap_dir(deployer)
 	local overlap = ep.get_entity_property(deployer, "overlap_sprite")
 
@@ -231,6 +248,8 @@ local function begin_release_drone(deployer, game_tick)
     end
 
     recalculate_releasing_drones(deployer.surface.index)
+
+    update_drone_count(deployer.surface.index)
 end
 local function tick_release_drone(deployer, game_tick, drone_data)
     if game_tick == drone_data.tick_start + deploy_release_layer_change_tick then
@@ -270,6 +289,8 @@ local function tick_release_drone(deployer, game_tick, drone_data)
     end
 
     recalculate_releasing_drones(deployer.surface.index)
+
+    update_drone_count(deployer.surface.index)
 end
 
 local function tick_deployer(deployer, game_tick)
@@ -400,6 +421,8 @@ function deployer_controller.created(deployer)
     update_drone_dir(deployer)
 
 	dlh.clean_settings(deployer)
+
+    dlh.set_drone_count(deployer, dc.drone_count(deployer.surface.index))
 end
 function deployer_controller.destroyed(deployer)
     local drone_data = ep.get_entity_property(deployer, "drone_data")
@@ -424,6 +447,8 @@ function deployer_controller.destroyed(deployer)
     unregister_deployer(deployer)
 
     recalculate_releasing_drones(deployer.surface.index)
+
+    update_drone_count(deployer.surface.index)
 end
 
 function deployer_controller.tick(game_tick)
@@ -474,6 +499,10 @@ end
 function deployer_controller.direction_changed(deployer)
     update_or_create_overlap_dir(deployer)
     update_drone_dir(deployer)
+end
+
+function deployer_controller.drone_count_changed(surface_index)
+    update_drone_count(surface_index)
 end
 
 return deployer_controller
