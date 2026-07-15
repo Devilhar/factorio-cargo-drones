@@ -2,7 +2,7 @@
 local constants     = require("constants")
 local ep            = require("entity_property")
 local dlh           = require("deployer_helper")
---local dc            = require("drone_controller")
+local dc            = require("drone_controller")
 
 local deployer_overlap_dir_sprites = {
 	[defines.direction.north]	= "deployer-overlap-north",
@@ -56,6 +56,7 @@ local function register_deployer(deployer)
         surface_buffer = {
             inactive = {},
             active = {},
+            releasing_drones = 0,
         }
 
         storage.deployer_controller.surfaces[deployer.surface.index] = surface_buffer
@@ -73,9 +74,45 @@ local function unregister_deployer(deployer)
     surface_buffer.inactive[deployer.unit_number] = nil
     surface_buffer.active[deployer.unit_number] = nil
 
-    if next(surface_buffer.inactive) == nil and next(surface_buffer.active) then
+    if next(surface_buffer.inactive) == nil and next(surface_buffer.active) == nil then
         storage.deployer_controller.surfaces[deployer.surface.index] = nil
     end
+end
+
+local function recalculate_releasing_drones(surface_index)
+    local surface_buffer = storage.deployer_controller.surfaces[surface_index]
+
+    if not surface_buffer then
+        return
+    end
+
+    local count = 0
+
+    for _, deployer in pairs(surface_buffer.inactive) do
+        local drone_data = ep.get_entity_property(deployer, "drone_data")
+
+        if drone_data and drone_data.state == drone_states.release then
+            count = count + 1
+        end
+    end
+    for _, deployer in pairs(surface_buffer.active) do
+        local drone_data = ep.get_entity_property(deployer, "drone_data")
+
+        if drone_data and drone_data.state == drone_states.release then
+            count = count + 1
+        end
+    end
+
+    surface_buffer.releasing_drones = count
+end
+local function get_releasing_drone_count(surface_index)
+    local surface_buffer = storage.deployer_controller.surfaces[surface_index]
+
+    if not surface_buffer then
+        return 0
+    end
+
+    return surface_buffer.releasing_drones
 end
 
 local function update_or_create_overlap_dir(deployer)
@@ -192,6 +229,8 @@ local function begin_release_drone(deployer, game_tick)
     if proxy_container and proxy_container.valid then
         proxy_container.proxy_target_entity = nil
     end
+
+    recalculate_releasing_drones(deployer.surface.index)
 end
 local function tick_release_drone(deployer, game_tick, drone_data)
     if game_tick == drone_data.tick_start + deploy_release_layer_change_tick then
@@ -229,6 +268,8 @@ local function tick_release_drone(deployer, game_tick, drone_data)
         proxy_container.proxy_target_entity = drone_container
         proxy_container.proxy_target_inventory = defines.inventory.chest
     end
+
+    recalculate_releasing_drones(deployer.surface.index)
 end
 
 local function tick_deployer(deployer, game_tick)
@@ -275,6 +316,10 @@ local function tick_deployer(deployer, game_tick)
         tick_release_drone(deployer, game_tick, drone_data)
 
         return activation_state.active
+    end
+
+    if dc.drone_count(deployer.surface.index) + get_releasing_drone_count(deployer.surface.index) >= dlh.get_drone_limit(deployer) then
+        return activation_state.inactive
     end
 
     local dummy_fuel_drone = ep.get_entity_property(deployer, "dummy_fuel_drone")
@@ -377,6 +422,8 @@ function deployer_controller.destroyed(deployer)
     end
 
     unregister_deployer(deployer)
+
+    recalculate_releasing_drones(deployer.surface.index)
 end
 
 function deployer_controller.tick(game_tick)

@@ -724,4 +724,14 @@ function drone_controller.tick(game_tick)
     end
 end
 
+function drone_controller.drone_count(surface_index)
+    local surface_buffer = storage.drone_controller.surfaces[surface_index]
+
+    if not surface_buffer then
+        return 0
+    end
+
+    return table_size(surface_buffer)
+end
+
 return drone_controller
