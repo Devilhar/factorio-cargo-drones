@@ -98,17 +98,17 @@ local function collect_idle_drones()
     end
 end
 local function collect_requester_moorings()
-    local requesters = ep.get_cargo_drone_requester_moorings()
-
-    for requester_id, requester_data in pairs(requesters) do
-        storage.scheduler.requester_buffer[requester_id] = requester_data.entity
+    for _, surface_buffer in pairs(storage.mooring_controller.surfaces) do
+        for _, mooring in pairs(surface_buffer[mh.mooring_types.requester]) do
+            storage.scheduler.requester_buffer[mooring.unit_number] = mooring
+        end
     end
 end
 local function collect_provider_moorings()
-    local providers = ep.get_cargo_drone_provider_moorings()
-
-    for provider_id, provider_data in pairs(providers) do
-        storage.scheduler.provider_buffer[provider_id] = provider_data.entity
+    for _, surface_buffer in pairs(storage.mooring_controller.surfaces) do
+        for _, mooring in pairs(surface_buffer[mh.mooring_types.provider]) do
+            storage.scheduler.provider_buffer[mooring.unit_number] = mooring
+        end
     end
 end
 
@@ -254,7 +254,7 @@ local function assign_task_to_drone_with_cargo()
     end
 
     ir.assign_to_request_with_items(surface_buffer, drone)
-    storage.scheduler.tickrate_buffer[drone.unit_number] = constants.drones_tickrates.every
+    ep.set_entity_property(drone, "tickrate", constants.drones_tickrates.every)
 
     return false
 end
@@ -304,7 +304,7 @@ local function process_next_item_request(heuristic_target_count_cost)
     table.remove(drones, closest_index)
 
     ir.assign_item_request(surface_buffer, drone, item_request)
-    storage.scheduler.tickrate_buffer[drone.unit_number] = constants.drones_tickrates.every
+    ep.set_entity_property(drone, "tickrate", constants.drones_tickrates.every)
 
     return false
 end
@@ -380,7 +380,7 @@ local function assign_depot_task()
     end
 
     dt.assign_depot(drone, closest_depot)
-    storage.scheduler.tickrate_buffer[drone.unit_number] = constants.drones_tickrates.every
+    ep.set_entity_property(drone, "tickrate", constants.drones_tickrates.every)
 
     return false
 end
@@ -392,8 +392,6 @@ function scheduler.init()
 
     storage.scheduler.update_state = storage.scheduler.update_state or 0
     storage.scheduler.last_schedule_tick = storage.scheduler.last_schedule_tick or 0
-
-    storage.scheduler.tickrate_buffer = storage.scheduler.tickrate_buffer or {}
 
     storage.scheduler.last_mooring_scan_tick = storage.scheduler.last_mooring_scan_tick or 0
     storage.scheduler.should_perform_mooring_scan = storage.scheduler.should_perform_mooring_scan or false
@@ -410,10 +408,6 @@ function scheduler.init()
     storage.scheduler.requester_buffer = storage.scheduler.requester_buffer or {}
 
     storage.scheduler.mooring_key = storage.scheduler.mooring_key or nil
-end
-
-function scheduler.drone_destroyed(unit_number)
-    storage.scheduler.tickrate_buffer[unit_number] = nil
 end
 
 local state_procs = {
