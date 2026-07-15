@@ -29,6 +29,10 @@ local drone_shadow_dir_sprites = {
 	[defines.direction.west]	= "cargo-drone-shadow-west",
 }
 
+local activation_state = {
+    active      = 1,
+    inactive    = 2,
+}
 local drone_states = {
     idle    = 1,
     prepare = 2,
@@ -44,6 +48,35 @@ local deploy_prepare_sprite_change_ticks = 3 * 60
 local deploy_release_rest_ticks = 1 * 60
 local deploy_release_take_off_ticks = 5 * 60
 local deploy_release_layer_change_tick = 3.5 * 60
+
+local function register_deployer(deployer)
+    local surface_buffer = storage.deployer_controller.surfaces[deployer.surface.index]
+
+    if not surface_buffer then
+        surface_buffer = {
+            inactive = {},
+            active = {},
+        }
+
+        storage.deployer_controller.surfaces[deployer.surface.index] = surface_buffer
+    end
+
+    surface_buffer.inactive[deployer.unit_number] = deployer
+end
+local function unregister_deployer(deployer)
+    local surface_buffer = storage.deployer_controller.surfaces[deployer.surface.index]
+
+    if not surface_buffer then
+        return
+    end
+
+    surface_buffer.inactive[deployer.unit_number] = nil
+    surface_buffer.active[deployer.unit_number] = nil
+
+    if next(surface_buffer.inactive) == nil and next(surface_buffer.active) then
+        storage.deployer_controller.surfaces[deployer.surface.index] = nil
+    end
+end
 
 local function update_or_create_overlap_dir(deployer)
 	local overlap = ep.get_entity_property(deployer, "overlap_sprite")
@@ -76,6 +109,22 @@ local function update_drone_dir(deployer)
     drone_data.drone_shadow.sprite = drone_shadow_dir_sprites[deployer.direction]
 end
 
+local function create_drone(deployer)
+    local drone = deployer.surface.create_entity{
+        name = "cargo-drone",
+        force = deployer.force,
+        position = { deployer.position.x, deployer.position.y + drone_placement_offset_y },
+        direction = deployer.direction,
+        create_build_effect_smoke = true,
+        raise_built = true,
+    }
+
+    local dummy_fuel_drone = ep.get_entity_property(deployer, "dummy_fuel_drone")
+
+    if dummy_fuel_drone and dummy_fuel_drone.valid then
+        drone.get_inventory(defines.inventory.fuel).transfer_from_inventory(dummy_fuel_drone.get_inventory(defines.inventory.fuel))
+    end
+end
 
 local function begin_prepare_drone(deployer, game_tick)
     ep.set_entity_property(deployer, "drone_data", {
@@ -83,7 +132,7 @@ local function begin_prepare_drone(deployer, game_tick)
         tick_start = game_tick,
         drone = rendering.draw_sprite{
             sprite = drone_half_dir_sprites[deployer.direction],
-            target = { entity = deployer, offset = { constants.drone_shift[1], 1 } },
+            target = { entity = deployer, offset = { constants.drone_shift[1], deploy_prepare_begin_offset + drone_placement_offset_y } },
             surface = deployer.surface,
             render_layer = "higher-object-under",
         },
@@ -116,6 +165,14 @@ local function tick_prepare_drone(deployer, game_tick, drone_data)
     end
 
     drone_data.state = drone_states.idle
+
+    local proxy_container = ep.get_entity_property(deployer, "proxy_container")
+    local dummy_fuel_drone = ep.get_entity_property(deployer, "dummy_fuel_drone")
+
+    if proxy_container and proxy_container.valid and dummy_fuel_drone and dummy_fuel_drone.valid then
+        proxy_container.proxy_target_entity = dummy_fuel_drone
+        proxy_container.proxy_target_inventory = defines.inventory.fuel
+    end
 end
 
 local function begin_release_drone(deployer, game_tick)
@@ -129,6 +186,12 @@ local function begin_release_drone(deployer, game_tick)
     drone_data.tick_start = game_tick
 
     deployer.surface.play_sound{ path = "cargo-drone-deployer-drone-release", position = deployer.position }
+
+    local proxy_container = ep.get_entity_property(deployer, "proxy_container")
+
+    if proxy_container and proxy_container.valid then
+        proxy_container.proxy_target_entity = nil
+    end
 end
 local function tick_release_drone(deployer, game_tick, drone_data)
     if game_tick == drone_data.tick_start + deploy_release_layer_change_tick then
@@ -152,62 +215,83 @@ local function tick_release_drone(deployer, game_tick, drone_data)
         return
     end
 
-    local drone = deployer.surface.create_entity{
-        name = "cargo-drone",
-        force = deployer.force,
-        position = { deployer.position.x, deployer.position.y + drone_placement_offset_y },
-        direction = deployer.direction,
-        create_build_effect_smoke = true,
-        raise_built = true,
-    }
-
-    drone.burner.currently_burning = "coal"
-
-    drone.burner.remaining_burning_fuel = 4000000
-
-    -- FIXME: Add refuel check
-    --dc.check_refuel(drone)
+    create_drone(deployer)
 
     drone_data.drone.destroy()
     drone_data.drone_shadow.destroy()
 
     ep.set_entity_property(deployer, "drone_data", nil)
-end
 
-local function deploy_drone(deployer, game_tick)
-    local drone_data = ep.get_entity_property(deployer, "drone_data")
+    local proxy_container = ep.get_entity_property(deployer, "proxy_container")
+    local drone_container = ep.get_entity_property(deployer, "drone_container")
 
-    if not drone_data then
-        begin_prepare_drone(deployer, game_tick)
-
-        return
+    if proxy_container and proxy_container.valid and drone_container and drone_container.valid then
+        proxy_container.proxy_target_entity = drone_container
+        proxy_container.proxy_target_inventory = defines.inventory.chest
     end
-
-    if drone_data.state ~= drone_states.idle then
-        return
-    end
-
-    begin_release_drone(deployer, game_tick)
 end
 
 local function tick_deployer(deployer, game_tick)
-    local cb = deployer.get_control_behavior()
-
-    if not cb.enabled then
-        cb.enabled = true
-
-        deploy_drone(deployer, game_tick)
-    end
-
     local drone_data = ep.get_entity_property(deployer, "drone_data")
 
-    if drone_data then
-        if drone_data.state == drone_states.prepare then
-            tick_prepare_drone(deployer, game_tick, drone_data)
-        elseif drone_data.state == drone_states.release then
-            tick_release_drone(deployer, game_tick, drone_data)
+    if not drone_data then
+        local drone_container = ep.get_entity_property(deployer, "drone_container")
+
+        if not drone_container or not drone_container.valid then
+            return activation_state.inactive
         end
+
+        local container_inventory = drone_container.get_inventory(defines.inventory.chest)
+
+        container_inventory.set_filter(1, { name = "cargo-drone" })
+
+        if container_inventory.is_empty() then
+            return activation_state.inactive
+        end
+
+        if container_inventory[1].name ~= "cargo-drone" then
+            return activation_state.inactive
+        end
+
+        local proxy_container = ep.get_entity_property(deployer, "proxy_container")
+
+        if proxy_container and proxy_container.valid then
+            proxy_container.proxy_target_entity = nil
+        end
+
+        container_inventory.clear()
+        begin_prepare_drone(deployer, game_tick)
+
+        return activation_state.active
     end
+
+    if drone_data.state == drone_states.prepare then
+        tick_prepare_drone(deployer, game_tick, drone_data)
+
+        return activation_state.active
+    end
+
+    if drone_data.state == drone_states.release then
+        tick_release_drone(deployer, game_tick, drone_data)
+
+        return activation_state.active
+    end
+
+    local dummy_fuel_drone = ep.get_entity_property(deployer, "dummy_fuel_drone")
+
+    if not dummy_fuel_drone or not dummy_fuel_drone.valid then
+        return activation_state.inactive
+    end
+
+    local fuel_inventory = dummy_fuel_drone.get_inventory(defines.inventory.fuel)
+
+    if fuel_inventory.is_full() then
+        begin_release_drone(deployer, game_tick)
+
+        return activation_state.active
+    end
+
+    return activation_state.inactive
 end
 
 local deployer_controller = {}
@@ -226,17 +310,48 @@ function deployer_controller.surface_cleared(surface_index)
 end
 
 function deployer_controller.created(deployer)
-    local surface_buffer = storage.deployer_controller.surfaces[deployer.surface.index]
-
-    if not surface_buffer then
-        surface_buffer = {}
-
-        storage.deployer_controller.surfaces[deployer.surface.index] = surface_buffer
-    end
-
-    surface_buffer[deployer.unit_number] = deployer
-
 	ep.entity_manage(deployer)
+
+    register_deployer(deployer)
+
+    local proxy_container = deployer.surface.create_entity{
+        name = "cargo-drone-deployer-proxy-container",
+        force = deployer.force,
+        position = { deployer.position.x, deployer.position.y },
+        create_build_effect_smoke = false,
+        raise_built = false,
+    }
+
+    ep.set_entity_property(deployer, "proxy_container", proxy_container)
+
+    local drone_container = deployer.surface.create_entity{
+        name = "cargo-drone-deployer-drone-container",
+        force = deployer.force,
+        position = { deployer.position.x, deployer.position.y },
+        create_build_effect_smoke = false,
+        raise_built = false,
+    }
+
+    drone_container.get_inventory(defines.inventory.chest).set_filter(1, { name = "cargo-drone" })
+
+    ep.set_entity_property(deployer, "drone_container", drone_container)
+
+    proxy_container.proxy_target_entity = drone_container
+    proxy_container.proxy_target_inventory = defines.inventory.chest
+
+    local dummy_fuel_drone = deployer.surface.create_entity{
+        name = "cargo-drone-deployer-dummy-fuel-drone",
+        force = deployer.force,
+        position = { deployer.position.x, deployer.position.y },
+        create_build_effect_smoke = false,
+        raise_built = false,
+    }
+
+    dummy_fuel_drone.burner.currently_burning = "coal"
+
+    dummy_fuel_drone.burner.remaining_burning_fuel = 4000000
+
+    ep.set_entity_property(deployer, "dummy_fuel_drone", dummy_fuel_drone)
 
     update_or_create_overlap_dir(deployer)
     update_drone_dir(deployer)
@@ -244,23 +359,69 @@ function deployer_controller.created(deployer)
 	dlh.clean_settings(deployer)
 end
 function deployer_controller.destroyed(deployer)
-    local surface_buffer = storage.deployer_controller.surfaces[deployer.surface.index]
+    local drone_data = ep.get_entity_property(deployer, "drone_data")
+    local proxy_container = ep.get_entity_property(deployer, "proxy_container")
+    local drone_container = ep.get_entity_property(deployer, "drone_container")
+    local dummy_fuel_drone = ep.get_entity_property(deployer, "dummy_fuel_drone")
 
-    if not surface_buffer then
-        return
+    if drone_data then
+        create_drone(deployer)
     end
 
-    surface_buffer[deployer.unit_number] = nil
-
-    if next(surface_buffer) == nil then
-        storage.deployer_controller.surfaces[deployer.surface.index] = nil
+    if proxy_container then
+        proxy_container.destroy()
     end
+    if drone_container then
+        drone_container.destroy()
+    end
+    if dummy_fuel_drone then
+        dummy_fuel_drone.destroy()
+    end
+
+    unregister_deployer(deployer)
 end
 
 function deployer_controller.tick(game_tick)
-    for _, deployers in pairs(storage.deployer_controller.surfaces) do
-        for _, deployer in pairs(deployers) do
-            tick_deployer(deployer, game_tick)
+    for _, surface_buffer in pairs(storage.deployer_controller.surfaces) do
+        local activate = nil
+        local deactivate = nil
+
+        for _, deployer in pairs(surface_buffer.inactive) do
+            if deployer.unit_number % 60 == game_tick % 60 then
+                local state = tick_deployer(deployer, game_tick)
+
+                if state == activation_state.active then
+                    if not activate then
+                        activate = {}
+                    end
+
+                    table.insert(activate, deployer)
+                end
+            end
+        end
+        for _, deployer in pairs(surface_buffer.active) do
+            local state = tick_deployer(deployer, game_tick)
+
+            if state == activation_state.inactive then
+                if not deactivate then
+                    deactivate = {}
+                end
+
+                table.insert(deactivate, deployer)
+            end
+        end
+
+        if activate then
+            for _, deployer in ipairs(activate) do
+                surface_buffer.inactive[deployer.unit_number] = nil
+                surface_buffer.active[deployer.unit_number] = deployer
+            end
+        end
+        if deactivate then
+            for _, deployer in ipairs(deactivate) do
+                surface_buffer.inactive[deployer.unit_number] = deployer
+                surface_buffer.active[deployer.unit_number] = nil
+            end
         end
     end
 end

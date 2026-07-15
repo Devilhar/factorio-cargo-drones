@@ -77,6 +77,79 @@ local deployer_drone_release = {
 	filename = "__cargo-drone__/sound/cargo-drone-deployer-drone-release.ogg",
 }
 
+local deployer_proxy_container = {
+	type = "proxy-container",
+	name = "cargo-drone-deployer-proxy-container",
+	flags = {
+		"hide-alt-info",
+		"not-upgradable",
+		"not-deconstructable",
+		"player-creation",
+		"not-blueprintable",
+		"not-repairable",
+		"not-in-kill-statistics",
+		"no-automated-item-removal",
+	},
+	hidden = true,
+	selectable_in_game = false,
+	collision_mask = { layers = {} },
+	collision_box = {{-3.85, -3.85}, {3.85, 3.85}},
+	selection_box = {{-4, -4}, {4, 4}},
+	selection_priority = selection_priorities.editor_only,
+}
+local deployer_drone_container = {
+	type = "container",
+	name = "cargo-drone-deployer-drone-container",
+	flags = {
+		"hide-alt-info",
+		"not-upgradable",
+		"not-deconstructable",
+		"player-creation",
+		"not-blueprintable",
+		"not-repairable",
+		"not-in-kill-statistics",
+		"no-automated-item-removal",
+	},
+	hidden = true,
+	selectable_in_game = false,
+	collision_mask = { layers = {} },
+	selection_priority = selection_priorities.editor_only,
+	inventory_size = 1,
+	inventory_type = "with_filters_and_bar",
+}
+local deployer_dummy_fuel_drone = {
+    type = "car",
+    name = "cargo-drone-deployer-dummy-fuel-drone",
+	flags = {
+		"hide-alt-info",
+		"not-upgradable",
+		"not-deconstructable",
+		"player-creation",
+		"not-blueprintable",
+		"not-repairable",
+		"not-in-kill-statistics",
+		"no-automated-item-insertion",
+		"no-automated-item-removal",
+	},
+	hidden = true,
+	selectable_in_game = false,
+	selection_priority = selection_priorities.editor_only,
+	collision_mask = { layers = {} },
+    effectivity = 1,
+	consumption = "10W",
+	rotation_speed = 1,
+	rotation_snap_angle = 1,
+	energy_source = {
+		type = "burner",
+		fuel_inventory_size = settings.startup["cargo-drone-fuel-inventory-size"].value,
+	},
+	inventory_size = 0,
+	weight = 1,
+	braking_force = 1,
+	friction_force = 1,
+	energy_per_hit_point = 1,
+}
+
 data:extend({
 	deployer_entity,
 	deployer_item,
@@ -89,4 +162,8 @@ data:extend({
 
 	deployer_raise_drone,
 	deployer_drone_release,
+
+	deployer_proxy_container,
+	deployer_drone_container,
+	deployer_dummy_fuel_drone,
 })
