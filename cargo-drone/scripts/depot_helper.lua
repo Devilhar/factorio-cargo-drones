@@ -59,6 +59,13 @@ function depot_helper.destroyed(depot)
     remove_depot(depot)
 end
 
+function depot_helper.surface_deleted(surface_index)
+    storage.depot_helper.depots[surface_index] = nil
+end
+function depot_helper.surface_cleared(surface_index)
+    storage.depot_helper.depots[surface_index] = nil
+end
+
 function depot_helper.clean_settings(depot)
     clean_settings(depot)
 end
