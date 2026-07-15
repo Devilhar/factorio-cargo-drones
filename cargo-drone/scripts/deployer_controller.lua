@@ -310,8 +310,6 @@ function deployer_controller.surface_cleared(surface_index)
 end
 
 function deployer_controller.created(deployer)
-	ep.entity_manage(deployer)
-
     register_deployer(deployer)
 
     local proxy_container = deployer.surface.create_entity{
