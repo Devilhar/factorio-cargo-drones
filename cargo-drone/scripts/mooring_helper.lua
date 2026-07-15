@@ -39,12 +39,6 @@ local mooring_type_lookup = {
 	["cargo-drone-mooring-constant-combinator-refueler"]    = mooring_types.refueler,
 }
 
-local mooring_top_sprites = {
-	[mooring_types.provider]    = "cargo-drone-mooring-top-sprite-provider",
-	[mooring_types.requester]   = "cargo-drone-mooring-top-sprite-requester",
-	[mooring_types.refueler]    = "cargo-drone-mooring-top-sprite-refueler",
-}
-
 local request_modes = {
     any     = 0,
     stack   = 1,
@@ -380,7 +374,7 @@ end
 local function clean_settings(mooring)
     clean_settings_all(mooring, mooring.name)
 
-    if not ep.is_provider_mooring(mooring.unit_number) then
+    if mooring_type_lookup[mooring.name] == mooring_types.provider then
         set_read_requests(mooring, false)
     end
 
@@ -407,6 +401,7 @@ end
 
 local mooring_helper = {}
 
+mooring_helper.mooring_types = mooring_types
 mooring_helper.request_modes = request_modes
 
 function mooring_helper.init()
@@ -416,77 +411,11 @@ function mooring_helper.init()
     storage.mooring_helper.active_readers_lookup    = storage.mooring_helper.active_readers_lookup or {}
 end
 
-function mooring_helper.try_setup_mooring(mooring)
-	local mooring_type = mooring_type_lookup[mooring.name]
-
-	if mooring_type == nil then
-        -- Not a mooring, no need to react
-		return true
-	end
-
-    local proxy_containers = create_proxy_containers(mooring)
-
-    if proxy_containers == nil then
-        return false
-    end
-
-    rendering.draw_sprite{
-        sprite = mooring_top_sprites[mooring_type],
-        target = mooring,
-        surface = mooring.surface,
-        render_layer = "elevated-higher-object",
-    }
-    rendering.draw_sprite{
-        sprite = "cargo-drone-mooring-top-shadow-sprite",
-        target = mooring,
-        surface = mooring.surface,
-        render_layer = "object",
-    }
-
-	ep.entity_manage(mooring)
-
-	ep.set_entity_property(mooring, "proxy_containers", proxy_containers)
-
-	script.register_on_object_destroyed(mooring)
-
-	if mooring_type == mooring_types.provider then
-		ep.add_cargo_drone_provider_mooring(mooring)
-	elseif mooring_type == mooring_types.requester then
-		ep.add_cargo_drone_requester_mooring(mooring)
-
-		ep.set_entity_property(mooring, "next_free_gametick", 0)
-	else
-		ep.add_cargo_drone_refuel_mooring(mooring)
-	end
-
-	clean_settings(mooring)
-
-    return true
-end
-function mooring_helper.mooring_destroyed(mooring)
-    local proxy_containers = ep.get_entity_property(mooring, "proxy_containers")
-
-    for _, proxy_container in ipairs(proxy_containers) do
-        proxy_container.destroy({ raise_destroy = true })
-    end
-end
-
 function mooring_helper.is_name_mooring(name)
     return mooring_type_lookup[name] ~= nil
 end
-function mooring_helper.is_mooring(entity_unit_number)
-    return ep.is_provider_mooring(entity_unit_number)
-        or ep.is_requester_mooring(entity_unit_number)
-        or ep.is_refueler_mooring(entity_unit_number)
-end
-
-function mooring_helper.on_rotate(mooring)
-    update_proxy_container_inventories(mooring)
-end
-function mooring_helper.on_flip(mooring)
-    flip_horizontal(mooring)
-
-    update_proxy_container_inventories(mooring)
+function mooring_helper.get_mooring_type(mooring)
+    return mooring_type_lookup[mooring.name]
 end
 
 function mooring_helper.clean_settings(mooring)
@@ -494,6 +423,17 @@ function mooring_helper.clean_settings(mooring)
 end
 function mooring_helper.clean_settings_ghost(mooring)
     clean_settings_ghost(mooring)
+end
+
+function mooring_helper.flip_horizontal(mooring)
+    flip_horizontal(mooring)
+end
+
+function mooring_helper.create_proxy_containers(mooring)
+    return create_proxy_containers(mooring)
+end
+function mooring_helper.update_proxy_container_inventories(mooring)
+    update_proxy_container_inventories(mooring)
 end
 
 function mooring_helper.on_destroyed_entity(entity)

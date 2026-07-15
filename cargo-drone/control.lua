@@ -17,13 +17,11 @@ local migration	= require("scripts.migration")
 local function unmanage_entity(entity)
 	local unit_number = entity.unit_number
 
-	if ep.is_cargo_drone(unit_number) then
-		dc.drone_destroyed(unit_number)
+	if entity.name == "cargo-drone" then
+		dc.destroyed(entity)
 
 		dt.drone_destroyed(entity)
-
-		scheduler.drone_destroyed(unit_number)
-	elseif mh.is_mooring(unit_number) then
+	elseif mh.is_name_mooring(entity.name) then
 		dt.target_destroyed(entity)
 	elseif entity.name == "cargo-drone-depot-constant-combinator" then
 		dt.target_destroyed(entity)
@@ -97,6 +95,10 @@ function on_init()
 
 	ep.init()
 
+	mc.init()
+
+	dc.init()
+
 	deh.init()
 	dlc.init()
 
@@ -137,12 +139,14 @@ end
 function on_surface_deleted(event)
 	ep.remove_invalid_entities()
 
+	dc.surface_deleted(event.surface_index)
 	dt.surface_deleted(event.surface_index)
 	dlc.surface_deleted(event.surface_index)
 end
 function on_surface_cleared(event)
 	ep.remove_invalid_entities()
 
+	dc.surface_cleared(event.surface_index)
 	dt.surface_cleared(event.surface_index)
 	dlc.surface_cleared(event.surface_index)
 end
@@ -162,7 +166,7 @@ function on_built_entity(event)
 
 		script.register_on_object_destroyed(entity)
 
-		ep.add_cargo_drone(entity)
+		dc.created(entity)
 
 		dt.drone_created(entity)
 
@@ -176,6 +180,7 @@ function on_built_entity(event)
 
 		return
 	end
+
 	if entity.name == "cargo-drone-deployer-constant-combinator" then
 		dlc.created(entity)
 
@@ -184,8 +189,10 @@ function on_built_entity(event)
 		return
 	end
 
-	if not mh.try_setup_mooring(entity) then
-		entity.destroy()
+	if mh.is_name_mooring(entity.name) then
+		mc.created(entity)
+
+		return
 	end
 end
 function on_destroyed_entity(event)
@@ -201,9 +208,11 @@ function on_destroyed_entity(event)
 		deh.destroyed(entity)
 	elseif entity.name == "cargo-drone-deployer-constant-combinator" then
 		dlc.destroyed(entity)
+	elseif mh.is_name_mooring(entity.name) then
+		mc.destroyed(entity)
 	end
 
-	mc.on_destroyed_entity(entity)
+	mh.on_destroyed_entity(entity)
 
 	unmanage_entity(entity)
 end
@@ -223,7 +232,7 @@ function on_player_rotated_entity(event)
 	end
 
 	if mh.is_name_mooring(entity_name) then
-		mh.on_rotate(event.entity)
+		mc.on_rotate(event.entity)
 	end
 end
 function on_player_flipped_entity(event)
@@ -242,7 +251,7 @@ function on_player_flipped_entity(event)
 	end
 
 	if mh.is_name_mooring(entity_name) then
-		mh.on_flip(event.entity)
+		mc.on_flip(event.entity)
 	end
 end
 function on_entity_settings_pasted(event)
@@ -307,6 +316,8 @@ function script_raised_teleported(event)
 	if event.old_surface_index == event.entity.surface.index then
 		return
 	end
+
+	dc.surface_change(event.entity, event.old_surface_index)
 
 	dt.drone_surface_change(event.entity, event.old_surface_index)
 end

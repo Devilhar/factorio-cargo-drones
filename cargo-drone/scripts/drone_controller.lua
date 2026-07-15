@@ -213,16 +213,16 @@ local function get_closest_valid_refueler(mooring_table, entity)
     local closest_entity = nil
     local closest_distance = constants.max_distance
 
-    for id, data in pairs(mooring_table) do
-        if entity.surface.index == data.entity.surface.index and not th.is_at_drone_limit(data.entity) then
-            local priority = th.get_priority(data.entity)
+    for _, refueler in pairs(mooring_table) do
+        if not th.is_at_drone_limit(refueler) then
+            local priority = th.get_priority(refueler)
 
             if highest_priority <= priority then
-                local distance = util.distance(entity.position, data.entity.position)
+                local distance = util.distance(entity.position, refueler.position)
 
                 if highest_priority < priority or distance < closest_distance then
                     highest_priority = priority
-                    closest_entity = data.entity
+                    closest_entity = refueler
                     closest_distance = distance
                 end
             end
@@ -261,7 +261,13 @@ local function check_refuel(drone, state)
         return false
     end
 
-    local refueler = get_closest_valid_refueler(ep.get_cargo_drone_refuel_moorings(), drone)
+    local mooring_surface_buffer = storage.mooring_controller.surfaces[drone.surface.index]
+
+    if not mooring_surface_buffer then
+        return false
+    end
+
+    local refueler = get_closest_valid_refueler(mooring_surface_buffer[mh.mooring_types.refueler], drone)
 
     if not refueler then
         return false
@@ -493,6 +499,31 @@ local function get_current_task(drone)
     return dt.get(current_task_id)
 end
 
+local function register_drone(drone)
+    local surface_buffer = storage.drone_controller.surfaces[drone.surface.index]
+
+    if not surface_buffer then
+        surface_buffer = {}
+
+        storage.drone_controller.surfaces[drone.surface.index] = surface_buffer
+    end
+
+    surface_buffer[drone.unit_number] = drone
+end
+local function unregister_drone(drone, surface_index)
+    local surface_buffer = storage.drone_controller.surfaces[surface_index]
+
+    if not surface_buffer then
+        return
+    end
+
+    surface_buffer[drone.unit_number] = nil
+
+    if next(surface_buffer) == nil then
+        storage.drone_controller.surfaces[surface_index] = nil
+    end
+end
+
 local state = {
     tickrate = constants.drones_tickrates.every,
     riding_state = { acceleration = defines.riding.acceleration.braking, direction = defines.riding.direction.straight },
@@ -636,8 +667,24 @@ end
 
 local drone_controller = {}
 
-function drone_controller.drone_destroyed(unit_number)
-    local old_docked_mooring = ep.get_entity_property_from_unit_number(unit_number, "docked_mooring")
+function drone_controller.init()
+    storage.drone_controller = storage.drone_controller or {}
+
+    storage.drone_controller.surfaces = storage.drone_controller.surfaces or {}
+end
+
+function drone_controller.surface_deleted(surface_index)
+    storage.drone_controller.surfaces[surface_index] = nil
+end
+function drone_controller.surface_cleared(surface_index)
+    storage.drone_controller.surfaces[surface_index] = nil
+end
+
+function drone_controller.created(drone)
+    register_drone(drone)
+end
+function drone_controller.destroyed(drone)
+    local old_docked_mooring = ep.get_entity_property(drone, "docked_mooring")
 
     if old_docked_mooring and old_docked_mooring.valid then
         local proxy_containers = ep.get_entity_property(old_docked_mooring, "proxy_containers")
@@ -648,21 +695,30 @@ function drone_controller.drone_destroyed(unit_number)
 
         mh.set_docked_drone(old_docked_mooring, nil)
     end
+
+    unregister_drone(drone, drone.surface.index)
+end
+
+function drone_controller.surface_change(drone, old_surface_index)
+    unregister_drone(drone, old_surface_index)
+
+    register_drone(drone)
 end
 
 function drone_controller.tick(game_tick)
     local tickrate_drone = 0
     local tickrate_new = 0
 
-    for unit_number, entity_data in pairs(ep.get_cargo_drones()) do
-        tickrate_drone = storage.scheduler.tickrate_buffer[unit_number] or constants.drones_tickrates.every
+    for _, drones in pairs(storage.drone_controller.surfaces) do
+        for unit_number, drone in pairs(drones) do
+            tickrate_drone = ep.get_entity_property(drone, "tickrate") or constants.drones_tickrates.every
 
-        if unit_number % tickrate_drone == game_tick % tickrate_drone then
+            if unit_number % tickrate_drone == game_tick % tickrate_drone then
+                tickrate_new = tick_drone(drone, game_tick)
 
-            tickrate_new = tick_drone(entity_data.entity, game_tick)
-
-            if tickrate_new ~= tickrate_drone then
-                storage.scheduler.tickrate_buffer[unit_number] = tickrate_new
+                if tickrate_new ~= tickrate_drone then
+                    ep.set_entity_property(drone, "tickrate", tickrate_new)
+                end
             end
         end
     end
