@@ -369,13 +369,13 @@ function deployer_controller.destroyed(deployer)
     end
 
     if proxy_container then
-        proxy_container.destroy()
+        proxy_container.destroy({ raise_destroy = true })
     end
     if drone_container then
-        drone_container.destroy()
+        drone_container.destroy({ raise_destroy = true })
     end
     if dummy_fuel_drone then
-        dummy_fuel_drone.destroy()
+        dummy_fuel_drone.destroy({ raise_destroy = true })
     end
 
     unregister_deployer(deployer)
