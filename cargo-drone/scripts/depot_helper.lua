@@ -49,8 +49,6 @@ function depot_helper.init()
 end
 
 function depot_helper.created(depot)
-	ep.entity_manage(depot)
-
     clean_settings(depot)
 
     add_depot(depot)

@@ -14,22 +14,6 @@ local gcd		= require("scripts.gui_cargo_drone")
 local scheduler	= require("scripts.scheduler")
 local migration	= require("scripts.migration")
 
-local function unmanage_entity(entity)
-	local unit_number = entity.unit_number
-
-	if entity.name == "cargo-drone" then
-		dc.destroyed(entity)
-
-		dt.drone_destroyed(entity)
-	elseif mh.is_name_mooring(entity.name) then
-		dt.target_destroyed(entity)
-	elseif entity.name == "cargo-drone-depot-constant-combinator" then
-		dt.target_destroyed(entity)
-	end
-
-	ep.entity_unmanage(unit_number)
-end
-
 local undo_redo_ghost_name_array = {
 	"cargo-drone-mooring-constant-combinator-provider",
 	"cargo-drone-mooring-constant-combinator-requester",
@@ -136,6 +120,59 @@ function on_player_removed(event)
 	gcd.on_player_removed(event)
 end
 
+local function on_built_entity_mooring_proc(entity)
+	mc.created(entity)
+end
+local function on_destroyed_entity_mooring_proc(entity)
+	mc.destroyed(entity)
+
+	dt.target_destroyed(entity)
+end
+
+local on_built_entity_procs = {
+	["entity-ghost"] = function (entity)
+		mh.clean_settings_ghost(entity)
+	end,
+	["cargo-drone"] = function (entity)
+		script.register_on_object_destroyed(entity)
+
+		dc.created(entity)
+
+		dt.drone_created(entity)
+	end,
+	["cargo-drone-depot-constant-combinator"] = function (entity)
+		deh.created(entity)
+
+		script.register_on_object_destroyed(entity)
+	end,
+	["cargo-drone-deployer-constant-combinator"] = function (entity)
+		dlc.created(entity)
+
+		script.register_on_object_destroyed(entity)
+	end,
+	["cargo-drone-mooring-constant-combinator-provider"] = on_built_entity_mooring_proc,
+	["cargo-drone-mooring-constant-combinator-requester"] = on_built_entity_mooring_proc,
+	["cargo-drone-mooring-constant-combinator-refueler"] = on_built_entity_mooring_proc,
+}
+local on_destroyed_entity_procs = {
+	["cargo-drone"] = function (entity)
+		dc.destroyed(entity)
+
+		dt.drone_destroyed(entity)
+	end,
+	["cargo-drone-depot-constant-combinator"] = function (entity)
+		deh.destroyed(entity)
+
+		dt.target_destroyed(entity)
+	end,
+	["cargo-drone-deployer-constant-combinator"] = function (entity)
+		dlc.destroyed(entity)
+	end,
+	["cargo-drone-mooring-constant-combinator-provider"] = on_destroyed_entity_mooring_proc,
+	["cargo-drone-mooring-constant-combinator-requester"] = on_destroyed_entity_mooring_proc,
+	["cargo-drone-mooring-constant-combinator-refueler"] = on_destroyed_entity_mooring_proc,
+}
+
 function on_surface_deleted(event)
 	ep.remove_invalid_entities()
 
@@ -155,47 +192,15 @@ end
 function on_built_entity(event)
 	local entity = event.entity
 
-	if entity.name == "entity-ghost" then
-		ep.entity_manage(entity)
+	local proc = on_built_entity_procs[entity.name]
 
-		mh.clean_settings_ghost(entity)
-
+	if not proc then
 		return
 	end
 
-	if entity.name == "cargo-drone" then
-		ep.entity_manage(entity)
+	ep.entity_manage(entity)
 
-		script.register_on_object_destroyed(entity)
-
-		dc.created(entity)
-
-		dt.drone_created(entity)
-
-		return
-	end
-
-	if entity.name == "cargo-drone-depot-constant-combinator" then
-		deh.created(entity)
-
-		script.register_on_object_destroyed(entity)
-
-		return
-	end
-
-	if entity.name == "cargo-drone-deployer-constant-combinator" then
-		dlc.created(entity)
-
-		script.register_on_object_destroyed(entity)
-
-		return
-	end
-
-	if mh.is_name_mooring(entity.name) then
-		mc.created(entity)
-
-		return
-	end
+	proc(entity)
 end
 function on_destroyed_entity(event)
 	gm.on_destroyed_entity(event)
@@ -206,17 +211,15 @@ function on_destroyed_entity(event)
 		return
 	end
 
-	if entity.name == "cargo-drone-depot-constant-combinator" then
-		deh.destroyed(entity)
-	elseif entity.name == "cargo-drone-deployer-constant-combinator" then
-		dlc.destroyed(entity)
-	elseif mh.is_name_mooring(entity.name) then
-		mc.destroyed(entity)
-	end
-
 	mh.on_destroyed_entity(entity)
 
-	unmanage_entity(entity)
+	local proc = on_destroyed_entity_procs[entity.name]
+
+	if proc then
+		proc(entity)
+	end
+
+	ep.entity_unmanage(entity.unit_number)
 end
 function on_player_rotated_entity(event)
 	if not event.entity or not event.entity.valid then

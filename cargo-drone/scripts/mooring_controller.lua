@@ -78,8 +78,6 @@ function mooring_controller.created(mooring)
         render_layer = "object",
     }
 
-	ep.entity_manage(mooring)
-
 	ep.set_entity_property(mooring, "proxy_containers", proxy_containers)
 
 	script.register_on_object_destroyed(mooring)
