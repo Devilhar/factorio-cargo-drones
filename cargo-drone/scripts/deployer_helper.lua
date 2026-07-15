@@ -127,7 +127,7 @@ end
 
 function deployer_helper.get_drone_limit(target)
     if not get_drone_limit_circuit(target) then
-        return get_drone_limit(target)
+        return get_drone_limit(target) or 10
     end
 
     local signal_id = get_drone_limit_circuit_signal_id(target)
