@@ -44,6 +44,32 @@ local function migrate_moorings(mooring_type, source)
     end
 end
 
+local function remove_invalid_depots()
+    local removed_surfaces = {}
+
+    for surface_index, surface_buffer in pairs(storage.depot_helper.depots) do
+        local removed = {}
+
+        for unit_number, depot in pairs(surface_buffer) do
+            if not depot.valid then
+                table.insert(removed, unit_number)
+            end
+        end
+
+        for _, unit_number in ipairs(removed) do
+            surface_buffer[unit_number] = nil
+        end
+
+        if next(surface_buffer) == nil then
+            table.insert(removed_surfaces, surface_index)
+        end
+    end
+
+    for _, surface_index in ipairs(removed_surfaces) do
+        storage.depot_helper.surfaces[surface_index] = nil
+    end
+end
+
 return function()
     storage.drone_controller = storage.drone_controller or {}
     storage.mooring_controller = storage.mooring_controller or {}
@@ -66,5 +92,5 @@ return function()
 
     storage.deployer_controller.surfaces = storage.deployer_controller.surfaces or {}
 
-    -- FIXME: Remove invalid surfaces from depots
+    remove_invalid_depots()
 end

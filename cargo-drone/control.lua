@@ -142,6 +142,7 @@ function on_surface_deleted(event)
 	dc.surface_deleted(event.surface_index)
 	dt.surface_deleted(event.surface_index)
 	dlc.surface_deleted(event.surface_index)
+	deh.surface_deleted(event.surface_index)
 end
 function on_surface_cleared(event)
 	ep.remove_invalid_entities()
@@ -149,6 +150,7 @@ function on_surface_cleared(event)
 	dc.surface_cleared(event.surface_index)
 	dt.surface_cleared(event.surface_index)
 	dlc.surface_cleared(event.surface_index)
+	deh.surface_cleared(event.surface_index)
 end
 function on_built_entity(event)
 	local entity = event.entity
