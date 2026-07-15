@@ -503,12 +503,17 @@ local function register_drone(drone)
     local surface_buffer = storage.drone_controller.surfaces[drone.surface.index]
 
     if not surface_buffer then
-        surface_buffer = {}
+        surface_buffer = {
+            drones = {},
+            drone_count = 0,
+        }
 
         storage.drone_controller.surfaces[drone.surface.index] = surface_buffer
     end
 
-    surface_buffer[drone.unit_number] = drone
+    surface_buffer.drones[drone.unit_number] = drone
+
+    surface_buffer.drone_count = table_size(surface_buffer.drones)
 end
 local function unregister_drone(drone, surface_index)
     local surface_buffer = storage.drone_controller.surfaces[surface_index]
@@ -517,9 +522,11 @@ local function unregister_drone(drone, surface_index)
         return
     end
 
-    surface_buffer[drone.unit_number] = nil
+    surface_buffer.drones[drone.unit_number] = nil
 
-    if next(surface_buffer) == nil then
+    surface_buffer.drone_count = table_size(surface_buffer.drones)
+
+    if next(surface_buffer.drones) == nil then
         storage.drone_controller.surfaces[surface_index] = nil
     end
 end
@@ -709,8 +716,8 @@ function drone_controller.tick(game_tick)
     local tickrate_drone = 0
     local tickrate_new = 0
 
-    for _, drones in pairs(storage.drone_controller.surfaces) do
-        for unit_number, drone in pairs(drones) do
+    for _, surface_buffer in pairs(storage.drone_controller.surfaces) do
+        for unit_number, drone in pairs(surface_buffer.drones) do
             tickrate_drone = ep.get_entity_property(drone, "tickrate") or constants.drones_tickrates.every
 
             if unit_number % tickrate_drone == game_tick % tickrate_drone then
@@ -731,7 +738,7 @@ function drone_controller.drone_count(surface_index)
         return 0
     end
 
-    return table_size(surface_buffer)
+    return surface_buffer.drone_count
 end
 
 return drone_controller

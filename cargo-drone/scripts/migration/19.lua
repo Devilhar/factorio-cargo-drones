@@ -13,12 +13,16 @@ local function migrate_drones()
             local surface_buffer = storage.drone_controller.surfaces[drone.surface.index]
 
             if not surface_buffer then
-                surface_buffer = {}
+                surface_buffer = {
+                    drones = {},
+                    drone_count = 0,
+                }
 
                 storage.drone_controller.surfaces[drone.surface.index] = surface_buffer
             end
 
-            surface_buffer[drone.unit_number] = drone
+            surface_buffer.drones[drone.unit_number] = drone
+            surface_buffer.drone_count = surface_buffer.drone_count + 1
         end
     end
 end
