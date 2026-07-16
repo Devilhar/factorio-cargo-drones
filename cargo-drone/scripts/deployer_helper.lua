@@ -14,6 +14,7 @@ local section_index = {
 }
 
 local setting_names = {
+    always_release                          = "always_release",
     drone_limit                             = "drone_limit",
     drone_limit_circuit                     = "drone_limit_circuit",
     drone_limit_circuit_signal_id           = "drone_limit_circuit_signal_id",
@@ -23,13 +24,14 @@ local setting_names = {
     available_drone_count_circuit_signal_id = "available_drone_count_circuit_signal_id",
 }
 local settings_filters = {
-    [setting_names.drone_limit]                             = "signal-A",
-    [setting_names.drone_limit_circuit]                     = "signal-B",
-    [setting_names.drone_limit_circuit_signal_id]           = "signal-C",
-    [setting_names.drone_count_circuit]                     = "signal-D",
-    [setting_names.drone_count_circuit_signal_id]           = "signal-E",
-    [setting_names.available_drone_count_circuit]           = "signal-F",
-    [setting_names.available_drone_count_circuit_signal_id] = "signal-G",
+    [setting_names.always_release]                          = "signal-A",
+    [setting_names.drone_limit]                             = "signal-B",
+    [setting_names.drone_limit_circuit]                     = "signal-C",
+    [setting_names.drone_limit_circuit_signal_id]           = "signal-D",
+    [setting_names.drone_count_circuit]                     = "signal-E",
+    [setting_names.drone_count_circuit_signal_id]           = "signal-F",
+    [setting_names.available_drone_count_circuit]           = "signal-G",
+    [setting_names.available_drone_count_circuit_signal_id] = "signal-H",
 }
 
 local function get_settings_section(deployer)
@@ -49,6 +51,17 @@ local function set_signal_id(deployer, index, signal_id, value)
     local section = deployer.get_control_behavior().get_section(index)
 
     fh.set_signal_id_value(section, signal_id, value)
+end
+
+local function get_always_release(deployer)
+    return get_settings_value(deployer, setting_names.always_release) ~= nil
+end
+local function set_always_release(deployer, flag)
+    if flag then
+        set_settings_value(deployer, setting_names.always_release, 0)
+    else
+        set_settings_value(deployer, setting_names.always_release, nil)
+    end
 end
 
 local function set_drone_limit(deployer, limit)
@@ -267,6 +280,13 @@ local deployer_helper = {}
 
 function deployer_helper.clean_settings(deployer)
     clean_settings(deployer)
+end
+
+function deployer_helper.get_always_release(deployer)
+    return get_always_release(deployer)
+end
+function deployer_helper.set_always_release(deployer, flag)
+    set_always_release(deployer, flag)
 end
 
 function deployer_helper.get_drone_limit_value(deployer)

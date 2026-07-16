@@ -358,8 +358,16 @@ local function tick_deployer(deployer, game_tick)
         return activation_state.active
     end
 
-    if dc.drone_count(deployer.surface.index) + get_releasing_drone_count(deployer.surface.index) >= dlh.get_drone_limit(deployer) then
+    local releasing_drone_count = get_releasing_drone_count(deployer.surface.index)
+
+    if dc.drone_count(deployer.surface.index) + releasing_drone_count >= dlh.get_drone_limit(deployer) then
         return activation_state.inactive
+    end
+
+    if not dlh.get_always_release(deployer) then
+        if releasing_drone_count > 0 or dt.idle_drone_count(deployer.surface.index) > 0 then
+            return activation_state.inactive
+        end
     end
 
     local dummy_fuel_drone = ep.get_entity_property(deployer, "dummy_fuel_drone")
