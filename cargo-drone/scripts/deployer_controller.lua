@@ -3,6 +3,7 @@ local constants     = require("constants")
 local ep            = require("entity_property")
 local dlh           = require("deployer_helper")
 local dc            = require("drone_controller")
+local dt            = require("drone_tasks")
 
 local deployer_overlap_dir_sprites = {
 	[defines.direction.north]	= "deployer-overlap-north",
@@ -131,6 +132,22 @@ local function update_drone_count(surface_index)
         dlh.set_drone_count(deployer, drone_count)
     end
 end
+local function update_available_drone_count(surface_index)
+    local surface_buffer = storage.deployer_controller.surfaces[surface_index]
+
+    if not surface_buffer then
+        return
+    end
+
+    local available_drone_count = dt.idle_drone_count(surface_index) + get_releasing_drone_count(surface_index)
+
+    for _, deployer in pairs(surface_buffer.inactive) do
+        dlh.set_available_drone_count(deployer, available_drone_count)
+    end
+    for _, deployer in pairs(surface_buffer.active) do
+        dlh.set_available_drone_count(deployer, available_drone_count)
+    end
+end
 
 local function update_or_create_overlap_dir(deployer)
 	local overlap = ep.get_entity_property(deployer, "overlap_sprite")
@@ -250,6 +267,7 @@ local function begin_release_drone(deployer, game_tick)
     recalculate_releasing_drones(deployer.surface.index)
 
     update_drone_count(deployer.surface.index)
+    update_available_drone_count(deployer.surface.index)
 end
 local function tick_release_drone(deployer, game_tick, drone_data)
     if game_tick == drone_data.tick_start + deploy_release_layer_change_tick then
@@ -291,6 +309,7 @@ local function tick_release_drone(deployer, game_tick, drone_data)
     recalculate_releasing_drones(deployer.surface.index)
 
     update_drone_count(deployer.surface.index)
+    update_available_drone_count(deployer.surface.index)
 end
 
 local function tick_deployer(deployer, game_tick)
@@ -449,6 +468,7 @@ function deployer_controller.destroyed(deployer)
     recalculate_releasing_drones(deployer.surface.index)
 
     update_drone_count(deployer.surface.index)
+    update_available_drone_count(deployer.surface.index)
 end
 
 function deployer_controller.tick(game_tick)
@@ -503,6 +523,9 @@ end
 
 function deployer_controller.drone_count_changed(surface_index)
     update_drone_count(surface_index)
+end
+function deployer_controller.idle_drone_count_changed(surface_index)
+    update_available_drone_count(surface_index)
 end
 
 return deployer_controller
