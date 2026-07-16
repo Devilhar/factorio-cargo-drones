@@ -17,8 +17,12 @@ local migration	= require("scripts.migration")
 local function on_drone_count_changed(surface_index)
 	dlc.drone_count_changed(surface_index)
 end
+local function on_idle_drone_count_changed(surface_index)
+	dlc.idle_drone_count_changed(surface_index)
+end
 
 dc.set_on_drone_count_changed(on_drone_count_changed)
+dt.set_on_drone_count_changed(on_idle_drone_count_changed)
 
 local undo_redo_ghost_name_array = {
 	"cargo-drone-mooring-constant-combinator-provider",
