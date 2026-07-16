@@ -8,6 +8,8 @@ local mh        = require("mooring_helper")
 local dt        = require("drone_tasks")
 local rc        = require("requester_cooldown")
 
+local callback_drone_count_changed = function (_surface_index) end
+
 -- Shamelessly stolen from AAI Programmable Vehicles, because I couldn't be bothered doing it myself
 -- Begin steal mode
 local function vector_to_orientation_xy(x, y)
@@ -514,6 +516,8 @@ local function register_drone(drone)
     surface_buffer.drones[drone.unit_number] = drone
 
     surface_buffer.drone_count = table_size(surface_buffer.drones)
+
+    callback_drone_count_changed(drone.surface.index)
 end
 local function unregister_drone(drone, surface_index)
     local surface_buffer = storage.drone_controller.surfaces[surface_index]
@@ -529,6 +533,8 @@ local function unregister_drone(drone, surface_index)
     if next(surface_buffer.drones) == nil then
         storage.drone_controller.surfaces[surface_index] = nil
     end
+
+    callback_drone_count_changed(surface_index)
 end
 
 local state = {
@@ -673,6 +679,10 @@ local function tick_drone(drone, game_tick)
 end
 
 local drone_controller = {}
+
+function drone_controller.set_on_drone_count_changed(on_drone_count_changed)
+    callback_drone_count_changed = on_drone_count_changed
+end
 
 function drone_controller.init()
     storage.drone_controller = storage.drone_controller or {}
