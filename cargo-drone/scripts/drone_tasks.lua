@@ -24,36 +24,36 @@ local task_data = {
 local callback_idle_drone_count_changed = function (_surface_index) end
 
 local function generate_next_id()
-    local id = storage.tasks_next_id
+    local id = storage.drone_tasks.next_id
 
-    storage.tasks_next_id = id + 1
+    storage.drone_tasks.next_id = id + 1
 
     return id
 end
 local function get_tasks()
-    return storage.drone_tasks
+    return storage.drone_tasks.tasks
 end
 
 local function set_drone_as_idle(drone)
     local surface_index = drone.surface.index
 
-    if not storage.idle_drones[surface_index] then
-        storage.idle_drones[surface_index] = {}
+    if not storage.drone_tasks.surfaces[surface_index] then
+        storage.drone_tasks.surfaces[surface_index] = {}
     end
 
-    storage.idle_drones[surface_index][drone.unit_number] = drone
+    storage.drone_tasks.surfaces[surface_index][drone.unit_number] = drone
 
     callback_idle_drone_count_changed(surface_index)
 end
 local function reset_drone_as_idle(drone_unit_number, surface_index)
-    if not storage.idle_drones[surface_index] then
+    if not storage.drone_tasks.surfaces[surface_index] then
         return
     end
 
-    storage.idle_drones[surface_index][drone_unit_number] = nil
+    storage.drone_tasks.surfaces[surface_index][drone_unit_number] = nil
 
-    if next(storage.idle_drones[surface_index]) == nil then
-        storage.idle_drones[surface_index] = nil
+    if next(storage.drone_tasks.surfaces[surface_index]) == nil then
+        storage.drone_tasks.surfaces[surface_index] = nil
     end
 
     callback_idle_drone_count_changed(surface_index)
@@ -212,7 +212,7 @@ end
 local function remove_tasks_with_invalid_entities()
     local removed = {}
 
-    for task_id, task in pairs(storage.drone_tasks) do
+    for task_id, task in pairs(storage.drone_tasks.tasks) do
         if task.drone_unit_number == nil or not ep.is_managed(task.drone_unit_number) then
             table.insert(removed, task_id)
 
@@ -258,8 +258,10 @@ end
 
 function drone_tasks.init()
     storage.drone_tasks = storage.drone_tasks or {}
-    storage.tasks_next_id = storage.tasks_next_id or 1
-    storage.idle_drones = storage.idle_drones or {}
+
+    storage.drone_tasks.tasks = storage.drone_tasks.tasks or {}
+    storage.drone_tasks.next_id = storage.drone_tasks.next_id or 1
+    storage.drone_tasks.surfaces = storage.drone_tasks.surfaces or {}
 end
 
 function drone_tasks.drone_surface_change(drone, old_surface)
@@ -281,12 +283,12 @@ end
 function drone_tasks.surface_deleted(surface_index)
     remove_tasks_with_invalid_entities()
 
-    storage.idle_drones[surface_index] = nil
+    storage.drone_tasks.surfaces[surface_index] = nil
 end
 function drone_tasks.surface_cleared(surface_index)
     remove_tasks_with_invalid_entities()
 
-    storage.idle_drones[surface_index] = nil
+    storage.drone_tasks.surfaces[surface_index] = nil
 end
 
 function drone_tasks.is_valid(id)
@@ -406,7 +408,7 @@ function drone_tasks.cargo_unassign_provider(task_id)
 end
 
 function drone_tasks.get_idle_drones_per_surface()
-    return storage.idle_drones or {}
+    return storage.drone_tasks.surfaces or {}
 end
 
 function drone_tasks.destroy(id)

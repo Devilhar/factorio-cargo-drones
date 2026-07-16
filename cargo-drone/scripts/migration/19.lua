@@ -74,6 +74,19 @@ local function remove_invalid_depots()
     end
 end
 
+local function migrate_drone_tasks()
+    local new_drone_tasks = {}
+
+    new_drone_tasks.tasks = storage.drone_tasks or {}
+    new_drone_tasks.next_id = storage.tasks_next_id or 1
+    new_drone_tasks.surfaces = storage.idle_drones or {}
+
+    storage.drone_tasks = new_drone_tasks
+    storage.tasks_next_id = nil
+    storage.idle_drones = nil
+end
+
+
 return function()
     storage.drone_controller = storage.drone_controller or {}
     storage.mooring_controller = storage.mooring_controller or {}
@@ -97,4 +110,6 @@ return function()
     storage.deployer_controller.surfaces = storage.deployer_controller.surfaces or {}
 
     remove_invalid_depots()
+
+    migrate_drone_tasks()
 end
