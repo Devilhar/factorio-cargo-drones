@@ -21,6 +21,8 @@ local task_data = {
     },
 }
 
+local callback_idle_drone_count_changed = function (_surface_index) end
+
 local function generate_next_id()
     local id = storage.tasks_next_id
 
@@ -40,6 +42,8 @@ local function set_drone_as_idle(drone)
     end
 
     storage.idle_drones[surface_index][drone.unit_number] = drone
+
+    callback_idle_drone_count_changed(surface_index)
 end
 local function reset_drone_as_idle(drone_unit_number, surface_index)
     if not storage.idle_drones[surface_index] then
@@ -51,6 +55,8 @@ local function reset_drone_as_idle(drone_unit_number, surface_index)
     if next(storage.idle_drones[surface_index]) == nil then
         storage.idle_drones[surface_index] = nil
     end
+
+    callback_idle_drone_count_changed(surface_index)
 end
 
 local function assign_task_drone(drone_unit_number, task)
@@ -245,6 +251,10 @@ end
 local drone_tasks = {}
 
 drone_tasks.task_types = task_types
+
+function drone_tasks.set_on_drone_count_changed(on_idle_drone_count_changed)
+    callback_idle_drone_count_changed = on_idle_drone_count_changed
+end
 
 function drone_tasks.init()
     storage.drone_tasks = storage.drone_tasks or {}
