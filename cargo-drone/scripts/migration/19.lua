@@ -79,7 +79,14 @@ local function migrate_drone_tasks()
 
     new_drone_tasks.tasks = storage.drone_tasks or {}
     new_drone_tasks.next_id = storage.tasks_next_id or 1
-    new_drone_tasks.surfaces = storage.idle_drones or {}
+    new_drone_tasks.surfaces = {}
+
+    for surface_index, drones in pairs(storage.idle_drones) do
+        new_drone_tasks.surfaces[surface_index] = {
+            idle_drones = drones,
+            idle_drone_count = table_size(drones)
+        }
+    end
 
     storage.drone_tasks = new_drone_tasks
     storage.tasks_next_id = nil

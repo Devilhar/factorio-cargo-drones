@@ -34,25 +34,38 @@ local function get_tasks()
     return storage.drone_tasks.tasks
 end
 
-local function set_drone_as_idle(drone)
+local function register_idle_drone(drone)
     local surface_index = drone.surface.index
 
-    if not storage.drone_tasks.surfaces[surface_index] then
-        storage.drone_tasks.surfaces[surface_index] = {}
+    local surface_buffer = storage.drone_tasks.surfaces[drone.surface.index]
+
+    if not surface_buffer then
+        surface_buffer = {
+            idle_drones = {},
+            idle_drone_count = 0,
+        }
+
+        storage.drone_tasks.surfaces[drone.surface.index] = surface_buffer
     end
 
-    storage.drone_tasks.surfaces[surface_index][drone.unit_number] = drone
+    surface_buffer.idle_drones[drone.unit_number] = drone
+
+    surface_buffer.idle_drone_count = table_size(surface_buffer.idle_drones)
 
     callback_idle_drone_count_changed(surface_index)
 end
-local function reset_drone_as_idle(drone_unit_number, surface_index)
-    if not storage.drone_tasks.surfaces[surface_index] then
+local function unregister_idle_drone(drone_unit_number, surface_index)
+    local surface_buffer = storage.drone_tasks.surfaces[surface_index]
+
+    if not surface_buffer then
         return
     end
 
-    storage.drone_tasks.surfaces[surface_index][drone_unit_number] = nil
+    surface_buffer.idle_drones[drone_unit_number] = nil
 
-    if next(storage.drone_tasks.surfaces[surface_index]) == nil then
+    surface_buffer.idle_drone_count = table_size(surface_buffer.idle_drones)
+
+    if next(surface_buffer.idle_drones) == nil then
         storage.drone_tasks.surfaces[surface_index] = nil
     end
 
@@ -97,7 +110,7 @@ local function unassign_task_drone(drone_unit_number, task_id, mark_as_idle)
             local entity = ep.get_managed_entity(drone_unit_number)
 
             if entity and entity.valid then
-                set_drone_as_idle(entity)
+                register_idle_drone(entity)
             end
         end
     end
@@ -275,9 +288,9 @@ function drone_tasks.drone_surface_change(drone, old_surface)
         end
 	end
 
-    reset_drone_as_idle(drone.unit_number, old_surface)
+    unregister_idle_drone(drone.unit_number, old_surface)
 
-    set_drone_as_idle(drone)
+    register_idle_drone(drone)
 end
 
 function drone_tasks.surface_deleted(surface_index)
@@ -325,7 +338,7 @@ function drone_tasks.assign_cargo(drone, provider, requester, items, inventory_f
     end
     assign_task_target(requester, task)
 
-    reset_drone_as_idle(drone.unit_number, drone.surface.index)
+    unregister_idle_drone(drone.unit_number, drone.surface.index)
 
     return id
 end
@@ -346,7 +359,7 @@ function drone_tasks.assign_refuel(drone, refueler)
     assign_task_drone(drone.unit_number, task)
     assign_task_target(refueler, task)
 
-    reset_drone_as_idle(drone.unit_number, drone.surface.index)
+    unregister_idle_drone(drone.unit_number, drone.surface.index)
 
     return id
 end
@@ -416,12 +429,12 @@ function drone_tasks.destroy(id)
 end
 
 function drone_tasks.drone_created(drone)
-    set_drone_as_idle(drone)
+    register_idle_drone(drone)
 end
 function drone_tasks.drone_destroyed(drone)
     local properties = ep.get_entity_properties(drone)
 
-    reset_drone_as_idle(drone.unit_number, drone.surface.index)
+    unregister_idle_drone(drone.unit_number, drone.surface.index)
 
     if not properties.task_ids then
         return
@@ -450,6 +463,16 @@ function drone_tasks.target_destroyed(target)
     for task_id, _ in pairs(task_ids) do
         remove_and_cleanup_task(task_id)
     end
+end
+
+function drone_tasks.idle_drone_count(surface_index)
+    local surface_buffer = storage.drone_tasks.surfaces[surface_index]
+
+    if not surface_buffer then
+        return 0
+    end
+
+    return surface_buffer.idle_drone_count
 end
 
 return drone_tasks

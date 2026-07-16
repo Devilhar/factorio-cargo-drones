@@ -87,8 +87,8 @@ local function begin_frame()
 end
 
 local function collect_idle_drones()
-    for surface_index, drones in pairs(dt.get_idle_drones_per_surface()) do
-        for _, drone in pairs(drones) do
+    for surface_index, surface_buffer in pairs(dt.get_idle_drones_per_surface()) do
+        for _, drone in pairs(surface_buffer.idle_drones) do
             if not storage.scheduler.idling_cargo_drones[surface_index] then
                 storage.scheduler.idling_cargo_drones[surface_index] = {}
             end
