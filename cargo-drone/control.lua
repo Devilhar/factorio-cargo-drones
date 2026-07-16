@@ -14,6 +14,12 @@ local gcd		= require("scripts.gui_cargo_drone")
 local scheduler	= require("scripts.scheduler")
 local migration	= require("scripts.migration")
 
+local function on_drone_count_changed(surface_index)
+	dlc.drone_count_changed(surface_index)
+end
+
+dc.set_on_drone_count_changed(on_drone_count_changed)
+
 local undo_redo_ghost_name_array = {
 	"cargo-drone-mooring-constant-combinator-provider",
 	"cargo-drone-mooring-constant-combinator-requester",
@@ -139,8 +145,6 @@ local on_built_entity_procs = {
 		dc.created(entity)
 
 		dt.drone_created(entity)
-
-		dlc.drone_count_changed(entity.surface.index)
 	end,
 	["cargo-drone-depot-constant-combinator"] = function (entity)
 		deh.created(entity)
@@ -161,8 +165,6 @@ local on_destroyed_entity_procs = {
 		dc.destroyed(entity)
 
 		dt.drone_destroyed(entity)
-
-		dlc.drone_count_changed(entity.surface.index)
 	end,
 	["cargo-drone-depot-constant-combinator"] = function (entity)
 		deh.destroyed(entity)
@@ -329,9 +331,6 @@ function script_raised_teleported(event)
 	dc.surface_change(event.entity, event.old_surface_index)
 
 	dt.drone_surface_change(event.entity, event.old_surface_index)
-
-	dlc.drone_count_changed(event.old_surface_index)
-	dlc.drone_count_changed(event.entity.surface.index)
 end
 
 function on_gui_opened(event)
