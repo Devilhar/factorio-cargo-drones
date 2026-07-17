@@ -119,4 +119,7 @@ return function()
     remove_invalid_depots()
 
     migrate_drone_tasks()
+
+    storage.gui_deployer_player = storage.gui_deployer_player or {}
+    storage.gui_deployer_entity_lookup = storage.gui_deployer_entity_lookup or {}
 end
