@@ -5,8 +5,8 @@ local fh = require("filter_helper")
 local default_drone_limit = 50
 
 local signal_id_drone_limit             = { type = "virtual", name = "signal-L", quality = "normal" }
-local signal_id_drone_count             = { type = "virtual", name = "signal-C", quality = "normal" }
-local signal_id_available_drone_count   = { type = "virtual", name = "signal-A", quality = "normal" }
+local signal_id_drone_count             = { type = "virtual", name = "signal-X", quality = "normal" }
+local signal_id_available_drone_count   = { type = "virtual", name = "signal-Y", quality = "normal" }
 
 local section_index = {
     settings                = 1,
