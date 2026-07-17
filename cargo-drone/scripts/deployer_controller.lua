@@ -5,6 +5,15 @@ local dlh           = require("deployer_helper")
 local dc            = require("drone_controller")
 local dt            = require("drone_tasks")
 
+local deployer_status = {
+    awaiting_drone  = 1,
+    preparing       = 2,
+    awaiting_fuel   = 3,
+    at_drone_limit  = 4,
+    idling          = 5,
+    releasing       = 6,
+}
+
 local deployer_overlap_dir_sprites = {
 	[defines.direction.north]	= "deployer-overlap-north",
 	[defines.direction.east]	= "deployer-overlap-east",
@@ -389,6 +398,8 @@ end
 
 local deployer_controller = {}
 
+deployer_controller.deployer_status = deployer_status
+
 function deployer_controller.init()
     storage.deployer_controller = storage.deployer_controller or {}
 
@@ -544,6 +555,41 @@ function deployer_controller.release_drone(deployer)
     end
 end
 
+function deployer_controller.get_deployer_status(deployer)
+    local drone_data = ep.get_entity_property(deployer, "drone_data")
+
+    if not drone_data then
+        return deployer_status.awaiting_drone
+    end
+
+    if drone_data.state == drone_states.prepare then
+        return deployer_status.preparing
+    end
+
+    if drone_data.state == drone_states.release then
+        return deployer_status.releasing
+    end
+
+    local dummy_fuel_drone = ep.get_entity_property(deployer, "dummy_fuel_drone")
+
+    if not dummy_fuel_drone or not dummy_fuel_drone.valid then
+        return deployer_status.awaiting_fuel
+    end
+
+    local fuel_inventory = dummy_fuel_drone.get_inventory(defines.inventory.fuel)
+
+    if not fuel_inventory.is_full() then
+        return deployer_status.awaiting_fuel
+    end
+
+    local releasing_drone_count = get_releasing_drone_count(deployer.surface.index)
+
+    if dc.drone_count(deployer.surface.index) + releasing_drone_count >= dlh.get_drone_limit(deployer) then
+        return deployer_status.at_drone_limit
+    end
+
+    return deployer_status.idling
+end
 function deployer_controller.is_drone_prepared(deployer)
     local drone_data = ep.get_entity_property(deployer, "drone_data")
 
