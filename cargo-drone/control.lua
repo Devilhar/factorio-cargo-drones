@@ -11,6 +11,7 @@ local dt		= require("scripts.drone_tasks")
 local mc		= require("scripts.mooring_controller")
 local dc		= require("scripts.drone_controller")
 local gm		= require("scripts.gui_mooring")
+local gd		= require("scripts.gui_deployer")
 local gcd		= require("scripts.gui_cargo_drone")
 local scheduler	= require("scripts.scheduler")
 local migration	= require("scripts.migration")
@@ -104,6 +105,7 @@ function on_init()
 	dt.init()
 
 	gm.create_player_storage()
+	gd.create_player_storage()
 	gcd.create_player_storage()
 
 	scheduler.init()
@@ -123,11 +125,13 @@ function on_tick(event)
 	mc.tick()
 
 	gm.tick()
+	gd.tick()
 	gcd.tick()
 end
 
 function on_player_removed(event)
 	gm.on_player_removed(event)
+	gd.on_player_removed(event)
 	gcd.on_player_removed(event)
 end
 
@@ -142,6 +146,12 @@ end
 
 local on_built_entity_procs = {
 	["entity-ghost"] = function (entity)
+		if entity.ghost_name == "cargo-drone-deployer-constant-combinator" then
+			dlh.clean_settings(entity)
+
+			return
+		end
+
 		mh.clean_settings_ghost(entity)
 	end,
 	["cargo-drone"] = function (entity)
@@ -215,6 +225,7 @@ function on_built_entity(event)
 end
 function on_destroyed_entity(event)
 	gm.on_destroyed_entity(event)
+	gd.on_destroyed_entity(event)
 
 	local entity = event.entity
 
@@ -342,33 +353,42 @@ end
 
 function on_gui_opened(event)
 	gm.on_gui_opened(event)
+	gd.on_gui_opened(event)
 	gcd.on_gui_opened(event)
 end
 function on_gui_closed(event)
 	gm.on_gui_closed(event)
+	gd.on_gui_closed(event)
 	gcd.on_gui_closed(event)
 end
 function on_gui_click(event)
     gm.on_gui_click(event)
+    gd.on_gui_click(event)
     gcd.on_gui_click(event)
 end
 function on_gui_checked_state_changed(event)
 	gm.on_gui_checked_state_changed(event)
+	gd.on_gui_checked_state_changed(event)
 end
 function on_gui_value_changed(event)
 	gm.on_gui_value_changed(event)
+	gd.on_gui_value_changed(event)
 end
 function on_gui_text_changed(event)
 	gm.on_gui_text_changed(event)
+	gd.on_gui_text_changed(event)
 end
 function on_gui_elem_changed(event)
 	gm.on_gui_elem_changed(event)
+	gd.on_gui_elem_changed(event)
 end
 function on_gui_selection_state_changed(event)
 	gm.on_gui_selection_state_changed(event)
+	gd.on_gui_selection_state_changed(event)
 end
 function on_gui_confirmed(event)
 	gm.on_gui_confirmed(event)
+	gd.on_gui_confirmed(event)
 end
 
 local build_event_filters = {
@@ -382,6 +402,7 @@ local build_event_filters = {
 	{ filter = "ghost_name", name = "cargo-drone-mooring-constant-combinator-requester" },
 	{ filter = "ghost_name", name = "cargo-drone-mooring-constant-combinator-refueler" },
 	{ filter = "ghost_name", name = "cargo-drone-depot-constant-combinator" },
+	{ filter = "ghost_name", name = "cargo-drone-deployer-constant-combinator" },
 }
 local build_events = {
 	defines.events.on_built_entity,
