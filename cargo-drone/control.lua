@@ -4,6 +4,7 @@ local ep		= require("scripts.entity_property")
 local th		= require("scripts.target_helper")
 local deh		= require("scripts.depot_helper")
 local dlc		= require("scripts.deployer_controller")
+local dlh		= require("scripts.deployer_helper")
 local rc    	= require("scripts.requester_cooldown")
 local mh		= require("scripts.mooring_helper")
 local dt		= require("scripts.drone_tasks")
@@ -307,6 +308,8 @@ function on_entity_settings_pasted(event)
 		end
 	elseif destination_name == "cargo-drone-depot-constant-combinator" then
 		deh.clean_settings(event.destination)
+	elseif destination_name == "cargo-drone-deployer-constant-combinator" then
+		dlh.clean_settings(event.destination)
 	end
 end
 function on_undo_applied(event)
