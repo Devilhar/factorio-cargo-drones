@@ -18,8 +18,17 @@ local function get_drone_limit_signal_element(player_data, element)
 
     return signal_id[element]
 end
-local function get_drone_count_signal_element(player_data, element)
-    local signal_id = dlh.get_drone_count_circuit_signal_id(player_data.entity)
+local function get_total_drone_count_signal_element(player_data, element)
+    local signal_id = dlh.get_total_drone_count_circuit_signal_id(player_data.entity)
+
+    if signal_id == nil then
+        return nil
+    end
+
+    return signal_id[element]
+end
+local function get_available_drone_count_signal_element(player_data, element)
+    local signal_id = dlh.get_available_drone_count_circuit_signal_id(player_data.entity)
 
     if signal_id == nil then
         return nil
@@ -50,6 +59,13 @@ local observers = {
             if player_data.elements.drone_limit_field.text ~= tostring(data) then
                 player_data.elements.drone_limit_field.text = tostring(data)
             end
+        end
+    },
+
+    get_always_release = {
+        get = function(player_data) return dlh.get_always_release(player_data.entity) end,
+        updated = function(player_data, data)
+            player_data.elements.always_release_checkbox.state = data
         end
     },
 
@@ -121,30 +137,50 @@ local observers = {
         end
     },
 
-    is_drone_count_circuit = {
-        get = function(player_data) return dlh.is_drone_count_circuit(player_data.entity) end,
+    is_drone_counts_circuit = {
+        get = function(player_data) return dlh.is_drone_counts_circuit(player_data.entity) end,
         updated = function(player_data, data)
-            player_data.elements.drone_count_circuit_checkbox.state = data
-            player_data.elements.drone_count_signal_label.enabled = data
-            player_data.elements.drone_count_signal_choose_elem_button.enabled = data
+            player_data.elements.drone_counts_circuit_checkbox.state = data
+            player_data.elements.total_drone_count_signal_label.enabled = data
+            player_data.elements.total_drone_count_signal_choose_elem_button.enabled = data
+            player_data.elements.available_drone_count_signal_label.enabled = data
+            player_data.elements.available_drone_count_signal_choose_elem_button.enabled = data
         end
     },
-    get_drone_count_signal_element_type = {
-        get = function(player_data) return get_drone_count_signal_element(player_data, "type") end,
+    get_total_drone_count_signal_element_type = {
+        get = function(player_data) return get_total_drone_count_signal_element(player_data, "type") end,
         updated = function(player_data, data)
-            player_data.elements.drone_count_signal_choose_elem_button.elem_value = dlh.get_drone_count_circuit_signal_id(player_data.entity)
+            player_data.elements.total_drone_count_signal_choose_elem_button.elem_value = dlh.get_total_drone_count_circuit_signal_id(player_data.entity)
         end
     },
-    get_drone_count_signal_element_name = {
-        get = function(player_data) return get_drone_count_signal_element(player_data, "name") end,
+    get_total_drone_count_signal_element_name = {
+        get = function(player_data) return get_total_drone_count_signal_element(player_data, "name") end,
         updated = function(player_data, data)
-            player_data.elements.drone_count_signal_choose_elem_button.elem_value = dlh.get_drone_count_circuit_signal_id(player_data.entity)
+            player_data.elements.total_drone_count_signal_choose_elem_button.elem_value = dlh.get_total_drone_count_circuit_signal_id(player_data.entity)
         end
     },
-    get_drone_count_signal_element_quality = {
-        get = function(player_data) return get_drone_count_signal_element(player_data, "quality") end,
+    get_total_drone_count_signal_element_quality = {
+        get = function(player_data) return get_total_drone_count_signal_element(player_data, "quality") end,
         updated = function(player_data, data)
-            player_data.elements.drone_count_signal_choose_elem_button.elem_value = dlh.get_drone_count_circuit_signal_id(player_data.entity)
+            player_data.elements.total_drone_count_signal_choose_elem_button.elem_value = dlh.get_total_drone_count_circuit_signal_id(player_data.entity)
+        end
+    },
+    get_available_drone_count_signal_element_type = {
+        get = function(player_data) return get_available_drone_count_signal_element(player_data, "type") end,
+        updated = function(player_data, data)
+            player_data.elements.available_drone_count_signal_choose_elem_button.elem_value = dlh.get_available_drone_count_circuit_signal_id(player_data.entity)
+        end
+    },
+    get_available_drone_count_signal_element_name = {
+        get = function(player_data) return get_available_drone_count_signal_element(player_data, "name") end,
+        updated = function(player_data, data)
+            player_data.elements.available_drone_count_signal_choose_elem_button.elem_value = dlh.get_available_drone_count_circuit_signal_id(player_data.entity)
+        end
+    },
+    get_available_drone_count_signal_element_quality = {
+        get = function(player_data) return get_available_drone_count_signal_element(player_data, "quality") end,
+        updated = function(player_data, data)
+            player_data.elements.available_drone_count_signal_choose_elem_button.elem_value = dlh.get_available_drone_count_circuit_signal_id(player_data.entity)
         end
     },
 }
@@ -188,6 +224,12 @@ local callbacks = {
         update_gui(player_data)
     end,
 
+    [gui_prefix .. "set-always-release-checkbox"] = function(player_data, event)
+        dlh.set_always_release(player_data.entity, player_data.elements.always_release_checkbox.state)
+
+        update_gui(player_data)
+    end,
+
     ---------- Circuit ----------
     [gui_prefix .. "set-drone-limit-checkbox"] = function(player_data, event)
         dlh.set_drone_limit_circuit(player_data.entity, player_data.elements.drone_limit_circuit_checkbox.state)
@@ -198,13 +240,16 @@ local callbacks = {
         dlh.set_drone_limit_circuit_signal_id(player_data.entity, player_data.elements.drone_limit_signal_choose_elem_button.elem_value)
     end,
 
-    [gui_prefix .. "read-drone-count-checkbox"] = function(player_data, event)
-        dlh.set_drone_count_circuit(player_data.entity, player_data.elements.drone_count_circuit_checkbox.state)
+    [gui_prefix .. "read-drone-counts-checkbox"] = function(player_data, event)
+        dlh.set_drone_counts_circuit(player_data.entity, player_data.elements.drone_counts_circuit_checkbox.state)
 
         update_gui(player_data)
     end,
-    [gui_prefix .. "drone-count-signal-choose-elem-button"] = function(player_data, event)
-        dlh.set_drone_count_circuit_signal_id(player_data.entity, player_data.elements.drone_count_signal_choose_elem_button.elem_value)
+    [gui_prefix .. "total-drone-count-signal-choose-elem-button"] = function(player_data, event)
+        dlh.set_total_drone_count_circuit_signal_id(player_data.entity, player_data.elements.total_drone_count_signal_choose_elem_button.elem_value)
+    end,
+    [gui_prefix .. "available-drone-count-signal-choose-elem-button"] = function(player_data, event)
+        dlh.set_available_drone_count_circuit_signal_id(player_data.entity, player_data.elements.available_drone_count_signal_choose_elem_button.elem_value)
     end,
 }
 
@@ -292,8 +337,8 @@ local function build_gui_deployer(player_data, deployer, parent)
         name = gui_prefix .. "drone-limit-slider",
         style = "notched_slider",
         minimum_value = 0,
-        maximum_value = 8,
-        value_step = 1
+        maximum_value = 200,
+        value_step = 25
     }
 
     local drone_limit_field = drone_limit_flow.add{
@@ -307,6 +352,17 @@ local function build_gui_deployer(player_data, deployer, parent)
 
     player_data.elements.drone_limit_slider = drone_limit_slider
     player_data.elements.drone_limit_field = drone_limit_field
+
+    ---------- Always release ----------
+    local always_release_checkbox = deployer_flow.add{
+        type = "checkbox",
+        name = gui_prefix .. "set-always-release-checkbox",
+        caption = { "cargo-drone-gui-deployer.enable-always-release" },
+        tooltip = { "cargo-drone-gui-deployer.enable-always-release-tooltip" },
+        state = dlh.get_always_release(deployer)
+    }
+
+    player_data.elements.always_release_checkbox = always_release_checkbox
 
     ---------- Filler ----------
     local deployer_filler = deployer_flow.add{
@@ -404,57 +460,93 @@ local function build_gui_circuit(player_data, deployer, parent)
     player_data.elements.drone_limit_signal_label = drone_limit_signal_label
     player_data.elements.drone_limit_signal_choose_elem_button = drone_limit_signal_choose_elem_button
 
-    ---------- Drone Count ----------
+    ---------- Drone Counts ----------
 
     main_frame.add{
         type = "line",
     }
 
-    local drone_count_circuit_checkbox = main_frame.add{
+    local drone_counts_circuit_checkbox = main_frame.add{
         type = "checkbox",
-        name = gui_prefix .. "read-drone-count-checkbox",
-        caption = { "cargo-drone-gui-control-behavior-modes.read-drone-count" },
-        tooltip = { "cargo-drone-gui-control-behavior-modes.read-drone-count-description" },
+        name = gui_prefix .. "read-drone-counts-checkbox",
+        caption = { "cargo-drone-gui-control-behavior-modes.read-drone-counts" },
+        tooltip = { "cargo-drone-gui-control-behavior-modes.read-drone-counts-description" },
         style = "subheader_caption_checkbox",
-        state = dlh.is_drone_count_circuit(deployer)
+        state = dlh.is_drone_counts_circuit(deployer)
     }
 
-    drone_count_circuit_checkbox.style.top_margin = 4
-    drone_count_circuit_checkbox.style.bottom_margin = 4
-    drone_count_circuit_checkbox.style.left_margin = 12
-    drone_count_circuit_checkbox.style.right_margin = 12
+    drone_counts_circuit_checkbox.style.top_margin = 4
+    drone_counts_circuit_checkbox.style.bottom_margin = 4
+    drone_counts_circuit_checkbox.style.left_margin = 12
+    drone_counts_circuit_checkbox.style.right_margin = 12
 
-    local drone_count_signal_flow = main_frame.add{
+    player_data.elements.drone_counts_circuit_checkbox = drone_counts_circuit_checkbox
+
+    ---------- Total drone count ----------
+
+    local total_drone_count_signal_flow = main_frame.add{
         type = "flow",
         direction = "horizontal"
     }
 
-    drone_count_signal_flow.style.vertical_align = "center"
-    drone_count_signal_flow.style.top_margin = 4
-    drone_count_signal_flow.style.bottom_margin = 4
-    drone_count_signal_flow.style.left_margin = 12
-    drone_count_signal_flow.style.right_margin = 12
+    total_drone_count_signal_flow.style.vertical_align = "center"
+    total_drone_count_signal_flow.style.top_margin = 4
+    total_drone_count_signal_flow.style.bottom_margin = 4
+    total_drone_count_signal_flow.style.left_margin = 12
+    total_drone_count_signal_flow.style.right_margin = 12
 
-    local drone_count_signal_label = drone_count_signal_flow.add{
+    local total_drone_count_signal_label = total_drone_count_signal_flow.add{
         type = "label",
-        caption = { "cargo-drone-gui-control-behavior-modes.drone-count" }
+        caption = { "cargo-drone-gui-control-behavior-modes.total-drone-count" }
     }
 
-    local drone_count_signal_filler = drone_count_signal_flow.add{
+    local total_drone_count_signal_filler = total_drone_count_signal_flow.add{
         type = "empty-widget",
     }
 
-    drone_count_signal_filler.style.horizontally_stretchable = true
+    total_drone_count_signal_filler.style.horizontally_stretchable = true
 
-    local drone_count_signal_choose_elem_button = drone_count_signal_flow.add{
+    local total_drone_count_signal_choose_elem_button = total_drone_count_signal_flow.add{
         type = "choose-elem-button",
-        name = gui_prefix .. "drone-count-signal-choose-elem-button",
+        name = gui_prefix .. "total-drone-count-signal-choose-elem-button",
         elem_type = "signal"
     }
 
-    player_data.elements.drone_count_circuit_checkbox = drone_count_circuit_checkbox
-    player_data.elements.drone_count_signal_label = drone_count_signal_label
-    player_data.elements.drone_count_signal_choose_elem_button = drone_count_signal_choose_elem_button
+    player_data.elements.total_drone_count_signal_label = total_drone_count_signal_label
+    player_data.elements.total_drone_count_signal_choose_elem_button = total_drone_count_signal_choose_elem_button
+
+    ---------- Available drone count ----------
+
+    local available_drone_count_signal_flow = main_frame.add{
+        type = "flow",
+        direction = "horizontal"
+    }
+
+    available_drone_count_signal_flow.style.vertical_align = "center"
+    available_drone_count_signal_flow.style.top_margin = 4
+    available_drone_count_signal_flow.style.bottom_margin = 4
+    available_drone_count_signal_flow.style.left_margin = 12
+    available_drone_count_signal_flow.style.right_margin = 12
+
+    local available_drone_count_signal_label = available_drone_count_signal_flow.add{
+        type = "label",
+        caption = { "cargo-drone-gui-control-behavior-modes.available-drone-count" }
+    }
+
+    local available_drone_count_signal_filler = available_drone_count_signal_flow.add{
+        type = "empty-widget",
+    }
+
+    available_drone_count_signal_filler.style.horizontally_stretchable = true
+
+    local available_drone_count_signal_choose_elem_button = available_drone_count_signal_flow.add{
+        type = "choose-elem-button",
+        name = gui_prefix .. "available-drone-count-signal-choose-elem-button",
+        elem_type = "signal"
+    }
+
+    player_data.elements.available_drone_count_signal_label = available_drone_count_signal_label
+    player_data.elements.available_drone_count_signal_choose_elem_button = available_drone_count_signal_choose_elem_button
 end
 
 local function build_gui(player, deployer)
