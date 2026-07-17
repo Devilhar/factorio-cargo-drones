@@ -126,10 +126,10 @@ local function update_drone_count(surface_index)
     local drone_count = dc.drone_count(surface_index) + get_releasing_drone_count(surface_index)
 
     for _, deployer in pairs(surface_buffer.inactive) do
-        dlh.set_drone_count(deployer, drone_count)
+        dlh.set_total_drone_count(deployer, drone_count)
     end
     for _, deployer in pairs(surface_buffer.active) do
-        dlh.set_drone_count(deployer, drone_count)
+        dlh.set_total_drone_count(deployer, drone_count)
     end
 end
 local function update_available_drone_count(surface_index)
@@ -449,7 +449,7 @@ function deployer_controller.created(deployer)
 
 	dlh.clean_settings(deployer)
 
-    dlh.set_drone_count(deployer, dc.drone_count(deployer.surface.index))
+    dlh.set_total_drone_count(deployer, dc.drone_count(deployer.surface.index))
 end
 function deployer_controller.destroyed(deployer)
     local drone_data = ep.get_entity_property(deployer, "drone_data")

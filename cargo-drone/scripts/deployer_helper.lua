@@ -2,6 +2,8 @@
 local ep = require("entity_property")
 local fh = require("filter_helper")
 
+local default_drone_limit = 50
+
 local signal_id_drone_limit             = { type = "virtual", name = "signal-L", quality = "normal" }
 local signal_id_drone_count             = { type = "virtual", name = "signal-C", quality = "normal" }
 local signal_id_available_drone_count   = { type = "virtual", name = "signal-A", quality = "normal" }
@@ -9,7 +11,7 @@ local signal_id_available_drone_count   = { type = "virtual", name = "signal-A",
 local section_index = {
     settings                = 1,
     drone_limit             = 2,
-    drone_count             = 3,
+    total_drone_count       = 3,
     available_drone_count   = 4,
 }
 
@@ -18,9 +20,8 @@ local setting_names = {
     drone_limit                             = "drone_limit",
     drone_limit_circuit                     = "drone_limit_circuit",
     drone_limit_circuit_signal_id           = "drone_limit_circuit_signal_id",
-    drone_count_circuit                     = "drone_count_circuit",
-    drone_count_circuit_signal_id           = "drone_count_circuit_signal_id",
-    available_drone_count_circuit           = "available_drone_count_circuit",
+    drone_counts_circuit                    = "drone_counts_circuit",
+    total_drone_count_circuit_signal_id     = "total_drone_count_circuit_signal_id",
     available_drone_count_circuit_signal_id = "available_drone_count_circuit_signal_id",
 }
 local settings_filters = {
@@ -28,10 +29,9 @@ local settings_filters = {
     [setting_names.drone_limit]                             = "signal-B",
     [setting_names.drone_limit_circuit]                     = "signal-C",
     [setting_names.drone_limit_circuit_signal_id]           = "signal-D",
-    [setting_names.drone_count_circuit]                     = "signal-E",
-    [setting_names.drone_count_circuit_signal_id]           = "signal-F",
-    [setting_names.available_drone_count_circuit]           = "signal-G",
-    [setting_names.available_drone_count_circuit_signal_id] = "signal-H",
+    [setting_names.drone_counts_circuit]                    = "signal-E",
+    [setting_names.total_drone_count_circuit_signal_id]     = "signal-F",
+    [setting_names.available_drone_count_circuit_signal_id] = "signal-G",
 }
 
 local function get_settings_section(deployer)
@@ -106,54 +106,52 @@ local function set_drone_limit_circuit_signal_id(deployer, signal_id)
     set_signal_id(deployer, section_index.drone_limit, signal_id, 0)
 end
 
-local function get_drone_count_circuit(deployer)
-    return get_settings_value(deployer, setting_names.drone_count_circuit) ~= nil
+local function get_drone_counts_circuit(deployer)
+    return get_settings_value(deployer, setting_names.drone_counts_circuit) ~= nil
 end
-local function set_drone_count_circuit(deployer, flag)
+local function set_drone_counts_circuit(deployer, flag)
     if flag then
-        set_settings_value(deployer, setting_names.drone_count_circuit, 0)
+        set_settings_value(deployer, setting_names.drone_counts_circuit, 0)
     else
-        set_settings_value(deployer, setting_names.drone_count_circuit, nil)
+        set_settings_value(deployer, setting_names.drone_counts_circuit, nil)
     end
 end
 
-local function get_drone_count_circuit_signal_id(deployer)
-    if get_settings_value(deployer, setting_names.drone_count_circuit_signal_id) == nil then
+local function get_total_drone_count_circuit_signal_id(deployer)
+    if get_settings_value(deployer, setting_names.total_drone_count_circuit_signal_id) == nil then
         return signal_id_drone_count
     end
 
-    local section = deployer.get_control_behavior().get_section(section_index.drone_count)
+    local section = deployer.get_control_behavior().get_section(section_index.total_drone_count)
 
     return section.get_slot(1).value
 end
-local function set_drone_count_circuit_signal_id(deployer, signal_id)
-    set_settings_value(deployer, setting_names.drone_count_circuit_signal_id, 0)
-    set_signal_id(deployer, section_index.drone_count, signal_id, 0)
+local function set_total_drone_count_circuit_signal_id(deployer, signal_id)
+    set_settings_value(deployer, setting_names.total_drone_count_circuit_signal_id, 0)
+    set_signal_id(deployer, section_index.total_drone_count, signal_id, 0)
 end
-
-local function get_drone_count(deployer)
-    return ep.get_entity_property(deployer, "drone_count") or 0
+local function get_total_drone_count(deployer)
+    return ep.get_entity_property(deployer, "total_drone_count") or 0
 end
-local function get_drone_count_output(deployer)
-    if not get_drone_count_circuit(deployer) then
+local function get_total_drone_count_output(deployer)
+    if not get_drone_counts_circuit(deployer) then
         return 0
     end
 
-    return get_drone_count(deployer)
+    return get_total_drone_count(deployer)
 end
-
-local function update_drone_count_output(deployer)
+local function update_total_drone_count_output(deployer)
     local cb = deployer.get_control_behavior()
 
-    local section = cb.get_section(section_index.drone_count)
+    local section = cb.get_section(section_index.total_drone_count)
 
-    local signal_id = get_drone_count_circuit_signal_id(deployer)
+    local signal_id = get_total_drone_count_circuit_signal_id(deployer)
 
     if not signal_id then
         return
     end
 
-    local count = get_drone_count_output(deployer)
+    local count = get_total_drone_count_output(deployer)
 
     section.filters = {
         {
@@ -161,17 +159,6 @@ local function update_drone_count_output(deployer)
             min = count
         }
     }
-end
-
-local function get_available_drone_count_circuit(deployer)
-    return get_settings_value(deployer, setting_names.available_drone_count_circuit) ~= nil
-end
-local function set_available_drone_count_circuit(deployer, flag)
-    if flag then
-        set_settings_value(deployer, setting_names.available_drone_count_circuit, 0)
-    else
-        set_settings_value(deployer, setting_names.available_drone_count_circuit, nil)
-    end
 end
 
 local function get_available_drone_count_circuit_signal_id(deployer)
@@ -187,18 +174,16 @@ local function set_available_drone_count_circuit_signal_id(deployer, signal_id)
     set_settings_value(deployer, setting_names.available_drone_count_circuit_signal_id, 0)
     set_signal_id(deployer, section_index.available_drone_count, signal_id, 0)
 end
-
 local function get_available_drone_count(deployer)
     return ep.get_entity_property(deployer, "available_drone_count") or 0
 end
 local function get_available_drone_count_output(deployer)
-    if not get_available_drone_count_circuit(deployer) then
+    if not get_drone_counts_circuit(deployer) then
         return 0
     end
 
     return get_available_drone_count(deployer)
 end
-
 local function update_available_drone_count_output(deployer)
     local cb = deployer.get_control_behavior()
 
@@ -223,7 +208,7 @@ end
 local function clear_all_outputs(deployer)
     local cb = deployer.get_control_behavior()
 
-    local section = cb.get_section(section_index.drone_count)
+    local section = cb.get_section(section_index.total_drone_count)
 
     local signal_filter = section.filters[1]
 
@@ -269,10 +254,10 @@ local function clean_settings(deployer)
 
     clear_all_outputs(deployer)
 
-    cb.get_section(section_index.drone_count).active = true
+    cb.get_section(section_index.total_drone_count).active = true
     cb.get_section(section_index.available_drone_count).active = true
 
-    update_drone_count_output(deployer)
+    update_total_drone_count_output(deployer)
     update_available_drone_count_output(deployer)
 end
 
@@ -290,7 +275,7 @@ function deployer_helper.set_always_release(deployer, flag)
 end
 
 function deployer_helper.get_drone_limit_value(deployer)
-    return get_drone_limit(deployer) or 10
+    return get_drone_limit(deployer) or default_drone_limit
 end
 function deployer_helper.set_drone_limit_value(deployer, value)
     set_drone_limit(deployer, value)
@@ -317,13 +302,13 @@ end
 
 function deployer_helper.get_drone_limit(deployer)
     if not get_drone_limit_circuit(deployer) then
-        return get_drone_limit(deployer) or 10
+        return get_drone_limit(deployer) or default_drone_limit
     end
 
     local signal_id = get_drone_limit_circuit_signal_id(deployer)
 
     if signal_id == nil then
-        return 10
+        return default_drone_limit
     end
 
     local limit_signal = deployer.get_signal(signal_id, defines.wire_connector_id.circuit_red, defines.wire_connector_id.circuit_green)
@@ -335,41 +320,33 @@ function deployer_helper.get_drone_limit(deployer)
     return limit_signal
 end
 
-function deployer_helper.is_drone_count_circuit(deployer)
-    return get_drone_count_circuit(deployer)
+function deployer_helper.is_drone_counts_circuit(deployer)
+    return get_drone_counts_circuit(deployer)
 end
-function deployer_helper.set_drone_count_circuit(deployer, flag)
-    set_drone_count_circuit(deployer, flag)
+function deployer_helper.set_drone_counts_circuit(deployer, flag)
+    set_drone_counts_circuit(deployer, flag)
 
-    update_drone_count_output(deployer)
-end
-
-function deployer_helper.get_drone_count_circuit_signal_id(deployer)
-    return get_drone_count_circuit_signal_id(deployer)
-end
-function deployer_helper.set_drone_count_circuit_signal_id(deployer, signal_id)
-    set_drone_count_circuit_signal_id(deployer, signal_id)
-
-    update_drone_count_output(deployer)
-end
-
-function deployer_helper.set_drone_count(deployer, drone_count)
-    ep.set_entity_property(deployer, "drone_count", drone_count)
-
-    update_drone_count_output(deployer)
-end
-
-function deployer_helper.is_available_drone_count_circuit(deployer)
-    return get_available_drone_count_circuit(deployer)
-end
-function deployer_helper.set_available_drone_count_circuit(deployer, flag)
-    set_available_drone_count_circuit(deployer, flag)
-
+    update_total_drone_count_output(deployer)
     update_available_drone_count_output(deployer)
 end
 
+function deployer_helper.get_total_drone_count_circuit_signal_id(deployer)
+    return get_total_drone_count_circuit_signal_id(deployer)
+end
+function deployer_helper.set_total_drone_count_circuit_signal_id(deployer, signal_id)
+    set_total_drone_count_circuit_signal_id(deployer, signal_id)
+
+    update_total_drone_count_output(deployer)
+end
+
+function deployer_helper.set_total_drone_count(deployer, drone_count)
+    ep.set_entity_property(deployer, "total_drone_count", drone_count)
+
+    update_total_drone_count_output(deployer)
+end
+
 function deployer_helper.get_available_drone_count_circuit_signal_id(deployer)
-    return get_drone_count_circuit_signal_id(deployer)
+    return get_available_drone_count_circuit_signal_id(deployer)
 end
 function deployer_helper.set_available_drone_count_circuit_signal_id(deployer, signal_id)
     set_available_drone_count_circuit_signal_id(deployer, signal_id)
