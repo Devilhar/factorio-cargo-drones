@@ -10,6 +10,15 @@ local window_gui_name = gui_prefix .. "window-deployer-main"
 
 local not_observed = {}
 
+local deployer_status_to_caption = {
+    [dlc.deployer_status.awaiting_drone]    = { "cargo-drone-gui-deployer.deployer-status-awaiting_drone" },
+    [dlc.deployer_status.preparing]         = { "cargo-drone-gui-deployer.deployer-status-preparing" },
+    [dlc.deployer_status.awaiting_fuel]     = { "cargo-drone-gui-deployer.deployer-status-awaiting_fuel" },
+    [dlc.deployer_status.at_drone_limit]    = { "cargo-drone-gui-deployer.deployer-status-at_drone_limit" },
+    [dlc.deployer_status.idling]            = { "cargo-drone-gui-deployer.deployer-status-idling" },
+    [dlc.deployer_status.releasing]         = { "cargo-drone-gui-deployer.deployer-status-releasing" },
+}
+
 local function get_drone_limit_signal_element(player_data, element)
     local signal_id = dlh.get_drone_limit_circuit_signal_id(player_data.entity)
 
@@ -39,6 +48,12 @@ local function get_available_drone_count_signal_element(player_data, element)
 end
 
 local observers = {
+    get_deployer_status = {
+        get = function(player_data) return dlc.get_deployer_status(player_data.entity) end,
+        updated = function(player_data, data)
+            player_data.elements.status_label.caption = deployer_status_to_caption[data]
+        end
+    },
     is_drone_limit_circuit = {
         get = function(player_data) return dlh.is_drone_limit_circuit(player_data.entity) end,
         updated = function(player_data, data)
@@ -293,6 +308,23 @@ local function build_gui_deployer(player_data, deployer, parent)
         style = "inside_shallow_frame",
         direction = "vertical",
     }
+
+    ---------- Header ----------
+    local header_frame = deployer_frame.add{
+        type = "frame",
+        style = "subheader_frame",
+        direction = "horizontal",
+    }
+
+    header_frame.style.horizontally_stretchable = true
+    header_frame.style.vertical_align = "center"
+
+    local status_label = header_frame.add{ type = "label" }
+
+    status_label.style.margin = 2
+    status_label.style.left_margin = 4
+
+    player_data.elements.status_label = status_label
 
     local deployer_flow = deployer_frame.add{
         type = "flow",
