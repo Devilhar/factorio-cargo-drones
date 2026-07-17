@@ -536,4 +536,36 @@ function deployer_controller.idle_drone_count_changed(surface_index)
     update_available_drone_count(surface_index)
 end
 
+function deployer_controller.release_drone(deployer)
+    local drone_data = ep.get_entity_property(deployer, "drone_data")
+
+    if drone_data and drone_data.state == drone_states.idle then
+        begin_release_drone(deployer, game.tick)
+    end
+end
+
+function deployer_controller.is_drone_prepared(deployer)
+    local drone_data = ep.get_entity_property(deployer, "drone_data")
+
+    return drone_data ~= nil and drone_data.state == drone_states.idle
+end
+function deployer_controller.get_drone_inventory(deployer)
+    local drone_container = ep.get_entity_property(deployer, "drone_container")
+
+    if not drone_container then
+        return nil
+    end
+
+    return drone_container.get_inventory(defines.inventory.chest)
+end
+function deployer_controller.get_fuel_inventory(deployer)
+    local dummy_fuel_drone = ep.get_entity_property(deployer, "dummy_fuel_drone")
+
+    if not dummy_fuel_drone then
+        return nil
+    end
+
+    return dummy_fuel_drone.get_inventory(defines.inventory.fuel)
+end
+
 return deployer_controller

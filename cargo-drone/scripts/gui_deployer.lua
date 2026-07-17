@@ -2,6 +2,7 @@
 -- If you're here looking for a good way to handle GUI. Go elsewhere. There's nothing for you here. Naught but despair
 
 local dlh = require("deployer_helper")
+local dlc = require("deployer_controller")
 
 local gui_prefix = "cargo-drone-"
 
@@ -117,6 +118,13 @@ local observers = {
         end
     },
 
+    is_drone_prepared = {
+        get = function(player_data) return dlc.is_drone_prepared(player_data.entity) end,
+        updated = function(player_data, data)
+            player_data.elements.release_drone_button.enabled = data
+        end
+    },
+
     ---------- Circuit ----------
     get_drone_limit_signal_element_type = {
         get = function(player_data) return get_drone_limit_signal_element(player_data, "type") end,
@@ -137,10 +145,10 @@ local observers = {
         end
     },
 
-    is_drone_counts_circuit = {
-        get = function(player_data) return dlh.is_drone_counts_circuit(player_data.entity) end,
+    is_drone_statistics_circuit = {
+        get = function(player_data) return dlh.is_drone_statistics_circuit(player_data.entity) end,
         updated = function(player_data, data)
-            player_data.elements.drone_counts_circuit_checkbox.state = data
+            player_data.elements.drone_statistics_circuit_checkbox.state = data
             player_data.elements.total_drone_count_signal_label.enabled = data
             player_data.elements.total_drone_count_signal_choose_elem_button.enabled = data
             player_data.elements.available_drone_count_signal_label.enabled = data
@@ -230,6 +238,10 @@ local callbacks = {
         update_gui(player_data)
     end,
 
+    [gui_prefix .. "release-drone-button"] = function(player_data, event)
+        dlc.release_drone(player_data.entity)
+    end,
+
     ---------- Circuit ----------
     [gui_prefix .. "set-drone-limit-checkbox"] = function(player_data, event)
         dlh.set_drone_limit_circuit(player_data.entity, player_data.elements.drone_limit_circuit_checkbox.state)
@@ -240,8 +252,8 @@ local callbacks = {
         dlh.set_drone_limit_circuit_signal_id(player_data.entity, player_data.elements.drone_limit_signal_choose_elem_button.elem_value)
     end,
 
-    [gui_prefix .. "read-drone-counts-checkbox"] = function(player_data, event)
-        dlh.set_drone_counts_circuit(player_data.entity, player_data.elements.drone_counts_circuit_checkbox.state)
+    [gui_prefix .. "read-drone-statistics-checkbox"] = function(player_data, event)
+        dlh.set_drone_statistics_circuit(player_data.entity, player_data.elements.drone_statistics_circuit_checkbox.state)
 
         update_gui(player_data)
     end,
@@ -288,6 +300,7 @@ local function build_gui_deployer(player_data, deployer, parent)
     }
 
     deployer_flow.style.width = 412
+    deployer_flow.style.minimal_height = 400
     deployer_flow.style.padding = 16
 
     ---------- Entity preview ----------
@@ -353,8 +366,17 @@ local function build_gui_deployer(player_data, deployer, parent)
     player_data.elements.drone_limit_slider = drone_limit_slider
     player_data.elements.drone_limit_field = drone_limit_field
 
-    ---------- Always release ----------
-    local always_release_checkbox = deployer_flow.add{
+    ---------- Release ----------
+    local release_flow = deployer_flow.add{
+        type = "flow",
+        direction = "horizontal",
+    }
+
+    release_flow.style.vertical_align = "center"
+    release_flow.style.horizontal_spacing = 8
+    release_flow.style.bottom_margin = 8
+
+    local always_release_checkbox = release_flow.add{
         type = "checkbox",
         name = gui_prefix .. "set-always-release-checkbox",
         caption = { "cargo-drone-gui-deployer.enable-always-release" },
@@ -362,7 +384,20 @@ local function build_gui_deployer(player_data, deployer, parent)
         state = dlh.get_always_release(deployer)
     }
 
+    local release_filler = release_flow.add{
+        type = "empty-widget",
+    }
+
+    release_filler.style.horizontally_stretchable = true
+
+    local release_drone_button = release_flow.add{
+        type = "button",
+        name = gui_prefix .. "release-drone-button",
+        caption = { "cargo-drone-gui-deployer.release-drone" },
+    }
+
     player_data.elements.always_release_checkbox = always_release_checkbox
+    player_data.elements.release_drone_button = release_drone_button
 
     ---------- Filler ----------
     local deployer_filler = deployer_flow.add{
@@ -417,8 +452,8 @@ local function build_gui_circuit(player_data, deployer, parent)
     local drone_limit_circuit_checkbox = main_frame.add{
         type = "checkbox",
         name = gui_prefix .. "set-drone-limit-checkbox",
-        caption = { "cargo-drone-gui-control-behavior-modes.set-drone-limit" },
-        tooltip = { "cargo-drone-gui-control-behavior-modes.set-drone-limit-description" },
+        caption = { "cargo-drone-gui-deployer-control-behavior-modes.set-total-drone-limit" },
+        tooltip = { "cargo-drone-gui-deployer-control-behavior-modes.set-total-drone-limit-description" },
         style = "subheader_caption_checkbox",
         state = dlh.is_drone_limit_circuit(deployer)
     }
@@ -441,7 +476,7 @@ local function build_gui_circuit(player_data, deployer, parent)
 
     local drone_limit_signal_label = drone_limit_signal_flow.add{
         type = "label",
-        caption = { "cargo-drone-gui-control-behavior-modes.drone-limit" }
+        caption = { "cargo-drone-gui-deployer-control-behavior-modes.total-drone-limit" }
     }
 
     local drone_limit_signal_filler = drone_limit_signal_flow.add{
@@ -460,27 +495,27 @@ local function build_gui_circuit(player_data, deployer, parent)
     player_data.elements.drone_limit_signal_label = drone_limit_signal_label
     player_data.elements.drone_limit_signal_choose_elem_button = drone_limit_signal_choose_elem_button
 
-    ---------- Drone Counts ----------
+    ---------- Drone statistics ----------
 
     main_frame.add{
         type = "line",
     }
 
-    local drone_counts_circuit_checkbox = main_frame.add{
+    local drone_statistics_circuit_checkbox = main_frame.add{
         type = "checkbox",
-        name = gui_prefix .. "read-drone-counts-checkbox",
-        caption = { "cargo-drone-gui-control-behavior-modes.read-drone-counts" },
-        tooltip = { "cargo-drone-gui-control-behavior-modes.read-drone-counts-description" },
+        name = gui_prefix .. "read-drone-statistics-checkbox",
+        caption = { "cargo-drone-gui-deployer-control-behavior-modes.read-drone-statistics" },
+        tooltip = { "cargo-drone-gui-deployer-control-behavior-modes.read-drone-statistics-description" },
         style = "subheader_caption_checkbox",
-        state = dlh.is_drone_counts_circuit(deployer)
+        state = dlh.is_drone_statistics_circuit(deployer)
     }
 
-    drone_counts_circuit_checkbox.style.top_margin = 4
-    drone_counts_circuit_checkbox.style.bottom_margin = 4
-    drone_counts_circuit_checkbox.style.left_margin = 12
-    drone_counts_circuit_checkbox.style.right_margin = 12
+    drone_statistics_circuit_checkbox.style.top_margin = 4
+    drone_statistics_circuit_checkbox.style.bottom_margin = 4
+    drone_statistics_circuit_checkbox.style.left_margin = 12
+    drone_statistics_circuit_checkbox.style.right_margin = 12
 
-    player_data.elements.drone_counts_circuit_checkbox = drone_counts_circuit_checkbox
+    player_data.elements.drone_statistics_circuit_checkbox = drone_statistics_circuit_checkbox
 
     ---------- Total drone count ----------
 
@@ -497,7 +532,7 @@ local function build_gui_circuit(player_data, deployer, parent)
 
     local total_drone_count_signal_label = total_drone_count_signal_flow.add{
         type = "label",
-        caption = { "cargo-drone-gui-control-behavior-modes.total-drone-count" }
+        caption = { "cargo-drone-gui-deployer-control-behavior-modes.total-drone-count" }
     }
 
     local total_drone_count_signal_filler = total_drone_count_signal_flow.add{
@@ -530,7 +565,7 @@ local function build_gui_circuit(player_data, deployer, parent)
 
     local available_drone_count_signal_label = available_drone_count_signal_flow.add{
         type = "label",
-        caption = { "cargo-drone-gui-control-behavior-modes.available-drone-count" }
+        caption = { "cargo-drone-gui-deployer-control-behavior-modes.available-drone-count" }
     }
 
     local available_drone_count_signal_filler = available_drone_count_signal_flow.add{
