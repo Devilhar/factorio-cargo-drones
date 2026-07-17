@@ -1480,8 +1480,8 @@ local function build_gui_circuit(player_data, mooring, mooring_name, parent)
     local drone_limit_circuit_checkbox = main_frame.add{
         type = "checkbox",
         name = gui_prefix .. "set-drone-limit-checkbox",
-        caption = { "cargo-drone-gui-control-behavior-modes.set-drone-limit" },
-        tooltip = { "cargo-drone-gui-control-behavior-modes.set-drone-limit-description" },
+        caption = { "cargo-drone-gui-mooring-control-behavior-modes.set-drone-limit" },
+        tooltip = { "cargo-drone-gui-mooring-control-behavior-modes.set-drone-limit-description" },
         style = "subheader_caption_checkbox",
         state = th.is_drone_limit_circuit(mooring)
     }
@@ -1504,7 +1504,7 @@ local function build_gui_circuit(player_data, mooring, mooring_name, parent)
 
     local drone_limit_signal_label = drone_limit_signal_flow.add{
         type = "label",
-        caption = { "cargo-drone-gui-control-behavior-modes.drone-limit" }
+        caption = { "cargo-drone-gui-mooring-control-behavior-modes.drone-limit" }
     }
 
     local drone_limit_signal_filler = drone_limit_signal_flow.add{
@@ -1533,8 +1533,8 @@ local function build_gui_circuit(player_data, mooring, mooring_name, parent)
         local drone_id_circuit_checkbox = main_frame.add{
             type = "checkbox",
             name = gui_prefix .. "drone-id-checkbox",
-            caption = { "cargo-drone-gui-control-behavior-modes.read-docked-drone" },
-            tooltip = { "cargo-drone-gui-control-behavior-modes.read-docked-drone-description" },
+            caption = { "cargo-drone-gui-mooring-control-behavior-modes.read-docked-drone" },
+            tooltip = { "cargo-drone-gui-mooring-control-behavior-modes.read-docked-drone-description" },
             style = "subheader_caption_checkbox",
             state = mh.get_drone_id_circuit(mooring)
         }
@@ -1557,7 +1557,7 @@ local function build_gui_circuit(player_data, mooring, mooring_name, parent)
 
         local drone_id_signal_label = drone_id_signal_flow.add{
             type = "label",
-            caption = { "cargo-drone-gui-control-behavior-modes.drone-id" }
+            caption = { "cargo-drone-gui-mooring-control-behavior-modes.drone-id" }
         }
 
         local drone_id_signal_filler = drone_id_signal_flow.add{
@@ -1586,8 +1586,8 @@ local function build_gui_circuit(player_data, mooring, mooring_name, parent)
     local drone_count_circuit_checkbox = main_frame.add{
         type = "checkbox",
         name = gui_prefix .. "read-drone-count-checkbox",
-        caption = { "cargo-drone-gui-control-behavior-modes.read-drone-count" },
-        tooltip = { "cargo-drone-gui-control-behavior-modes.read-drone-count-description" },
+        caption = { "cargo-drone-gui-mooring-control-behavior-modes.read-drone-count" },
+        tooltip = { "cargo-drone-gui-mooring-control-behavior-modes.read-drone-count-description" },
         style = "subheader_caption_checkbox",
         state = th.is_drone_count_circuit(mooring)
     }
@@ -1610,7 +1610,7 @@ local function build_gui_circuit(player_data, mooring, mooring_name, parent)
 
     local drone_count_signal_label = drone_count_signal_flow.add{
         type = "label",
-        caption = { "cargo-drone-gui-control-behavior-modes.drone-count" }
+        caption = { "cargo-drone-gui-mooring-control-behavior-modes.drone-count" }
     }
 
     local drone_count_signal_filler = drone_count_signal_flow.add{
@@ -1638,8 +1638,8 @@ local function build_gui_circuit(player_data, mooring, mooring_name, parent)
     local priority_circuit_checkbox = main_frame.add{
         type = "checkbox",
         name = gui_prefix .. "set-priority-checkbox",
-        caption = { "cargo-drone-gui-control-behavior-modes.set-priority" },
-        tooltip = { "cargo-drone-gui-control-behavior-modes.set-priority-description" },
+        caption = { "cargo-drone-gui-mooring-control-behavior-modes.set-priority" },
+        tooltip = { "cargo-drone-gui-mooring-control-behavior-modes.set-priority-description" },
         style = "subheader_caption_checkbox",
         state = th.is_priority_circuit(mooring)
     }
@@ -1662,7 +1662,7 @@ local function build_gui_circuit(player_data, mooring, mooring_name, parent)
 
     local priority_signal_label = priority_signal_flow.add{
         type = "label",
-        caption = { "cargo-drone-gui-control-behavior-modes.priority" }
+        caption = { "cargo-drone-gui-mooring-control-behavior-modes.priority" }
     }
 
     local priority_signal_filler = priority_signal_flow.add{
@@ -1691,8 +1691,8 @@ local function build_gui_circuit(player_data, mooring, mooring_name, parent)
         local read_requests_circuit_checkbox = main_frame.add{
             type = "checkbox",
             name = gui_prefix .. "read-requests-checkbox",
-            caption = { "cargo-drone-gui-control-behavior-modes.read-requests" },
-            tooltip = { "cargo-drone-gui-control-behavior-modes.read-requests-description" },
+            caption = { "cargo-drone-gui-mooring-control-behavior-modes.read-requests" },
+            tooltip = { "cargo-drone-gui-mooring-control-behavior-modes.read-requests-description" },
             style = "subheader_caption_checkbox",
             state = mh.get_read_requests(mooring)
         }
