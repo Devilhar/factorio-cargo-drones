@@ -201,17 +201,37 @@ local function make_directional_sprite(layer)
 	return layer
 end
 
-local half_height = 502 / 2
-local half_shift = util.by_pixel(0, -502 / 8)
+local function make_directional_quater_sprites(layer)
+	local sprites = {}
+	local mults = {
+		6/32,
+		1/8,
+		1/16,
+		0,
+	}
 
-local cargo_drone_sprite_north			= make_directional_sprite{ name = "cargo-drone-north",			filename = "__cargo-drone__/graphics/cargo-drone.png", 			y = 0 }
-local cargo_drone_sprite_east			= make_directional_sprite{ name = "cargo-drone-east",			filename = "__cargo-drone__/graphics/cargo-drone.png", 			y = 1004 }
-local cargo_drone_sprite_south			= make_directional_sprite{ name = "cargo-drone-south",			filename = "__cargo-drone__/graphics/cargo-drone.png", 			y = 2008 }
-local cargo_drone_sprite_west			= make_directional_sprite{ name = "cargo-drone-west",			filename = "__cargo-drone__/graphics/cargo-drone.png", 			y = 3012 }
-local cargo_drone_half_sprite_north		= make_directional_sprite{ name = "cargo-drone-half-north",		filename = "__cargo-drone__/graphics/cargo-drone.png",			y = 0,		height = half_height, shift = half_shift }
-local cargo_drone_half_sprite_east		= make_directional_sprite{ name = "cargo-drone-half-east",		filename = "__cargo-drone__/graphics/cargo-drone.png",			y = 1004,	height = half_height, shift = half_shift }
-local cargo_drone_half_sprite_south		= make_directional_sprite{ name = "cargo-drone-half-south",		filename = "__cargo-drone__/graphics/cargo-drone.png",			y = 2008,	height = half_height, shift = half_shift }
-local cargo_drone_half_sprite_west		= make_directional_sprite{ name = "cargo-drone-half-west",		filename = "__cargo-drone__/graphics/cargo-drone.png",			y = 3012,	height = half_height, shift = half_shift }
+	for i = 1, 4 do
+		local height = (252 / 4) * i
+		--local shift_height = 252 / 8
+		local quater_layer = table.deepcopy(layer)
+
+		quater_layer.y = quater_layer.y + 125
+		quater_layer.height = height
+		quater_layer.shift = util.by_pixel(0, -252 * mults[i])
+
+		sprites[i] = make_directional_sprite(quater_layer)
+
+		sprites[i].name = sprites[i].name .. "-" .. i
+	end
+
+	return sprites
+end
+
+local cargo_drone_sprites_north	= make_directional_quater_sprites{ name = "cargo-drone-north",			filename = "__cargo-drone__/graphics/cargo-drone.png", 			y = 0 }
+local cargo_drone_sprites_east	= make_directional_quater_sprites{ name = "cargo-drone-east",			filename = "__cargo-drone__/graphics/cargo-drone.png", 			y = 1004 }
+local cargo_drone_sprites_south	= make_directional_quater_sprites{ name = "cargo-drone-south",			filename = "__cargo-drone__/graphics/cargo-drone.png", 			y = 2008 }
+local cargo_drone_sprites_west	= make_directional_quater_sprites{ name = "cargo-drone-west",			filename = "__cargo-drone__/graphics/cargo-drone.png", 			y = 3012 }
+
 local cargo_drone_shadow_sprite_north	= make_directional_sprite{ name = "cargo-drone-shadow-north",	filename = "__cargo-drone__/graphics/cargo-drone-shadow.png",	y = 0,		draw_as_shadow = true }
 local cargo_drone_shadow_sprite_east	= make_directional_sprite{ name = "cargo-drone-shadow-east",	filename = "__cargo-drone__/graphics/cargo-drone-shadow.png",	y = 1004,	draw_as_shadow = true }
 local cargo_drone_shadow_sprite_south	= make_directional_sprite{ name = "cargo-drone-shadow-south",	filename = "__cargo-drone__/graphics/cargo-drone-shadow.png",	y = 2008,	draw_as_shadow = true }
@@ -246,14 +266,22 @@ data:extend({
 		results = { { type = "item", name = "cargo-drone", amount = 1 } }
 	},
 
-	cargo_drone_sprite_north,
-	cargo_drone_sprite_east,
-	cargo_drone_sprite_south,
-	cargo_drone_sprite_west,
-	cargo_drone_half_sprite_north,
-	cargo_drone_half_sprite_east,
-	cargo_drone_half_sprite_south,
-	cargo_drone_half_sprite_west,
+	cargo_drone_sprites_north[1],
+	cargo_drone_sprites_north[2],
+	cargo_drone_sprites_north[3],
+	cargo_drone_sprites_north[4],
+	cargo_drone_sprites_east[1],
+	cargo_drone_sprites_east[2],
+	cargo_drone_sprites_east[3],
+	cargo_drone_sprites_east[4],
+	cargo_drone_sprites_south[1],
+	cargo_drone_sprites_south[2],
+	cargo_drone_sprites_south[3],
+	cargo_drone_sprites_south[4],
+	cargo_drone_sprites_west[1],
+	cargo_drone_sprites_west[2],
+	cargo_drone_sprites_west[3],
+	cargo_drone_sprites_west[4],
 	cargo_drone_shadow_sprite_north,
 	cargo_drone_shadow_sprite_east,
 	cargo_drone_shadow_sprite_south,

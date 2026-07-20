@@ -26,12 +26,6 @@ local drone_dir_sprites = {
 	[defines.direction.south]	= "cargo-drone-south",
 	[defines.direction.west]	= "cargo-drone-west",
 }
-local drone_half_dir_sprites = {
-	[defines.direction.north]	= "cargo-drone-half-north",
-	[defines.direction.east]	= "cargo-drone-half-east",
-	[defines.direction.south]	= "cargo-drone-half-south",
-	[defines.direction.west]	= "cargo-drone-half-west",
-}
 local drone_shadow_dir_sprites = {
 	[defines.direction.north]	= "cargo-drone-shadow-north",
 	[defines.direction.east]	= "cargo-drone-shadow-east",
@@ -49,15 +43,16 @@ local drone_states = {
     release = 3,
 }
 
-local drone_placement_offset_y = 1
+local drone_placement_offset_y = 0.5
 
-local deploy_prepare_begin_offset = 3
+local deploy_prepare_begin_offset = 3.4
+local deploy_prepare_end_offset = 0.4
 local deploy_prepare_ticks = 6 * 60
-local deploy_prepare_sprite_change_ticks = 3 * 60
+local deploy_prepare_sprite_change_ticks = { 2 * 60, 4 * 60, 6 * 60 }
 
 local deploy_release_rest_ticks = 1 * 60
 local deploy_release_take_off_ticks = 5 * 60
-local deploy_release_layer_change_tick = 3.5 * 60
+local deploy_release_layer_change_tick = 2 * 60
 
 local function register_deployer(deployer)
     local surface_buffer = storage.deployer_controller.surfaces[deployer.surface.index]
@@ -181,11 +176,7 @@ local function update_drone_dir(deployer)
 		return
 	end
 
-    if drone_data.drone_sprite_half then
-        drone_data.drone.sprite = drone_half_dir_sprites[deployer.direction]
-    else
-        drone_data.drone.sprite = drone_dir_sprites[deployer.direction]
-    end
+    drone_data.drone.sprite = drone_dir_sprites[deployer.direction] .. "-" .. drone_data.drone_sprite_quater
     drone_data.drone_shadow.sprite = drone_shadow_dir_sprites[deployer.direction]
 end
 
@@ -210,16 +201,16 @@ local function begin_prepare_drone(deployer, game_tick)
     ep.set_entity_property(deployer, "drone_data", {
         state = drone_states.prepare,
         tick_start = game_tick,
+        drone_sprite_quater = 1,
         drone = rendering.draw_sprite{
-            sprite = drone_half_dir_sprites[deployer.direction],
+            sprite = drone_dir_sprites[deployer.direction] .. "-" .. 1,
             target = { entity = deployer, offset = { constants.drone_shift[1], deploy_prepare_begin_offset + drone_placement_offset_y } },
             surface = deployer.surface,
             render_layer = "higher-object-under",
         },
-        drone_sprite_half = true,
         drone_shadow = rendering.draw_sprite{
             sprite = drone_shadow_dir_sprites[deployer.direction],
-            target = { entity = deployer, offset = { 0, constants.drone_shadow_shift[2] } },
+            target = { entity = deployer, offset = { -deploy_prepare_end_offset, constants.drone_shadow_shift[2] } },
             surface = deployer.surface,
             render_layer = "object",
         },
@@ -230,14 +221,18 @@ end
 local function tick_prepare_drone(deployer, game_tick, drone_data)
     local progress = math.min((game_tick - drone_data.tick_start) / deploy_prepare_ticks, 1)
 
-    if game_tick == drone_data.tick_start + deploy_prepare_sprite_change_ticks then
-        drone_data.drone.sprite = drone_dir_sprites[deployer.direction]
-        drone_data.drone_sprite_half = false
+    for i = 2, 4 do
+        if game_tick == drone_data.tick_start + deploy_prepare_sprite_change_ticks[i - 1] then
+            drone_data.drone.sprite = drone_dir_sprites[deployer.direction] .. "-" .. i
+            drone_data.drone_sprite_quater = i
+        end
     end
+
+    local offset = deploy_prepare_begin_offset * (1 - progress) + progress * deploy_prepare_end_offset
 
     drone_data.drone.target = {
         entity = deployer,
-        offset = { constants.drone_shift[1], deploy_prepare_begin_offset - deploy_prepare_begin_offset * progress + drone_placement_offset_y },
+        offset = { constants.drone_shift[1], offset + drone_placement_offset_y },
     }
 
     if game_tick < drone_data.tick_start + deploy_prepare_ticks then
@@ -284,15 +279,18 @@ local function tick_release_drone(deployer, game_tick, drone_data)
     end
 
     if game_tick >= drone_data.tick_start + deploy_release_rest_ticks then
-        local height_per = 1 - (math.cos(((game_tick - drone_data.tick_start - deploy_release_rest_ticks) / deploy_release_take_off_ticks) * -math.pi) + 1) / 2
+        local progress = 1 - (math.cos(((game_tick - drone_data.tick_start - deploy_release_rest_ticks) / deploy_release_take_off_ticks) * -math.pi) + 1) / 2
+
+        local offset = deploy_prepare_end_offset * (1 - progress) + progress * constants.drone_shift[2]
+        local offset_shadow = -deploy_prepare_end_offset * (1 - progress) + progress * constants.drone_shadow_shift[1]
 
         drone_data.drone.target = {
             entity = deployer,
-            offset = { constants.drone_shift[1], constants.drone_shift[2] * height_per + drone_placement_offset_y },
+            offset = { constants.drone_shift[1], offset + drone_placement_offset_y },
         }
         drone_data.drone_shadow.target = {
             entity = deployer,
-            offset = { constants.drone_shadow_shift[1] * height_per, constants.drone_shadow_shift[2] + drone_placement_offset_y },
+            offset = { offset_shadow, constants.drone_shadow_shift[2] + drone_placement_offset_y },
         }
     end
 

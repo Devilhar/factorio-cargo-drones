@@ -14,9 +14,17 @@ local deployer_entity = merge_tables(table.deepcopy(data.raw["constant-combinato
 		layers = {
 			{
 				filename = "__cargo-drone__/graphics/cargo-drone-deployer.png",
-				width = 256,
-				height = 256,
+				width = 512,
+				height = 512,
+				scale = 0.5,
 			},
+			{
+				filename = "__cargo-drone__/graphics/cargo-drone-deployer-shadow.png",
+				width = 512,
+				height = 512,
+				scale = 0.75,
+				draw_as_shadow = true,
+			}
 		},
 	}),
 	collision_box = {{-3.85, -3.85}, {3.85, 3.85}},
@@ -55,16 +63,17 @@ local function make_overlap_sprite(direction, x)
 		filename = "__cargo-drone__/graphics/cargo-drone-deployer-overlap.png",
 		priority = "very-low",
 		x = x,
-		width = 256,
-		height = 256,
+		width = 512,
+		height = 512,
+		scale = 0.5,
 		mipmap_count = 2,
 	}
 end
 
 local deployer_overlap_sprite_north	= make_overlap_sprite("north",	0)
-local deployer_overlap_sprite_east	= make_overlap_sprite("east",	256)
-local deployer_overlap_sprite_south	= make_overlap_sprite("south",	512)
-local deployer_overlap_sprite_west	= make_overlap_sprite("west",	768)
+local deployer_overlap_sprite_east	= make_overlap_sprite("east",	512)
+local deployer_overlap_sprite_south	= make_overlap_sprite("south",	1024)
+local deployer_overlap_sprite_west	= make_overlap_sprite("west",	1536)
 
 local deployer_raise_drone = {
 	type = "sound",
