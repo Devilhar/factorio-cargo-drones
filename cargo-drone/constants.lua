@@ -19,10 +19,10 @@ constants.random_tick_interval = 60
 constants.drone_flight_height_pixels = 265
 constants.drone_flight_height = util.by_pixel(0, 265)[2]
 
-constants.drone_shift_pixels = { 2, -284 }
-constants.drone_shift = util.by_pixel(2, -284)
-constants.drone_shadow_shift_pixels = { 385, -16 }
-constants.drone_shadow_shift = util.by_pixel(385, -16)
+constants.drone_shift_pixels = { 0, -284 }
+constants.drone_shift = util.by_pixel(0, -284)
+constants.drone_shadow_shift_pixels = { 383, -16 }
+constants.drone_shadow_shift = util.by_pixel(383, -16)
 
 -- Scheduling
 constants.requester_cooldown_ticks = 30
