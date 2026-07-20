@@ -28,6 +28,14 @@ data:extend{
     },
 
     {
+        type = "bool-setting",
+        name = "cargo-drone-lightning-exemption",
+        setting_type = "startup",
+        default_value = false,
+        order = "b-cargo-drone-a",
+    },
+
+    {
         type = "int-setting",
         name = "cargo-drone-fuel-interrupt-percentage",
         setting_type = "runtime-global",

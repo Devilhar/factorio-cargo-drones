@@ -1,3 +1,5 @@
+  Minor Features:
+    - Added a setting to disable lightning damage to Cargo drones.
 ---------------------------------------------------------------------------------------------------
 Version: 1.15.0
 Date: 25. 06. 2026
