@@ -3,9 +3,9 @@
   "version": "1.16.0",
   "title": "Cargo Drone",
   "author": "Devilhar",
-  "factorio_version": "2.1",
+  "factorio_version": "2.0",
   "dependencies": [
-    "base >= 2.1",
+    "base >= 2.0",
     "? space-age"
   ],
   "description": "Adds a cargo drone. Much love <3"
