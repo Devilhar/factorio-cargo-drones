@@ -175,7 +175,9 @@ local deployer_dummy_fuel_drone = {
 	rotation_snap_angle = 1,
 	energy_source = {
 		type = "burner",
-		fuel_inventory_size = settings.startup["cargo-drone-fuel-inventory-size"].value,
+		-- Set later in data-final-fixes.lua
+		fuel_inventory_size = 0,
+		auto_refuel = false,
 	},
 	inventory_size = 0,
 	weight = 1,
