@@ -8,6 +8,17 @@ local function merge_tables(placeholder, overwrite_table)
 	return placeholder
 end
 
+local deployer_circuit_wire_connection_point = {
+	shadow = {
+		red = util.by_pixel(152 * 0.75, 162 * 0.75),
+		green = util.by_pixel(146 * 0.75, 165 * 0.75)
+	},
+	wire = {
+		red = util.by_pixel(148 * 0.5, 171 * 0.5),
+		green = util.by_pixel(136 * 0.5, 176 * 0.5)
+	}
+}
+
 local deployer_entity = merge_tables(table.deepcopy(data.raw["constant-combinator"]["constant-combinator"]), {
 	name = "cargo-drone-deployer-constant-combinator",
 	sprites = make_4way_animation_from_spritesheet({
@@ -31,6 +42,14 @@ local deployer_entity = merge_tables(table.deepcopy(data.raw["constant-combinato
 	selection_box = {{-4, -4}, {4, 4}},
 	minable = { mining_time = 0.2, result = "cargo-drone-deployer-constant-combinator" },
 	flags = { "hide-alt-info", "not-upgradable", "placeable-neutral", "player-creation" },
+	circuit_wire_connection_points = {
+		deployer_circuit_wire_connection_point,
+		deployer_circuit_wire_connection_point,
+		deployer_circuit_wire_connection_point,
+		deployer_circuit_wire_connection_point
+	},
+	circuit_connector = circuit_connector_definitions["chest"],
+	circuit_wire_max_distance = default_circuit_wire_max_distance
 })
 
 local deployer_item = {
