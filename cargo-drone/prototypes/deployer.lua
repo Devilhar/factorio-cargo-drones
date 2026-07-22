@@ -75,12 +75,18 @@ local deployer_overlap_sprite_east	= make_overlap_sprite("east",	512)
 local deployer_overlap_sprite_south	= make_overlap_sprite("south",	1024)
 local deployer_overlap_sprite_west	= make_overlap_sprite("west",	1536)
 
-local deployer_raise_drone = {
+local deployer_raise_drone_sound = {
 	type = "sound",
 	name = "cargo-drone-deployer-raise-drone",
 	filename = "__cargo-drone__/sound/cargo-drone-deployer-raise-drone.ogg",
 }
-local deployer_drone_release = {
+local deployer_raise_drone_stop_sound = {
+	type = "sound",
+	name = "cargo-drone-deployer-raise-drone-stop",
+	filename = "__base__/sound/car-metal-impact-2.ogg",
+	speed = 0.5
+}
+local deployer_drone_release_sound = {
 	type = "sound",
 	name = "cargo-drone-deployer-drone-release",
 	filename = "__cargo-drone__/sound/cargo-drone-deployer-drone-release.ogg",
@@ -169,8 +175,9 @@ data:extend({
 	deployer_overlap_sprite_south,
 	deployer_overlap_sprite_west,
 
-	deployer_raise_drone,
-	deployer_drone_release,
+	deployer_raise_drone_sound,
+	deployer_raise_drone_stop_sound,
+	deployer_drone_release_sound,
 
 	deployer_proxy_container,
 	deployer_drone_container,
