@@ -239,6 +239,8 @@ local function tick_prepare_drone(deployer, game_tick, drone_data)
         return
     end
 
+    deployer.surface.play_sound{ path = "cargo-drone-deployer-raise-drone-stop", position = deployer.position }
+
     drone_data.state = drone_states.idle
 
     local proxy_container = ep.get_entity_property(deployer, "proxy_container")
