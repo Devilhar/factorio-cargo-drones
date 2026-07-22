@@ -18,6 +18,13 @@ local deployer_circuit_wire_connection_point = {
 		green = util.by_pixel(136 * 0.5, 176 * 0.5)
 	}
 }
+local deployer_activity_light_sprite = util.draw_as_glow{
+	scale = 0.5,
+	filename = "__base__/graphics/entity/combinator/activity-leds/constant-combinator-LED-S.png",
+	width = 14,
+	height = 16,
+	shift = util.by_pixel(132 * 0.5, 195 * 0.5),
+}
 
 local deployer_entity = merge_tables(table.deepcopy(data.raw["constant-combinator"]["constant-combinator"]), {
 	name = "cargo-drone-deployer-constant-combinator",
@@ -38,6 +45,12 @@ local deployer_entity = merge_tables(table.deepcopy(data.raw["constant-combinato
 			}
 		},
 	}),
+	activity_led_sprites = {
+		north = deployer_activity_light_sprite,
+		east = deployer_activity_light_sprite,
+		south = deployer_activity_light_sprite,
+		west = deployer_activity_light_sprite,
+	},
 	collision_box = {{-3.85, -3.85}, {3.85, 3.85}},
 	selection_box = {{-4, -4}, {4, 4}},
 	minable = { mining_time = 0.2, result = "cargo-drone-deployer-constant-combinator" },
@@ -48,7 +61,6 @@ local deployer_entity = merge_tables(table.deepcopy(data.raw["constant-combinato
 		deployer_circuit_wire_connection_point,
 		deployer_circuit_wire_connection_point
 	},
-	circuit_connector = circuit_connector_definitions["chest"],
 	circuit_wire_max_distance = default_circuit_wire_max_distance
 })
 
