@@ -21,6 +21,18 @@ Provider moorings works similar to Provider chests, making items available to be
 
 Requester moorings works similar to Requester chests, but since it doesn't have an inventory, it doesn't make sense to set requests the same way. To make requests continuously send it a circuit signal with all the requested items and their quantity.
 
+#### Request mode
+The Requester has 4 request modes. These are used to set the minimum amount of items that must be delivered in a single request. If no single Provider has enough items to fullfill a request, no drone will be tasked.
+
+This can be used to stop multiple drones being assigned tasks to pickup single items as they become available at providers.
+
+| Mode | Minimum item requested              |
+|------|-------------------------------------|
+|Any   |No minimum, will pickup any amount   |
+|Stack |All requests are for full stacks only. Note that requests are rounded up, so if the Requester has a signal for 101 Iron plates, it will try to request 200 Iron plates|
+|Fuzzy |Sets the minimum to either a stack or the exact amount requested, whichever is smaller|
+|Full  |Sets the minimum to a drone's inventory capacity. Note that requests are rounded up, so assuming drones have 10 inventory slots and the Requester has a signal for 1 Iron plate, it will try to request 1000 Iron plates|
+
 ### <img src="https://raw.githubusercontent.com/Devilhar/factorio-cargo-drones/refs/heads/main/docs/cargo-drone-mooring-refueler-icon.png" width="32"> Refueler mooring
 
 Refueler moorings is where drones will head to when they run low on fuel. Once the drone is fully fueled, it will return to whatever it was doing.
