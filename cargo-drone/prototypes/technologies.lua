@@ -26,10 +26,6 @@ data:extend({
 				type = "unlock-recipe",
 				recipe = "cargo-drone-depot-constant-combinator"
 			},
-			{
-				type = "unlock-recipe",
-				recipe = "cargo-drone-deployer-constant-combinator"
-			},
 		},
 		prerequisites = {
 			"radar",
@@ -47,5 +43,32 @@ data:extend({
 			},
 			time = 30
 		}
-	}
+	},
+	{
+		type = "technology",
+		name = "cargo-drone-deployer",
+		icon = "__cargo-drone__/graphics/cargo-drone-deployer-icon-256x256.png",
+		icon_size = 256,
+		effects = {
+			{
+				type = "unlock-recipe",
+				recipe = "cargo-drone-deployer-constant-combinator"
+			},
+		},
+		prerequisites = {
+			"cargo-drones",
+			"concrete",
+		},
+		unit =
+		{
+			count = 75,
+			ingredients =
+			{
+				{"automation-science-pack", 1},
+				{"logistic-science-pack", 1},
+        		{"chemical-science-pack", 1}
+			},
+			time = 30
+		}
+	},
 })
