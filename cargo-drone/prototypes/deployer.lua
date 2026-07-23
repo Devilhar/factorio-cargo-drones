@@ -173,6 +173,7 @@ local deployer_dummy_fuel_drone = {
 		"not-upgradable",
 		"not-deconstructable",
 		"player-creation",
+		"not-on-map",
 		"not-blueprintable",
 		"not-repairable",
 		"not-in-kill-statistics",
