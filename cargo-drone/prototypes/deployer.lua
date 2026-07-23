@@ -82,8 +82,9 @@ local deployer_recipe = {
 	name = "cargo-drone-deployer-constant-combinator",
 	enabled = false,
 	ingredients = {
-		{ type = "item", name = "steel-plate", amount = 20 },
-		{ type = "item", name = "radar", amount = 1 }
+		{ type = "item", name = "steel-plate", amount = 50 },
+		{ type = "item", name = "engine-unit", amount = 25 },
+		{ type = "item", name = "concrete", amount = 100 },
 	},
 	results = {{type="item", name="cargo-drone-deployer-constant-combinator", amount=1}}
 }
