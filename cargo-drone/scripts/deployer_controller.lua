@@ -193,7 +193,16 @@ local function create_drone(deployer)
     local dummy_fuel_drone = ep.get_entity_property(deployer, "dummy_fuel_drone")
 
     if dummy_fuel_drone and dummy_fuel_drone.valid then
-        drone.get_inventory(defines.inventory.fuel).transfer_from_inventory(dummy_fuel_drone.get_inventory(defines.inventory.fuel))
+        local inventory_dummy = dummy_fuel_drone.get_inventory(defines.inventory.fuel)
+        local inventory_drone = drone.get_inventory(defines.inventory.fuel)
+
+        for i = 1, #inventory_dummy do
+            local item = inventory_dummy[i]
+
+            inventory_drone.insert({ name = item.name, quality = item.quality, count = item.count })
+        end
+
+        inventory_dummy.clear()
     end
 end
 
