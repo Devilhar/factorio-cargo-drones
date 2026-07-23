@@ -195,7 +195,15 @@ local function create_drone(deployer, drone_data)
     local fuel_inventory = drone.get_inventory(defines.inventory.fuel)
 
     if fuel_inventory and drone_data.dummy_fuel_drone.valid then
-        fuel_inventory.transfer_from_inventory(drone_data.dummy_fuel_drone.get_inventory(defines.inventory.fuel))
+        local inventory_dummy = drone_data.dummy_fuel_drone.get_inventory(defines.inventory.fuel)
+
+        for i = 1, #inventory_dummy do
+            local item = inventory_dummy[i]
+
+            fuel_inventory.insert({ name = item.name, quality = item.quality, count = item.count })
+        end
+
+        inventory_dummy.clear()
     end
 end
 
