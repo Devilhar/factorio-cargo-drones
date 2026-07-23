@@ -41,6 +41,7 @@ function on_surface_cleared(event)
     local feature_switches = {
         proxy_moorings = minor < 4,
         depot = minor >= 8,
+        deployer = minor >= 17,
     }
 
     local player = game.players[1]
@@ -70,6 +71,21 @@ function on_surface_cleared(event)
         moorng_names.requester  = "cargo-drone-mooring-constant-combinator-requester"
         moorng_names.refueler   = "cargo-drone-mooring-constant-combinator-refueler"
     end
+
+    surface.create_entity{
+        name = "ee-infinity-accumulator-primary-output",
+        position = { -3, -30 },
+        direction = defines.direction.north,
+        force = player.force,
+        raise_built = true
+    }
+    surface.create_entity{
+        name = "ee-super-substation",
+        position = { 3, -30 },
+        direction = defines.direction.north,
+        force = player.force,
+        raise_built = true
+    }
 
     local provider = surface.create_entity{
         name = moorng_names.provider,
@@ -102,6 +118,87 @@ function on_surface_cleared(event)
             force = player.force,
             raise_built = true
         }
+    end
+    if feature_switches.deployer then
+        surface.create_entity{
+            name = "cargo-drone-deployer-constant-combinator",
+            position = { 17, -14 },
+            direction = defines.direction.north,
+            force = player.force,
+            raise_built = true
+        }
+        surface.create_entity{
+            name = "cargo-drone-deployer-constant-combinator",
+            position = { 26, -14 },
+            direction = defines.direction.east,
+            force = player.force,
+            raise_built = true
+        }
+        surface.create_entity{
+            name = "cargo-drone-deployer-constant-combinator",
+            position = { 17, -5 },
+            direction = defines.direction.south,
+            force = player.force,
+            raise_built = true
+        }
+        surface.create_entity{
+            name = "cargo-drone-deployer-constant-combinator",
+            position = { 26, -5 },
+            direction = defines.direction.west,
+            force = player.force,
+            raise_built = true
+        }
+
+        local function make_drone_inserter(position)
+            surface.create_entity{
+                name = "fast-inserter",
+                position = { position[1] + 4, position[2] },
+                direction = defines.direction.east,
+                force = player.force,
+            }
+            local chest = surface.create_entity{
+                name = "steel-chest",
+                position = { position[1] + 5, position[2] },
+                force = player.force,
+            }
+
+            local inventory = chest.get_inventory(defines.inventory.chest)
+
+            inventory.insert("cargo-drone")
+        end
+
+        surface.create_entity{
+            name = "cargo-drone-deployer-constant-combinator",
+            position = { -18, -14 },
+            direction = defines.direction.north,
+            force = player.force,
+            raise_built = true
+        }
+        surface.create_entity{
+            name = "cargo-drone-deployer-constant-combinator",
+            position = { -27, -14 },
+            direction = defines.direction.east,
+            force = player.force,
+            raise_built = true
+        }
+        surface.create_entity{
+            name = "cargo-drone-deployer-constant-combinator",
+            position = { -18, -5 },
+            direction = defines.direction.south,
+            force = player.force,
+            raise_built = true
+        }
+        surface.create_entity{
+            name = "cargo-drone-deployer-constant-combinator",
+            position = { -27, -5 },
+            direction = defines.direction.west,
+            force = player.force,
+            raise_built = true
+        }
+        make_drone_inserter({ -18, -14 })
+        make_drone_inserter({ -27, -14 })
+        make_drone_inserter({ -18, -5 })
+        make_drone_inserter({ -27, -5 })
     end
     local drone = surface.create_entity{
         name = "cargo-drone",
@@ -172,6 +269,40 @@ function on_surface_cleared(event)
             name = "entity-ghost",
             inner_name = "cargo-drone-depot-constant-combinator",
             position = { 9, 5 },
+            force = player.force,
+            raise_built = true
+        }
+    end
+    if feature_switches.deployer then
+        surface.create_entity{
+            name = "entity-ghost",
+            inner_name = "cargo-drone-deployer-constant-combinator",
+            position = { 17, 5 },
+            direction = defines.direction.north,
+            force = player.force,
+            raise_built = true
+        }
+        surface.create_entity{
+            name = "entity-ghost",
+            inner_name = "cargo-drone-deployer-constant-combinator",
+            position = { 26, 5 },
+            direction = defines.direction.east,
+            force = player.force,
+            raise_built = true
+        }
+        surface.create_entity{
+            name = "entity-ghost",
+            inner_name = "cargo-drone-deployer-constant-combinator",
+            position = { 17, 14 },
+            direction = defines.direction.south,
+            force = player.force,
+            raise_built = true
+        }
+        surface.create_entity{
+            name = "entity-ghost",
+            inner_name = "cargo-drone-deployer-constant-combinator",
+            position = { 26, 14 },
+            direction = defines.direction.west,
             force = player.force,
             raise_built = true
         }
