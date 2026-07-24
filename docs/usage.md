@@ -13,6 +13,11 @@ If drones don't have a task, they will seek out available depots where they will
 The moorings are what allows you to insert into or take items out of drones.
 They don't have an inventory of their own, instead when a drone docks with a mooring, inserters interacting with the mooring will access the drone's inventory.
 
+### Name
+The name of any mooring can be changed to any string you want. There is a limit of 144 bytes where each normal character takes up 1 byte. Icons take up more bytes as they are represented like this: "[item=iron-plate]", which in this example is 17 bytes long.
+
+The name is not used in any logic, but is there purely to help you organize and keep track of what is where.
+
 ### Drone limit
 You can set a limit of incoming drones to any mooring by setting it in its menu or by sending the mooring a signal.
 
@@ -67,6 +72,11 @@ If the docked drone has any burnt results in it, it will also wait for those ite
 Depots act as a gathering point for drones with no task. This can be used to reduce delivery times since drones closest to the Provider will be preferred when assigning tasks.
 
 Drones will try to spread themselves evenly amongst the depots with the highest priority.
+
+### Name
+The name of any depot can be changed to any string you want. There is a limit of 144 bytes where each normal character takes up 1 byte. Icons take up more bytes as they are represented like this: "[item=iron-plate]", which in this example is 17 bytes long.
+
+The name is not used in any logic, but is there purely to help you organize and keep track of what is where.
 
 ### Limit drones per depot
 You can set a limit of incoming and parked drones to any depot by setting it in its menu or by sending the depot a signal.
