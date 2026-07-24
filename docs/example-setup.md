@@ -11,7 +11,7 @@ Here is a blueprint book with cheat sheets:
 
 </details>
 
-### <img src="https://raw.githubusercontent.com/Devilhar/factorio-cargo-drones/refs/heads/main/docs/cargo-drone-mooring-provider-icon.png" width="32"> Provider mooring
+### <img src="https://raw.githubusercontent.com/Devilhar/factorio-cargo-drones/refs/heads/main/images/provider-mooring-icon.png" width="32"> Provider mooring
 
 The easiest setup is to have a chest inserting into the Provider mooring and sending it its content.
 
@@ -19,7 +19,7 @@ The easiest setup is to have a chest inserting into the Provider mooring and sen
 
 To wire up the signals, simply connect the chest to the mooring with either red or green wire. The color makes no difference. By default, wired chests automatically read their content, but you can make sure by opening the chest and see that the "Read content" checkbox is checked.
 
-### Requester mooring
+### <img src="https://raw.githubusercontent.com/Devilhar/factorio-cargo-drones/refs/heads/main/images/requester-mooring-icon.png" width="32"> Requester mooring
 
 The easiest setup is to have a Requester mooring inserting into a chest. Then have the chest send its content into an Arithmetic combinator and invert the signal, and send the inverted signal to the Requester mooring. Finally a Constant combinator with a list of the requested items wired up to the Requester mooring using the same colored wire as the Arithmetic combinator.
 
@@ -35,7 +35,7 @@ Wire the Constant combinator to the Arithmetic combinator's Output. Then add the
 
 But this can result in a lot of Cargo drones getting tasked with picking up single items as they're taken out of the chest one by one. To counteract this, set the Request mode in the Requester to either Stack or Full. This makes it so it will request full stacks or full drone loads instead of individual items. Meaning the requester will have to be missing either an entire stack or drone load before making another request.
 
-### Refueler mooring
+### <img src="https://raw.githubusercontent.com/Devilhar/factorio-cargo-drones/refs/heads/main/images/refueler-mooring-icon.png" width="32"> Refueler mooring
 
 Refuelers require no signals, so the easiest setup is to simply insert fuel into the Refueler mooring.
 
