@@ -108,7 +108,7 @@ For Signals:
 Deployers keep track of two drone counts, used in its logic. These can be outputted by the deployer via circuit signals.
 
 #### Total drone count
-The amount of drones on the surface of the deployer. Includes any drone currently being released.
+- The amount of drones on the surface of the deployer. Includes any drone currently being released.
 
 #### Available drone count
-The amount of drones on the surface of the deployer that does not have a task assigned to them. Includes any drone currently being released.
+- The amount of drones on the surface of the deployer that does not have a task assigned to them. Includes any drone currently being released.
