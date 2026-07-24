@@ -38,8 +38,8 @@ Note that drones already tasked with going to a mooring will not change target i
 ### Inventory targeting
 You can set which inventory each tile of the mooring should target. This is primarily intended for removing burnt results, but can be used to add or remove fuel or burnt results from drones at any mooring.
 
-#### Limitation:
-- Mirroring moorings when pasting them will not mirror the inventory targets inside the mooring. But it is possible to mirror them once they have been placed.
+> [!WARNING]
+> Mirroring moorings when pasting them will not mirror the inventory targets inside the mooring. But it is possible to mirror them once they have been placed.
 
 ## <img src="https://raw.githubusercontent.com/Devilhar/factorio-cargo-drones/refs/heads/main/images/provider-mooring-icon.png" width="32"> Provider mooring
 
@@ -78,7 +78,7 @@ The name of any depot can be changed to any string you want. There is a limit of
 
 The name is not used in any logic, but is there purely to help you organize and keep track of what is where.
 
-### Limit drones per depot
+### Drone limit
 You can set a limit of incoming and parked drones to any depot by setting it in its menu or by sending the depot a signal.
 
 For Signals:
@@ -101,9 +101,10 @@ Note that drones already tasked with going to a depot will not change target if 
 
 Deployers can automatically deploy new drones when needed. This is done by inserting drones as items into the deployer, this will automatically prepare the drone. Once the drone is prepared it needs to be fuelled before it will be released, this is done by inserting the fuel into the deployer. When the drone has a full fuel inventory, the deployer can autonomously release it.
 
-By default drones are only released if there are no drones without a task. This can be changed to always be released in the deployer.
+> [!NOTE]
+> Due to technical limitations, items must be inserted either via inserter or loader. It is not possible to do it via the menu.
 
-Drones are only released if the amount of drones on the surface is less than the deployer's total drone limit.
+By default drones are only released if there are no drones without a task. This can be changed to always be released in the deployer.
 
 ### Total drone limit
 To stop an endless amount of drones from causing lag, there's a limit on the total amount of drones that are allowed on the surface of the deployer. This limit is set per deployer. Drones are only released if the amount of drones on the surface is less than the deployer's total drone limit.
@@ -115,7 +116,7 @@ For Signals:
 - Any value less than or equal to 0 will stop new drones from being released by that deployer
 
 ### Drone statistics
-Deployers keep track of two drone counts, used in its logic. These can be outputted by the deployer via circuit signals.
+Deployers keep track of two drone counts used in its logic. These can be outputted by the deployer via circuit signals.
 
 #### Total drone count
 - The amount of drones on the surface of the deployer. Includes any drone currently being released.
