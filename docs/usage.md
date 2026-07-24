@@ -8,38 +8,12 @@ Another difference is the source of fuel. Cargo drones need fuel like a Car. Thi
 
 If drones don't have a task, they will seek out available depots where they will await further tasks.
 
-## Moorings
+## <img src="https://raw.githubusercontent.com/Devilhar/factorio-cargo-drones/refs/heads/main/docs/cargo-drone-mooring-provider-icon.png" width="32"> <img src="https://raw.githubusercontent.com/Devilhar/factorio-cargo-drones/refs/heads/main/docs/cargo-drone-mooring-requester-icon.png" width="32"> <img src="https://raw.githubusercontent.com/Devilhar/factorio-cargo-drones/refs/heads/main/docs/cargo-drone-mooring-refueler-icon.png" width="32"> Moorings
 
 The moorings are what allows you to insert into or take items out of drones.
 They don't have an inventory of their own, instead when a drone docks with a mooring, inserters interacting with the mooring will access the drone's inventory.
 
-### <img src="https://raw.githubusercontent.com/Devilhar/factorio-cargo-drones/refs/heads/main/docs/cargo-drone-mooring-provider-icon.png" width="32"> Provider mooring
-
-Provider moorings works similar to Provider chests, making items available to be picked up by drones. To tell it what items are available, continuously send it a circuit signal with all the items and their quantity.
-
-### <img src="https://raw.githubusercontent.com/Devilhar/factorio-cargo-drones/refs/heads/main/docs/cargo-drone-mooring-requester-icon.png" width="32"> Requester mooring
-
-Requester moorings works similar to Requester chests, but since it doesn't have an inventory, it doesn't make sense to set requests the same way. To make requests continuously send it a circuit signal with all the requested items and their quantity.
-
-#### Request mode
-The Requester has 4 request modes. These are used to set the minimum amount of items that must be delivered in a single request. If no single Provider has enough items to fullfill a request, no drone will be tasked.
-
-This can be used to stop multiple drones being assigned tasks to pickup single items as they become available at providers.
-
-| Mode | Minimum item requested              |
-|------|-------------------------------------|
-|Any   |No minimum, will pickup any amount   |
-|Stack |All requests are for full stacks only. Note that requests are rounded up, so if the Requester has a signal for 101 Iron plates, it will try to request 200 Iron plates|
-|Fuzzy |Sets the minimum to either a stack or the exact amount requested, whichever is smaller|
-|Full  |Sets the minimum to a drone's inventory capacity. Note that requests are rounded up, so assuming drones have 10 inventory slots and the Requester has a signal for 1 Iron plate, it will try to request 1000 Iron plates|
-
-### <img src="https://raw.githubusercontent.com/Devilhar/factorio-cargo-drones/refs/heads/main/docs/cargo-drone-mooring-refueler-icon.png" width="32"> Refueler mooring
-
-Refueler moorings is where drones will head to when they run low on fuel. Once the drone is fully fueled, it will return to whatever it was doing.
-
-If the docked drone has any burnt results in it, it will also wait for those items to be removed before leaving. This is only relevant if burnt results has been enabled in the mod settings.
-
-### Limit drones per mooring
+### Drone limit
 You can set a limit of incoming drones to any mooring by setting it in its menu or by sending the mooring a signal.
 
 For Signals:
@@ -61,6 +35,32 @@ You can set which inventory each tile of the mooring should target. This is prim
 
 #### Limitation:
 - Mirroring moorings when pasting them will not mirror the inventory targets inside the mooring. But it is possible to mirror them once they have been placed.
+
+## <img src="https://raw.githubusercontent.com/Devilhar/factorio-cargo-drones/refs/heads/main/docs/cargo-drone-mooring-provider-icon.png" width="32"> Provider mooring
+
+Provider moorings works similar to Provider chests, making items available to be picked up by drones. To tell it what items are available, continuously send it a circuit signal with all the items and their quantity.
+
+## <img src="https://raw.githubusercontent.com/Devilhar/factorio-cargo-drones/refs/heads/main/docs/cargo-drone-mooring-requester-icon.png" width="32"> Requester mooring
+
+Requester moorings works similar to Requester chests, but since it doesn't have an inventory, it doesn't make sense to set requests the same way. To make requests continuously send it a circuit signal with all the requested items and their quantity.
+
+### Request mode
+The Requester has 4 request modes. These are used to set the minimum amount of items that must be delivered in a single request. If no single Provider has enough items to fullfill a request, no drone will be tasked.
+
+This can be used to stop multiple drones being assigned tasks to pickup single items as they become available at providers.
+
+| Mode | Minimum item requested              |
+|------|-------------------------------------|
+|Any   |No minimum, will pickup any amount   |
+|Stack |All requests are for full stacks only. Note that requests are rounded up, so if the Requester has a signal for 101 Iron plates, it will try to request 200 Iron plates|
+|Fuzzy |Sets the minimum to either a stack or the exact amount requested, whichever is smaller|
+|Full  |Sets the minimum to a drone's inventory capacity. Note that requests are rounded up, so assuming drones have 10 inventory slots and the Requester has a signal for 1 Iron plate, it will try to request 1000 Iron plates|
+
+## <img src="https://raw.githubusercontent.com/Devilhar/factorio-cargo-drones/refs/heads/main/docs/cargo-drone-mooring-refueler-icon.png" width="32"> Refueler mooring
+
+Refueler moorings is where drones will head to when they run low on fuel. Once the drone is fully fueled, it will return to whatever it was doing.
+
+If the docked drone has any burnt results in it, it will also wait for those items to be removed before leaving. This is only relevant if burnt results has been enabled in the mod settings.
 
 ## <img src="https://raw.githubusercontent.com/Devilhar/factorio-cargo-drones/refs/heads/main/docs/cargo-drone-depot-icon.png" width="32"> Depot
 
