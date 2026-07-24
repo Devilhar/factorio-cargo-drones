@@ -23,7 +23,7 @@ To wire up the signals, simply connect the chest to the mooring with either red 
 
 The easiest setup is to have a Requester mooring inserting into a chest. Then have the chest send its content into an Arithmetic combinator and invert the signal, and send the inverted signal to the Requester mooring. Finally a Constant combinator with a list of the requested items wired up to the Requester mooring using the same colored wire as the Arithmetic combinator.
 
-This makes it so the mooring will requests items missing from the chest.
+This makes it so the mooring will request items missing from the chest.
 
 <img src="https://raw.githubusercontent.com/devilhar/factorio-cargo-drones/main/images/requester-setup.png">
 
