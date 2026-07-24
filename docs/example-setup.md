@@ -1,6 +1,6 @@
-## Example Setup
+<h1 align="center">Example setup</h1>
 
-### Cheat sheet blueprints
+## Cheat sheet blueprints
 
 Here is a blueprint book with cheat sheets:
 <details>
@@ -11,25 +11,13 @@ Here is a blueprint book with cheat sheets:
 
 </details>
 
-### Provider mooring
+### <img src="https://raw.githubusercontent.com/Devilhar/factorio-cargo-drones/refs/heads/main/docs/cargo-drone-mooring-provider-icon.png" width="32"> Provider mooring
 
 The easiest setup is to have a chest inserting into the Provider mooring and sending it its content.
 
 <img src="https://raw.githubusercontent.com/devilhar/factorio-cargo-drones/main/images/provider-setup.png">
 
 To wire up the signals, simply connect the chest to the mooring with either red or green wire. The color makes no difference. By default, wired chests automatically read their content, but you can make sure by opening the chest and see that the "Read content" checkbox is checked.
-
-<img src="https://raw.githubusercontent.com/devilhar/factorio-cargo-drones/main/images/provider-chest-configuration.png">
-
-But this can result in a lot of Cargo drones getting tasked with picking up single items as they're added into the chest one by one. To counteract this, add a Decider combinator and instead wire the chest to the Decider combinator's input (The side with an arrow pointing *into it* when in Alt-mode).
-
-<img src="https://raw.githubusercontent.com/devilhar/factorio-cargo-drones/main/images/provider-setup-decider.png">
-
-Inside the Decider combinator, add a condition which checks if "Each" is higher than or equal to a minimum value you set. This value is the required amount of each item for them to be made available for pickup. In the example the minimum amount is 20.
-
-Finally add an output, and set it to "Each" and check "Input count".
-
-<img src="https://raw.githubusercontent.com/devilhar/factorio-cargo-drones/main/images/provider-decider-combinator-configuration.png">
 
 ### Requester mooring
 
@@ -39,29 +27,13 @@ This makes it so the mooring will requests items missing from the chest.
 
 <img src="https://raw.githubusercontent.com/devilhar/factorio-cargo-drones/main/images/requester-setup.png">
 
-#### Signals
-
 Connect the chest to the Arithmetic combinator's input (The side with an arrow pointing *into it* when in Alt-mode) with either red or green wire. The color makes no difference. Make sure its sending its content over the wire by opening the chest and see that the "Read content" checkbox is checked.
-
-<img src="https://raw.githubusercontent.com/devilhar/factorio-cargo-drones/main/images/requester-chest-configuration.png">
 
 In the Arithmetic combinator, set the Input (The first box under Input) and Output to "Each". Then set the Constant number to -1. Finally wire the output to the Requester mooring (The side with an arrow pointing *out* when in Alt-mode).
 
-<img src="https://raw.githubusercontent.com/devilhar/factorio-cargo-drones/main/images/requester-arithmetic-combinator-configuration.png">
-
 Wire the Constant combinator to the Arithmetic combinator's Output. Then add the items you wish to request.
 
-<img src="https://raw.githubusercontent.com/devilhar/factorio-cargo-drones/main/images/requester-constant-combinator-configuration.png">
-
-But this can result in a lot of Cargo drones getting tasked with picking up single items as they're taken out of the chest one by one. To counteract this, add a Decider combinator and instead wire the Arithmetic combinator's Output to the Decider combinator's input (The side with an arrow pointing *into it* when in Alt-mode).
-
-<img src="https://raw.githubusercontent.com/devilhar/factorio-cargo-drones/main/images/requester-setup-decider.png">
-
-Inside the Decider combinator, add a condition which checks if "Each" is higher than or equal to a minimum value you set. This value is the required amount each item need to be missing for it to be requested. In the example the minimum amount is 20.
-
-Finally add an output, and set it to "Each" and check "Input count".
-
-<img src="https://raw.githubusercontent.com/devilhar/factorio-cargo-drones/main/images/requester-decider-combinator-configuration.png">
+But this can result in a lot of Cargo drones getting tasked with picking up single items as they're taken out of the chest one by one. To counteract this, set the Request mode in the Requester to either Stack or Full. This makes it so it will request full stacks or full drone loads instead of individual items. Meaning the requester will have to be missing either an entire stack or drone load before making another request.
 
 ### Refueler mooring
 
