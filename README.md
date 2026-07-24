@@ -14,32 +14,13 @@ Notice that the provider and requester moorings don't have any inventory space; 
 - Requester Moorings: To request items, input signals of the items and their count
 - Refueler Moorings: Refueler moorings are always active, so make sure that they have fuel available or Cargo Drones will get stuck waiting there as they will not leave until fully refueled
 
-When a Cargo Drone is waiting at a mooring, you can insert and extract items by inserting into/out of the mooring
+When a Cargo Drone is waiting at a mooring, you can insert and extract items by inserting into/out of the mooring.
 
-You can find an example setup and Blueprint book cheat sheet [here](example-setup.md)
+- You can find an example setup and Blueprint book cheat sheet [here](docs/example-setup.md)
+- For more in-depth explanations go to the [usage](docs/usage.md) section
 
-### Limit Cargo drones per mooring
-You can set a limit of incoming Cargo drones to any mooring by setting it in its menu or by sending the mooring a signal.
-
-For Signals:
-- Any value greater than 0 will set the limit to that value
-- Any value less than or equal to 0 will stop new Cargo drones from heading towards it
-
-Note that Cargo drones already tasked with going to a mooring will not stop or change task if the mooring is now above its limit.
-
-### Mooring priority
-You can set any mooring's priority to a number between 0 and 255 (inclusive) by setting it in its menu or by sending the mooring a signal. Moorings with a higher priority signal will be targeted first by Cargo drones.
-
-For Signals:
-- The value will be clamped between 0 and 255
-
-Note that Cargo drones already tasked with going to a mooring will not change target if there's a new mooring with higher priority.
-
-### Mooring inventory targeting
-You can set which inventory each tile of the mooring should target. This is primarily intended for removing burnt results, but can be used to refuel Cargo drones at any mooring.
-
-Limitation:
-- Mirroring moorings when pasting them will not mirror the inventory targets inside the mooring. But it is possible to mirror them once they have been placed.
+## Want you name in the mod?
+Moorings and Depots have a list of default names. If you want your name in it, simply leave a comment on [this thread](https://mods.factorio.com/mod/cargo-drone/discussion/69cffa6b1ac576ba3a8cc2bb) or submit it in [this Google forms](https://docs.google.com/forms/d/e/1FAIpQLScxgUvPshNqgkHA6LmNkEkS_W-_6UsW4ZvHqafAvMTLcefAzg/viewform?usp=header).
 
 ### Special thanks
 Thank you to KeithFromCanada for feedback and help
