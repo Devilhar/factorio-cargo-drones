@@ -186,6 +186,7 @@ end
 local function create_drone(deployer, drone_data)
     local drone = deployer.surface.create_entity{
         name = drone_data.drone_name,
+        quality = drone_data.drone_quality,
         force = deployer.force,
         position = { deployer.position.x, deployer.position.y + drone_placement_offset_y },
         direction = deployer.direction,
@@ -200,11 +201,12 @@ local function create_drone(deployer, drone_data)
     end
 end
 
-local function begin_prepare_drone(deployer, game_tick, drone_name)
+local function begin_prepare_drone(deployer, game_tick, drone_name, drone_quality)
     ep.set_entity_property(deployer, "drone_data", {
         state = drone_states.prepare,
         tick_start = game_tick,
         drone_name = drone_name,
+        drone_quality = drone_quality,
         drone_sprite_quater = 1,
         drone = rendering.draw_sprite{
             sprite = "cargo-drone-deployer-" .. drone_name .. "-" .. direction_to_cardinal[deployer.direction] .. "-" .. 1,
@@ -345,9 +347,9 @@ local function tick_deployer(deployer, game_tick)
             return activation_state.inactive
         end
 
-        local contents = container_inventory.get_contents()
+        local drone_item = container_inventory.get_contents()[1]
 
-        local item_prototype = prototypes.item[contents[1].name]
+        local item_prototype = prototypes.item[drone_item.name]
 
         if not item_prototype or not item_prototype.place_result then
             return activation_state.inactive
@@ -365,8 +367,8 @@ local function tick_deployer(deployer, game_tick)
             proxy_container.proxy_target_entity = nil
         end
 
-        container_inventory.clear()
-        begin_prepare_drone(deployer, game_tick, drone_name)
+        container_inventory.remove({ name = drone_item.name, quality = drone_item.quality, count = 1  })
+        begin_prepare_drone(deployer, game_tick, drone_name, drone_item.quality)
 
         return activation_state.active
     end
