@@ -1,5 +1,5 @@
 
-local constants	= require("constants")
+local constants	= require("scripts.constants")
 local ep		= require("scripts.entity_property")
 local th		= require("scripts.target_helper")
 local deh		= require("scripts.depot_helper")
