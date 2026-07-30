@@ -2,6 +2,7 @@
 local ep = require("entity_property")
 local dt = require("drone_tasks")
 local dh = require("drone_helper")
+local dc = require("drone_controller")
 local th = require("target_helper")
 
 local gui_prefix = "cargo-drone-"
@@ -144,7 +145,7 @@ function gui_cargo_drone.on_gui_opened(event)
 		return
 	end
 
-    if entity.name ~= "cargo-drone" then
+    if prototypes.mod_data["cargo-drone-data"].data.drones[entity.name] == nil then
         return
     end
 

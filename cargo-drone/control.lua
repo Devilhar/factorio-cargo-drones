@@ -135,8 +135,20 @@ function on_player_removed(event)
 	gcd.on_player_removed(event)
 end
 
+local function on_built_entity_drone(entity)
+	script.register_on_object_destroyed(entity)
+
+	dc.created(entity)
+
+	dt.drone_created(entity)
+end
 local function on_built_entity_mooring_proc(entity)
 	mc.created(entity)
+end
+local function on_destroyed_entity_drone(entity)
+	dc.destroyed(entity)
+
+	dt.drone_destroyed(entity)
 end
 local function on_destroyed_entity_mooring_proc(entity)
 	mc.destroyed(entity)
@@ -154,13 +166,6 @@ local on_built_entity_procs = {
 
 		mh.clean_settings_ghost(entity)
 	end,
-	["cargo-drone"] = function (entity)
-		script.register_on_object_destroyed(entity)
-
-		dc.created(entity)
-
-		dt.drone_created(entity)
-	end,
 	["cargo-drone-depot-constant-combinator"] = function (entity)
 		deh.created(entity)
 
@@ -176,11 +181,6 @@ local on_built_entity_procs = {
 	["cargo-drone-mooring-constant-combinator-refueler"] = on_built_entity_mooring_proc,
 }
 local on_destroyed_entity_procs = {
-	["cargo-drone"] = function (entity)
-		dc.destroyed(entity)
-
-		dt.drone_destroyed(entity)
-	end,
 	["cargo-drone-depot-constant-combinator"] = function (entity)
 		deh.destroyed(entity)
 
@@ -193,6 +193,11 @@ local on_destroyed_entity_procs = {
 	["cargo-drone-mooring-constant-combinator-requester"] = on_destroyed_entity_mooring_proc,
 	["cargo-drone-mooring-constant-combinator-refueler"] = on_destroyed_entity_mooring_proc,
 }
+
+for name, _ in pairs(prototypes.mod_data["cargo-drone-data"].data.drones) do
+	on_built_entity_procs[name] = on_built_entity_drone
+	on_destroyed_entity_procs[name] = on_destroyed_entity_drone
+end
 
 function on_surface_deleted(event)
 	ep.remove_invalid_entities()
@@ -392,7 +397,6 @@ function on_gui_confirmed(event)
 end
 
 local build_event_filters = {
-	{ filter = "name", name = "cargo-drone" },
 	{ filter = "name", name = "cargo-drone-mooring-constant-combinator-provider" },
 	{ filter = "name", name = "cargo-drone-mooring-constant-combinator-requester" },
 	{ filter = "name", name = "cargo-drone-mooring-constant-combinator-refueler" },
@@ -412,7 +416,6 @@ local build_events = {
 	defines.events.on_entity_cloned,
 }
 local destroy_event_filters = {
-	{ filter = "name", name = "cargo-drone" },
 	{ filter = "name", name = "cargo-drone-mooring-constant-combinator-provider" },
 	{ filter = "name", name = "cargo-drone-mooring-constant-combinator-requester" },
 	{ filter = "name", name = "cargo-drone-mooring-constant-combinator-refueler" },
@@ -429,9 +432,13 @@ local destroy_events = {
 	defines.events.on_robot_mined_entity,
 	defines.events.script_raised_destroy,
 }
-local script_raised_teleported_filters = {
-	{ filter = "name", name = "cargo-drone" },
-}
+local script_raised_teleported_filters = {}
+
+for name, _ in pairs(prototypes.mod_data["cargo-drone-data"].data.drones) do
+	table.insert(build_event_filters, { filter = "name", name = name })
+	table.insert(destroy_event_filters, { filter = "name", name = name })
+	table.insert(script_raised_teleported_filters, { filter = "name", name = name })
+end
 
 script.on_init(on_init)
 script.on_configuration_changed(on_configuration_changed)
