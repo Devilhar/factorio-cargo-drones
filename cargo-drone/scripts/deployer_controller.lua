@@ -1,5 +1,4 @@
 
-local constants     = require("constants")
 local ep            = require("entity_property")
 local dlh           = require("deployer_helper")
 local dc            = require("drone_controller")
@@ -14,23 +13,17 @@ local deployer_status = {
     releasing       = 6,
 }
 
+local direction_to_cardinal = {
+    [defines.direction.north]	= "north",
+	[defines.direction.east]	= "east",
+	[defines.direction.south]	= "south",
+	[defines.direction.west]	= "west",
+}
 local deployer_overlap_dir_sprites = {
 	[defines.direction.north]	= "deployer-overlap-north",
 	[defines.direction.east]	= "deployer-overlap-east",
 	[defines.direction.south]	= "deployer-overlap-south",
 	[defines.direction.west]	= "deployer-overlap-west",
-}
-local drone_dir_sprites = {
-	[defines.direction.north]	= "cargo-drone-north",
-	[defines.direction.east]	= "cargo-drone-east",
-	[defines.direction.south]	= "cargo-drone-south",
-	[defines.direction.west]	= "cargo-drone-west",
-}
-local drone_shadow_dir_sprites = {
-	[defines.direction.north]	= "cargo-drone-shadow-north",
-	[defines.direction.east]	= "cargo-drone-shadow-east",
-	[defines.direction.south]	= "cargo-drone-shadow-south",
-	[defines.direction.west]	= "cargo-drone-shadow-west",
 }
 
 local activation_state = {
@@ -120,6 +113,16 @@ local function get_releasing_drone_count(surface_index)
     return surface_buffer.releasing_drones
 end
 
+local function update_drone_container_filters(drone_container)
+    local drone_container_inventory = drone_container.get_inventory(defines.inventory.chest)
+    local slot_index = 1
+
+    for drone_name, _ in pairs(prototypes.mod_data["cargo-drone-data"].data.drones) do
+        drone_container_inventory.set_filter(slot_index, { name = drone_name })
+
+        slot_index = slot_index + 1
+    end
+end
 local function update_drone_count(surface_index)
     local surface_buffer = storage.deployer_controller.surfaces[surface_index]
 
@@ -176,13 +179,13 @@ local function update_drone_dir(deployer)
 		return
 	end
 
-    drone_data.drone.sprite = drone_dir_sprites[deployer.direction] .. "-" .. drone_data.drone_sprite_quater
-    drone_data.drone_shadow.sprite = drone_shadow_dir_sprites[deployer.direction]
+    drone_data.drone.sprite = "cargo-drone-deployer-" .. drone_data.drone_name .. "-" .. direction_to_cardinal[deployer.direction] .. "-" .. drone_data.drone_sprite_quater
+    drone_data.drone_shadow.sprite = "cargo-drone-deployer-" .. drone_data.drone_name .. "-shadow-" .. direction_to_cardinal[deployer.direction]
 end
 
-local function create_drone(deployer)
+local function create_drone(deployer, drone_data)
     local drone = deployer.surface.create_entity{
-        name = "cargo-drone",
+        name = drone_data.drone_name,
         force = deployer.force,
         position = { deployer.position.x, deployer.position.y + drone_placement_offset_y },
         direction = deployer.direction,
@@ -197,20 +200,21 @@ local function create_drone(deployer)
     end
 end
 
-local function begin_prepare_drone(deployer, game_tick)
+local function begin_prepare_drone(deployer, game_tick, drone_name)
     ep.set_entity_property(deployer, "drone_data", {
         state = drone_states.prepare,
         tick_start = game_tick,
+        drone_name = drone_name,
         drone_sprite_quater = 1,
         drone = rendering.draw_sprite{
-            sprite = drone_dir_sprites[deployer.direction] .. "-" .. 1,
-            target = { entity = deployer, offset = { constants.drone_shift[1], deploy_prepare_begin_offset + drone_placement_offset_y } },
+            sprite = "cargo-drone-deployer-" .. drone_name .. "-" .. direction_to_cardinal[deployer.direction] .. "-" .. 1,
+            target = { entity = deployer, offset = { 0, deploy_prepare_begin_offset + drone_placement_offset_y } },
             surface = deployer.surface,
             render_layer = "higher-object-under",
         },
         drone_shadow = rendering.draw_sprite{
-            sprite = drone_shadow_dir_sprites[deployer.direction],
-            target = { entity = deployer, offset = { -deploy_prepare_end_offset, constants.drone_shadow_shift[2] } },
+            sprite = "cargo-drone-deployer-" .. drone_name .. "-shadow-" .. direction_to_cardinal[deployer.direction],
+            target = { entity = deployer, offset = { -deploy_prepare_end_offset, 0 } },
             surface = deployer.surface,
             render_layer = "object",
         },
@@ -223,7 +227,7 @@ local function tick_prepare_drone(deployer, game_tick, drone_data)
 
     for i = 2, 4 do
         if game_tick == drone_data.tick_start + deploy_prepare_sprite_change_ticks[i - 1] then
-            drone_data.drone.sprite = drone_dir_sprites[deployer.direction] .. "-" .. i
+            drone_data.drone.sprite = "cargo-drone-deployer-" .. drone_data.drone_name .. "-" .. direction_to_cardinal[deployer.direction] .. "-" .. i
             drone_data.drone_sprite_quater = i
         end
     end
@@ -232,7 +236,7 @@ local function tick_prepare_drone(deployer, game_tick, drone_data)
 
     drone_data.drone.target = {
         entity = deployer,
-        offset = { constants.drone_shift[1], offset + drone_placement_offset_y },
+        offset = { 0, offset + drone_placement_offset_y },
     }
 
     if game_tick < drone_data.tick_start + deploy_prepare_ticks then
@@ -281,18 +285,20 @@ local function tick_release_drone(deployer, game_tick, drone_data)
     end
 
     if game_tick >= drone_data.tick_start + deploy_release_rest_ticks then
+        local prototype_data = prototypes.mod_data["cargo-drone-data"].data.drones[drone_data.drone_name]
+
         local progress = 1 - (math.cos(((game_tick - drone_data.tick_start - deploy_release_rest_ticks) / deploy_release_take_off_ticks) * -math.pi) + 1) / 2
 
-        local offset = deploy_prepare_end_offset * (1 - progress) + progress * constants.drone_shift[2]
-        local offset_shadow = -deploy_prepare_end_offset * (1 - progress) + progress * constants.drone_shadow_shift[1]
+        local offset = deploy_prepare_end_offset * (1 - progress) + progress * prototype_data.deployer_sprites.sprite.shift[2]
+        local offset_shadow = -deploy_prepare_end_offset * (1 - progress) + progress * prototype_data.deployer_sprites.shadow.shift[1]
 
         drone_data.drone.target = {
             entity = deployer,
-            offset = { constants.drone_shift[1], offset + drone_placement_offset_y },
+            offset = { 0, offset + drone_placement_offset_y },
         }
         drone_data.drone_shadow.target = {
             entity = deployer,
-            offset = { offset_shadow, constants.drone_shadow_shift[2] + drone_placement_offset_y },
+            offset = { offset_shadow, drone_placement_offset_y },
         }
     end
 
@@ -300,7 +306,7 @@ local function tick_release_drone(deployer, game_tick, drone_data)
         return
     end
 
-    create_drone(deployer)
+    create_drone(deployer, drone_data)
 
     drone_data.drone.destroy()
     drone_data.drone_shadow.destroy()
@@ -333,13 +339,23 @@ local function tick_deployer(deployer, game_tick)
 
         local container_inventory = drone_container.get_inventory(defines.inventory.chest)
 
-        container_inventory.set_filter(1, { name = "cargo-drone" })
+        update_drone_container_filters(drone_container)
 
         if container_inventory.is_empty() then
             return activation_state.inactive
         end
 
-        if container_inventory[1].name ~= "cargo-drone" then
+        local contents = container_inventory.get_contents()
+
+        local item_prototype = prototypes.item[contents[1].name]
+
+        if not item_prototype or not item_prototype.place_result then
+            return activation_state.inactive
+        end
+
+        local drone_name = item_prototype.place_result.name
+
+        if not prototypes.mod_data["cargo-drone-data"].data.drones[drone_name] then
             return activation_state.inactive
         end
 
@@ -350,7 +366,7 @@ local function tick_deployer(deployer, game_tick)
         end
 
         container_inventory.clear()
-        begin_prepare_drone(deployer, game_tick)
+        begin_prepare_drone(deployer, game_tick, drone_name)
 
         return activation_state.active
     end
@@ -434,7 +450,7 @@ function deployer_controller.created(deployer)
         raise_built = false,
     }
 
-    drone_container.get_inventory(defines.inventory.chest).set_filter(1, { name = "cargo-drone" })
+    update_drone_container_filters(drone_container)
 
     ep.set_entity_property(deployer, "drone_container", drone_container)
 
@@ -469,7 +485,7 @@ function deployer_controller.destroyed(deployer)
     local dummy_fuel_drone = ep.get_entity_property(deployer, "dummy_fuel_drone")
 
     if drone_data then
-        create_drone(deployer)
+        create_drone(deployer, drone_data)
     end
 
     if proxy_container then
