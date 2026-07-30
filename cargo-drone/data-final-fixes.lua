@@ -1,8 +1,8 @@
 
+local mod_data = data.raw["mod-data"]["cargo-drone-data"].data
 local cargo_drone = data.raw["car"]["cargo-drone"]
 local deployer_dummy_fuel_drone = data.raw["car"]["cargo-drone-deployer-dummy-fuel-drone"]
 local deployer_drone_container = data.raw["container"]["cargo-drone-deployer-drone-container"]
-
 
 deployer_dummy_fuel_drone.energy_source.fuel_inventory_size = cargo_drone.energy_source.fuel_inventory_size
 deployer_dummy_fuel_drone.energy_source.fuel_categories = cargo_drone.energy_source.fuel_categories
@@ -137,9 +137,7 @@ local function make_drone_deployer_sprites(drone_prototype, drone_data)
     end
 end
 
-local drone_count = 0
-
-for name, drone_data in pairs(data.raw["mod-data"]["cargo-drone-data"].data.drones) do
+for name, drone_data in pairs(mod_data.drones) do
     local drone_prototype = data.raw.car[name]
 
     if drone_prototype then
@@ -147,9 +145,23 @@ for name, drone_data in pairs(data.raw["mod-data"]["cargo-drone-data"].data.dron
             error("All cargo drones must have the same inventory size.")
         end
 
-        drone_count = drone_count + 1
         inventory_size = drone_prototype.inventory_size
         make_drone_deployer_sprites(drone_prototype, drone_data)
+    end
+end
+
+local drone_count = 0
+
+for name, item in pairs(data.raw.item) do
+    if item.place_result and mod_data.drones[item.place_result] then
+        table.insert(mod_data.items, name)
+        drone_count = drone_count + 1
+    end
+end
+for name, item in pairs(data.raw["item-with-entity-data"]) do
+    if item.place_result and mod_data.drones[item.place_result] then
+        table.insert(mod_data.items, name)
+        drone_count = drone_count + 1
     end
 end
 

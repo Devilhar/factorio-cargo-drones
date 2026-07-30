@@ -117,8 +117,8 @@ local function update_drone_container_filters(drone_container)
     local drone_container_inventory = drone_container.get_inventory(defines.inventory.chest)
     local slot_index = 1
 
-    for drone_name, _ in pairs(prototypes.mod_data["cargo-drone-data"].data.drones) do
-        drone_container_inventory.set_filter(slot_index, { name = drone_name })
+    for _, item_name in ipairs(prototypes.mod_data["cargo-drone-data"].data.items) do
+        drone_container_inventory.set_filter(slot_index, { name = item_name })
 
         slot_index = slot_index + 1
     end

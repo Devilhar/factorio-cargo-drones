@@ -3,7 +3,9 @@ local item_sounds	= require("__base__.prototypes.item_sounds")
 
 local util			= require("util")
 
-local constants		= require("constants")
+local drone_flight_height = util.by_pixel(0, 265)[2]
+local drone_shift = util.by_pixel(0, -284)
+local drone_shadow_shift = util.by_pixel(383, -16)
 
 local cargo_drone = table.deepcopy(data.raw.car.car)
 cargo_drone.name = "cargo-drone"
@@ -42,7 +44,7 @@ cargo_drone.energy_source.smoke = {
 		position = {0, 0.98},
 		starting_frame = 0,
 		starting_frame_deviation = 60,
-		height = constants.drone_flight_height
+		height = drone_flight_height
 	}
 }
 cargo_drone.rotation_speed = 0.0010
@@ -64,7 +66,7 @@ cargo_drone.stop_trigger = {
 }
 cargo_drone.alert_icon_shift = { 0, 0 }
 
-cargo_drone.drawing_box_vertical_extension = constants.drone_flight_height
+cargo_drone.drawing_box_vertical_extension = drone_flight_height
 cargo_drone.render_layer = "air-object"
 cargo_drone.light_animation = nil
 cargo_drone.animation =
@@ -77,7 +79,7 @@ cargo_drone.animation =
 			frame_count = 1,
 			scale = 0.5,
 			direction_count = 64,
-			shift = constants.drone_shift,
+			shift = drone_shift,
 			animation_speed = 8,
 			max_advance = 0.2,
 			stripes =
@@ -97,7 +99,7 @@ cargo_drone.animation =
 			scale = 0.5,
 			draw_as_shadow = true,
 			direction_count = 64,
-			shift = constants.drone_shadow_shift,
+			shift = drone_shadow_shift,
 			max_advance = 0.2,
 			stripes = util.multiplystripes(2,
 			{
@@ -197,7 +199,7 @@ local drone_data = {
 			-- Make shorter to cut away empty space. Makes it more compact so it doesn't clip outside of the deployer
 			height = 252,
 			scale = 0.5,
-			shift = constants.drone_shift,
+			shift = drone_shift,
 			positions = {
 				north	= { 0, 125 },
 				east	= { 0, 1004 + 125 },
@@ -210,7 +212,7 @@ local drone_data = {
 			width = 502,
 			height = 502,
 			scale = 0.5,
-			shift = constants.drone_shadow_shift,
+			shift = drone_shadow_shift,
 			positions = {
 				north	= { 0, 0 },
 				east	= { 0, 1004 },

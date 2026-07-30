@@ -1,6 +1,4 @@
 
-local util = require("util")
-
 local constants = {}
 
 -- Mods
@@ -15,14 +13,6 @@ constants.drone_sprite_offset = { x = 0, y = -9 }
 constants.drone_sprite_shadow_offset = { x = 14, y = 0 }
 constants.drone_queue_distance = 20
 constants.random_tick_interval = 60
-
-constants.drone_flight_height_pixels = 265
-constants.drone_flight_height = util.by_pixel(0, 265)[2]
-
-constants.drone_shift_pixels = { 0, -284 }
-constants.drone_shift = util.by_pixel(0, -284)
-constants.drone_shadow_shift_pixels = { 383, -16 }
-constants.drone_shadow_shift = util.by_pixel(383, -16)
 
 -- Scheduling
 constants.requester_cooldown_ticks = 30
