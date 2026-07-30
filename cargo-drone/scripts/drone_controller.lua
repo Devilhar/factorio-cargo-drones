@@ -644,7 +644,9 @@ local function tick_drone(drone, game_tick)
         end
 
         if state.parked_depot then
-            local offset, x_scale, y_scale, orientation = calculate_depot_cable_render_params(drone, state.parked_depot, constants.drone_sprite_offset, false)
+            local drone_prototype_data = prototypes.mod_data["cargo-drone-data"].data.drones[drone.name]
+
+            local offset, x_scale, y_scale, orientation = calculate_depot_cable_render_params(drone, state.parked_depot, drone_prototype_data.cable.attachment_offset, false)
 
             cable_renderer = rendering.draw_sprite{
                 sprite = "cargo-drone-depot-cable",
@@ -656,7 +658,7 @@ local function tick_drone(drone, game_tick)
                 orientation = orientation
             }
 
-            offset, x_scale, y_scale, orientation = calculate_depot_cable_render_params(drone, state.parked_depot, constants.drone_sprite_shadow_offset, true)
+            offset, x_scale, y_scale, orientation = calculate_depot_cable_render_params(drone, state.parked_depot, drone_prototype_data.cable.attachment_shadow_offset, true)
 
             cable_shadow_renderer = rendering.draw_sprite{
                 sprite = "cargo-drone-depot-cable-shadow",

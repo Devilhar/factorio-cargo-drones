@@ -9,8 +9,6 @@ constants.drone_has_burnt_result = settings.startup["cargo-drone-burnt-result-in
 
 -- Cargo drones
 constants.drone_trunk_size = settings.startup["cargo-drone-inventory-size"].value
-constants.drone_sprite_offset = { x = 0, y = -9 }
-constants.drone_sprite_shadow_offset = { x = 14, y = 0 }
 constants.drone_queue_distance = 20
 constants.random_tick_interval = 60
 
