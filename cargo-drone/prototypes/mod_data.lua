@@ -5,7 +5,8 @@ local mod_data = {
 	data_type = "string",
 	data = {
 		drones = {},
-		items = {}
+		items = {},
+		burnt_results_enabled = false,
 	},
 }
 

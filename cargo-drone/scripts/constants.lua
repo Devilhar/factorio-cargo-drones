@@ -5,7 +5,7 @@ local constants = {}
 constants.current_mod_state = 19
 
 -- Settings
-constants.drone_has_burnt_result = settings.startup["cargo-drone-burnt-result-inventory-size"].value > 0
+constants.burnt_results_enabled = prototypes.mod_data["cargo-drone-data"].data.burnt_results_enabled
 
 -- Cargo drones
 constants.drone_trunk_size = settings.startup["cargo-drone-inventory-size"].value

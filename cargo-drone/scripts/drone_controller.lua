@@ -409,7 +409,7 @@ local function perform_task_refuel(drone, state, task, game_tick)
     local fuel_inventory = drone.get_inventory(defines.inventory.fuel)
 
     if fuel_inventory.is_full() then
-        if not constants.drone_has_burnt_result then
+        if not constants.burnt_results_enabled then
             return true
         end
 
