@@ -192,6 +192,10 @@ local cargo_drone_sound_docking = {
 }
 
 local drone_data = {
+	cable = {
+		attachment_offset = { x = 0, y = -9 },
+		attachment_shadow_offset = { x = 14, y = 0 },
+	},
 	deployer_sprites = {
 		sprite = {
 			filename = "__cargo-drone__/graphics/cargo-drone.png",
