@@ -192,6 +192,7 @@ local cargo_drone_sound_docking = {
 }
 
 local drone_data = {
+	version = 1,
 	cable = {
 		attachment_offset = { x = 0, y = -9 },
 		attachment_shadow_offset = { x = 14, y = 0 },
