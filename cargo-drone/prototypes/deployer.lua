@@ -165,41 +165,6 @@ local deployer_drone_container = {
 	inventory_size = 1,
 	inventory_type = "with_filters_and_bar",
 }
-local deployer_dummy_fuel_drone = {
-    type = "car",
-    name = "cargo-drone-deployer-dummy-fuel-drone",
-	flags = {
-		"hide-alt-info",
-		"not-upgradable",
-		"not-deconstructable",
-		"player-creation",
-		"not-on-map",
-		"not-blueprintable",
-		"not-repairable",
-		"not-in-kill-statistics",
-		"no-automated-item-insertion",
-		"no-automated-item-removal",
-	},
-	hidden = true,
-	selectable_in_game = false,
-	selection_priority = selection_priorities.editor_only,
-	collision_mask = { layers = {} },
-    effectivity = 1,
-	consumption = "10W",
-	rotation_speed = 1,
-	rotation_snap_angle = 1,
-	energy_source = {
-		type = "burner",
-		-- Set later in data-final-fixes.lua
-		fuel_inventory_size = 0,
-		auto_refuel = false,
-	},
-	inventory_size = 0,
-	weight = 1,
-	braking_force = 1,
-	friction_force = 1,
-	energy_per_hit_point = 1,
-}
 
 data:extend({
 	deployer_entity,
@@ -217,5 +182,4 @@ data:extend({
 
 	deployer_proxy_container,
 	deployer_drone_container,
-	deployer_dummy_fuel_drone,
 })

@@ -1,11 +1,6 @@
 
 local mod_data = data.raw["mod-data"]["cargo-drone-data"].data
-local cargo_drone = data.raw["car"]["cargo-drone"]
-local deployer_dummy_fuel_drone = data.raw["car"]["cargo-drone-deployer-dummy-fuel-drone"]
 local deployer_drone_container = data.raw["container"]["cargo-drone-deployer-drone-container"]
-
-deployer_dummy_fuel_drone.energy_source.fuel_inventory_size = cargo_drone.energy_source.fuel_inventory_size
-deployer_dummy_fuel_drone.energy_source.fuel_categories = cargo_drone.energy_source.fuel_categories
 
 local inventory_size = nil
 
@@ -151,6 +146,46 @@ for name, drone_data in pairs(mod_data.drones) do
         if drone_prototype.energy_source.burnt_inventory_size > 0 then
             mod_data.burnt_results_enabled = true
         end
+
+        local deployer_dummy_fuel_drone = {
+            type = "car",
+            name = "cargo-drone-deployer-dummy-fuel-" .. name,
+            flags = {
+                "hide-alt-info",
+                "not-upgradable",
+                "not-deconstructable",
+                "player-creation",
+                "not-on-map",
+                "not-blueprintable",
+                "not-repairable",
+                "not-in-kill-statistics",
+                "no-automated-item-insertion",
+                "no-automated-item-removal",
+            },
+            hidden = true,
+            selectable_in_game = false,
+            selection_priority = selection_priorities.editor_only,
+            collision_mask = { layers = {} },
+            effectivity = 1,
+            consumption = "10W",
+            rotation_speed = 1,
+            rotation_snap_angle = 1,
+            energy_source = {
+                type = "burner",
+                fuel_inventory_size = drone_prototype.energy_source.fuel_inventory_size,
+                fuel_categories = drone_prototype.energy_source.fuel_categories,
+                auto_refuel = false,
+            },
+            inventory_size = 0,
+            weight = 1,
+            braking_force = 1,
+            friction_force = 1,
+            energy_per_hit_point = 1,
+        }
+
+        data:extend{
+            deployer_dummy_fuel_drone
+        }
     end
 end
 
