@@ -2,6 +2,9 @@
 local mod_data = data.raw["mod-data"]["cargo-drone-data"].data
 local deployer_drone_container = data.raw["container"]["cargo-drone-deployer-drone-container"]
 
+mod_data.items = {}
+mod_data.burnt_results_enabled = false
+
 local inventory_size = nil
 
 local function make_drone_deployer_sprites(drone_prototype, drone_data)
