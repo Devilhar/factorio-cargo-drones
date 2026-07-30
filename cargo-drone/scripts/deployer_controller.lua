@@ -194,14 +194,25 @@ local function create_drone(deployer, drone_data)
         raise_built = true,
     }
 
-    local dummy_fuel_drone = ep.get_entity_property(deployer, "dummy_fuel_drone")
-
-    if dummy_fuel_drone and dummy_fuel_drone.valid then
-        drone.get_inventory(defines.inventory.fuel).transfer_from_inventory(dummy_fuel_drone.get_inventory(defines.inventory.fuel))
+    if drone_data.dummy_fuel_drone.valid then
+        drone.get_inventory(defines.inventory.fuel).transfer_from_inventory(drone_data.dummy_fuel_drone.get_inventory(defines.inventory.fuel))
     end
 end
 
 local function begin_prepare_drone(deployer, game_tick, drone_name, drone_quality)
+    local dummy_fuel_drone = deployer.surface.create_entity{
+        name = "cargo-drone-deployer-dummy-fuel-" .. drone_name,
+        quality = drone_quality,
+        force = deployer.force,
+        position = { deployer.position.x, deployer.position.y },
+        create_build_effect_smoke = false,
+        raise_built = false,
+    }
+
+    dummy_fuel_drone.burner.currently_burning = "coal"
+
+    dummy_fuel_drone.burner.remaining_burning_fuel = 4000000
+
     ep.set_entity_property(deployer, "drone_data", {
         state = drone_states.prepare,
         tick_start = game_tick,
@@ -220,6 +231,7 @@ local function begin_prepare_drone(deployer, game_tick, drone_name, drone_qualit
             surface = deployer.surface,
             render_layer = "object",
         },
+        dummy_fuel_drone = dummy_fuel_drone,
     })
 
     deployer.surface.play_sound{ path = "cargo-drone-deployer-raise-drone", position = deployer.position }
@@ -250,10 +262,9 @@ local function tick_prepare_drone(deployer, game_tick, drone_data)
     drone_data.state = drone_states.idle
 
     local proxy_container = ep.get_entity_property(deployer, "proxy_container")
-    local dummy_fuel_drone = ep.get_entity_property(deployer, "dummy_fuel_drone")
 
-    if proxy_container and proxy_container.valid and dummy_fuel_drone and dummy_fuel_drone.valid then
-        proxy_container.proxy_target_entity = dummy_fuel_drone
+    if proxy_container and proxy_container.valid and drone_data.dummy_fuel_drone.valid then
+        proxy_container.proxy_target_entity = drone_data.dummy_fuel_drone
         proxy_container.proxy_target_inventory = defines.inventory.fuel
     end
 end
@@ -312,6 +323,7 @@ local function tick_release_drone(deployer, game_tick, drone_data)
 
     drone_data.drone.destroy()
     drone_data.drone_shadow.destroy()
+    drone_data.dummy_fuel_drone.destroy({ raise_destroy = true })
 
     ep.set_entity_property(deployer, "drone_data", nil)
 
@@ -397,13 +409,11 @@ local function tick_deployer(deployer, game_tick)
         end
     end
 
-    local dummy_fuel_drone = ep.get_entity_property(deployer, "dummy_fuel_drone")
-
-    if not dummy_fuel_drone or not dummy_fuel_drone.valid then
+    if not drone_data.dummy_fuel_drone.valid then
         return activation_state.inactive
     end
 
-    local fuel_inventory = dummy_fuel_drone.get_inventory(defines.inventory.fuel)
+    local fuel_inventory = drone_data.dummy_fuel_drone.get_inventory(defines.inventory.fuel)
 
     if fuel_inventory.is_full() then
         begin_release_drone(deployer, game_tick)
@@ -459,20 +469,6 @@ function deployer_controller.created(deployer)
     proxy_container.proxy_target_entity = drone_container
     proxy_container.proxy_target_inventory = defines.inventory.chest
 
-    local dummy_fuel_drone = deployer.surface.create_entity{
-        name = "cargo-drone-deployer-dummy-fuel-drone",
-        force = deployer.force,
-        position = { deployer.position.x, deployer.position.y },
-        create_build_effect_smoke = false,
-        raise_built = false,
-    }
-
-    dummy_fuel_drone.burner.currently_burning = "coal"
-
-    dummy_fuel_drone.burner.remaining_burning_fuel = 4000000
-
-    ep.set_entity_property(deployer, "dummy_fuel_drone", dummy_fuel_drone)
-
     update_or_create_overlap_dir(deployer)
     update_drone_dir(deployer)
 
@@ -484,10 +480,11 @@ function deployer_controller.destroyed(deployer)
     local drone_data = ep.get_entity_property(deployer, "drone_data")
     local proxy_container = ep.get_entity_property(deployer, "proxy_container")
     local drone_container = ep.get_entity_property(deployer, "drone_container")
-    local dummy_fuel_drone = ep.get_entity_property(deployer, "dummy_fuel_drone")
 
     if drone_data then
         create_drone(deployer, drone_data)
+
+        drone_data.dummy_fuel_drone.destroy({ raise_destroy = true })
     end
 
     if proxy_container then
@@ -495,9 +492,6 @@ function deployer_controller.destroyed(deployer)
     end
     if drone_container then
         drone_container.destroy({ raise_destroy = true })
-    end
-    if dummy_fuel_drone then
-        dummy_fuel_drone.destroy({ raise_destroy = true })
     end
 
     unregister_deployer(deployer)
@@ -588,13 +582,11 @@ function deployer_controller.get_deployer_status(deployer)
         return deployer_status.releasing
     end
 
-    local dummy_fuel_drone = ep.get_entity_property(deployer, "dummy_fuel_drone")
-
-    if not dummy_fuel_drone or not dummy_fuel_drone.valid then
+    if not drone_data.dummy_fuel_drone.valid then
         return deployer_status.awaiting_fuel
     end
 
-    local fuel_inventory = dummy_fuel_drone.get_inventory(defines.inventory.fuel)
+    local fuel_inventory = drone_data.dummy_fuel_drone.get_inventory(defines.inventory.fuel)
 
     if not fuel_inventory.is_full() then
         return deployer_status.awaiting_fuel
@@ -623,13 +615,13 @@ function deployer_controller.get_drone_inventory(deployer)
     return drone_container.get_inventory(defines.inventory.chest)
 end
 function deployer_controller.get_fuel_inventory(deployer)
-    local dummy_fuel_drone = ep.get_entity_property(deployer, "dummy_fuel_drone")
+    local drone_data = ep.get_entity_property(deployer, "drone_data")
 
-    if not dummy_fuel_drone then
+    if not drone_data or not drone_data.dummy_fuel_drone.valid then
         return nil
     end
 
-    return dummy_fuel_drone.get_inventory(defines.inventory.fuel)
+    return drone_data.dummy_fuel_drone.get_inventory(defines.inventory.fuel)
 end
 
 return deployer_controller
