@@ -147,6 +147,10 @@ for name, drone_data in pairs(mod_data.drones) do
 
         inventory_size = drone_prototype.inventory_size
         make_drone_deployer_sprites(drone_prototype, drone_data)
+
+        if drone_prototype.energy_source.burnt_inventory_size > 0 then
+            mod_data.burnt_results_enabled = true
+        end
     end
 end
 

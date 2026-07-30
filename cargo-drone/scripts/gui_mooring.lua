@@ -954,7 +954,7 @@ for x = 1, 3 do
             if event.button == defines.mouse_button_type.left then
                 if target == defines.inventory.car_trunk then
                     target = defines.inventory.fuel
-                elseif constants.drone_has_burnt_result and target == defines.inventory.fuel then
+                elseif constants.burnt_results_enabled and target == defines.inventory.fuel then
                     target = defines.inventory.burnt_result
                 else
                     target = defines.inventory.car_trunk
@@ -962,7 +962,7 @@ for x = 1, 3 do
             elseif event.button == defines.mouse_button_type.right then
                 if target == defines.inventory.fuel then
                     target = defines.inventory.car_trunk
-                elseif constants.drone_has_burnt_result and target == defines.inventory.car_trunk then
+                elseif constants.burnt_results_enabled and target == defines.inventory.car_trunk then
                     target = defines.inventory.burnt_result
                 else
                     target = defines.inventory.fuel

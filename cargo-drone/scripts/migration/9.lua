@@ -26,7 +26,7 @@ return function()
 		migrate_proxy_containers(entity_data.entity)
 	end
 
-	if constants.drone_has_burnt_result then
+	if constants.burnt_results_enabled then
 		game.print({ "cargo-drone-migration.warning-read-inventory-output-removed" })
 	end
 end
