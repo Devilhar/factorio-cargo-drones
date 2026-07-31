@@ -2,7 +2,7 @@
 local constants = {}
 
 -- Mods
-constants.current_mod_state = 19
+constants.current_mod_state = 20
 
 -- Settings
 constants.burnt_results_enabled = prototypes.mod_data["cargo-drone-data"].data.burnt_results_enabled
