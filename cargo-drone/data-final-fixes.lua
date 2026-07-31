@@ -146,8 +146,18 @@ for name, drone_data in pairs(mod_data.drones) do
         inventory_size = drone_prototype.inventory_size
         make_drone_deployer_sprites(drone_prototype, drone_data)
 
-        if drone_prototype.energy_source.burnt_inventory_size > 0 then
-            mod_data.burnt_results_enabled = true
+        local energy_source = { type = "void" }
+
+        if drone_prototype.energy_source.type == "burner" then
+            if drone_prototype.energy_source.burnt_inventory_size > 0 then
+                mod_data.burnt_results_enabled = true
+            end
+            energy_source = {
+                type = "burner",
+                fuel_inventory_size = drone_prototype.energy_source.fuel_inventory_size,
+                fuel_categories = drone_prototype.energy_source.fuel_categories,
+                auto_refuel = false,
+            }
         end
 
         local deployer_dummy_fuel_drone = {
@@ -177,12 +187,7 @@ for name, drone_data in pairs(mod_data.drones) do
             consumption = "10W",
             rotation_speed = 1,
             rotation_snap_angle = 1,
-            energy_source = {
-                type = "burner",
-                fuel_inventory_size = drone_prototype.energy_source.fuel_inventory_size,
-                fuel_categories = drone_prototype.energy_source.fuel_categories,
-                auto_refuel = false,
-            },
+            energy_source = energy_source,
             inventory_size = 0,
             weight = 1,
             braking_force = 1,

@@ -194,8 +194,10 @@ local function create_drone(deployer, drone_data)
         raise_built = true,
     }
 
-    if drone_data.dummy_fuel_drone.valid then
-        drone.get_inventory(defines.inventory.fuel).transfer_from_inventory(drone_data.dummy_fuel_drone.get_inventory(defines.inventory.fuel))
+    local fuel_inventory = drone.get_inventory(defines.inventory.fuel)
+
+    if fuel_inventory and drone_data.dummy_fuel_drone.valid then
+        fuel_inventory.transfer_from_inventory(drone_data.dummy_fuel_drone.get_inventory(defines.inventory.fuel))
     end
 end
 
@@ -210,9 +212,11 @@ local function begin_prepare_drone(deployer, game_tick, drone_name, drone_qualit
         raise_built = false,
     }
 
-    dummy_fuel_drone.burner.currently_burning = "coal"
+    if dummy_fuel_drone.burner then
+        dummy_fuel_drone.burner.currently_burning = "coal"
 
-    dummy_fuel_drone.burner.remaining_burning_fuel = 4000000
+        dummy_fuel_drone.burner.remaining_burning_fuel = 4000000
+    end
 
     ep.set_entity_property(deployer, "drone_data", {
         state = drone_states.prepare,
@@ -416,7 +420,7 @@ local function tick_deployer(deployer, game_tick)
 
     local fuel_inventory = drone_data.dummy_fuel_drone.get_inventory(defines.inventory.fuel)
 
-    if fuel_inventory.is_full() then
+    if not fuel_inventory or fuel_inventory.is_full() then
         begin_release_drone(deployer, game_tick)
 
         return activation_state.active
@@ -589,7 +593,7 @@ function deployer_controller.get_deployer_status(deployer)
 
     local fuel_inventory = drone_data.dummy_fuel_drone.get_inventory(defines.inventory.fuel)
 
-    if not fuel_inventory.is_full() then
+    if fuel_inventory and not fuel_inventory.is_full() then
         return deployer_status.awaiting_fuel
     end
 

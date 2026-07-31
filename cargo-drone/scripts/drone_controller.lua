@@ -347,8 +347,10 @@ local function perform_task_none(drone, state, game_tick)
             send_alert(drone, "signal-lock", "cargo-drone-alerts.invalid-items")
         end
 
-        if drone.burner.remaining_burning_fuel > 0 or not drone.burner.inventory.is_empty() then
-            check_refuel(drone, state)
+        if drone.burner then
+            if drone.burner.remaining_burning_fuel > 0 or not drone.burner.inventory.is_empty() then
+                check_refuel(drone, state)
+            end
         end
     end
 end
@@ -356,7 +358,7 @@ local function perform_task_cargo(drone, state, task, game_tick)
     local inventory = drone.get_inventory(defines.inventory.car_trunk)
 
     if game_tick % constants.random_tick_interval == drone.unit_number % constants.random_tick_interval then
-        if drone.burner.remaining_burning_fuel <= 0 and drone.burner.inventory.is_empty() then
+        if drone.burner and drone.burner.remaining_burning_fuel <= 0 and drone.burner.inventory.is_empty() then
             send_alert(drone, "signal-fuel", "cargo-drone-alerts.no-fuel")
         end
 
@@ -381,7 +383,7 @@ local function perform_task_cargo(drone, state, task, game_tick)
         return true
     end
 
-    if game_tick % constants.random_tick_interval == drone.unit_number % constants.random_tick_interval then
+    if game_tick % constants.random_tick_interval == drone.unit_number % constants.random_tick_interval and drone.burner then
         if check_refuel(drone, state) then
             return false
         end
@@ -401,7 +403,7 @@ local function perform_task_cargo(drone, state, task, game_tick)
 end
 local function perform_task_refuel(drone, state, task, game_tick)
     if game_tick % constants.random_tick_interval == drone.unit_number % constants.random_tick_interval then
-        if drone.burner.remaining_burning_fuel <= 0 and drone.burner.inventory.is_empty() then
+        if drone.burner and drone.burner.remaining_burning_fuel <= 0 and drone.burner.inventory.is_empty() then
             send_alert(drone, "signal-fuel", "cargo-drone-alerts.no-fuel")
         end
     end
@@ -439,7 +441,7 @@ local function perform_task_refuel(drone, state, task, game_tick)
     return false
 end
 local function perform_task_depot(drone, state, task, game_tick)
-    if game_tick % constants.random_tick_interval == drone.unit_number % constants.random_tick_interval then
+    if game_tick % constants.random_tick_interval == drone.unit_number % constants.random_tick_interval and drone.burner then
         local inventory = drone.get_inventory(defines.inventory.car_trunk)
 
         for i = 1, #inventory do
