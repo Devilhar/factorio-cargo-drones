@@ -27,7 +27,7 @@ local depot_circuit_wire_connection_point = {
 local depot_entity = merge_tables(table.deepcopy(data.raw["constant-combinator"]["constant-combinator"]), {
 	name = "cargo-drone-depot-constant-combinator",
 	icon = "__cargo-drone__/graphics/cargo-drone-depot-icon.png",
-	minable = { mining_time = 0.2, result = "cargo-drone-depot-constant-combinator" },
+	minable = { mining_time = 2, result = "cargo-drone-depot-constant-combinator" },
 	flags = { "hide-alt-info", "not-upgradable", "placeable-neutral", "player-creation" },
 	max_health = 350,
 	collision_box = {{-0.85, -0.85}, {0.85, 0.85}},

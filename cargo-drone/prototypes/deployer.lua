@@ -56,7 +56,7 @@ local deployer_entity = merge_tables(table.deepcopy(data.raw["constant-combinato
 	selection_box = {{-4, -4}, {4, 4}},
 	-- One below cargo-drone
 	selection_priority = selection_priorities.resource + 1,
-	minable = { mining_time = 0.2, result = "cargo-drone-deployer-constant-combinator" },
+	minable = { mining_time = 2, result = "cargo-drone-deployer-constant-combinator" },
 	flags = { "hide-alt-info", "not-upgradable", "placeable-neutral", "player-creation" },
 	circuit_wire_connection_points = {
 		deployer_circuit_wire_connection_point,

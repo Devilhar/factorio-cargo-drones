@@ -27,7 +27,7 @@ local mooring_circuit_wire_connection_point = {
 local mooring_entity_cc = merge_tables(table.deepcopy(data.raw["constant-combinator"]["constant-combinator"]), {
 	name = "cargo-drone-mooring-constant-combinator-{NAME}",
 	icon = "__cargo-drone__/graphics/cargo-drone-mooring-{NAME}-icon.png",
-	minable = { mining_time = 0.2, result = "cargo-drone-mooring-constant-combinator-{NAME}" },
+	minable = { mining_time = 2, result = "cargo-drone-mooring-constant-combinator-{NAME}" },
 	flags = { "hide-alt-info", "not-upgradable", "placeable-neutral", "player-creation" },
 	max_health = 350,
 	collision_mask = { layers = { item = true, object = true, player = true, water_tile = true, is_object = true, is_lower_object = true, elevated_rail = true } },
