@@ -93,3 +93,22 @@ local drone_data = {
 
 -- Once created we can register it by adding the table we just created to the drones table using the entity name as key.
 data.raw["mod-data"]["cargo-drone-data"].data.drones[new_cargo_drone_entity_name] = drone_data
+
+-- All done. The drone is now ready.
+
+
+
+-- As an additional step let's add a recipe. This is not used by the cargo-drone mod, this is just to make testing easier.
+data:extend{
+	{
+		type = "recipe",
+		name = "new-cargo-drone",
+		enabled = true,
+		energy_required = 1,
+		ingredients =
+		{
+			{ type = "item", name = "wood", amount = 1 },
+		},
+		results = { { type = "item", name = "new-cargo-drone", amount = 1 } }
+	}
+}
