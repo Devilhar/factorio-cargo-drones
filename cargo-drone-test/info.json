@@ -6,7 +6,7 @@
   "factorio_version": "2.1",
   "dependencies": [
     "base >= 2.1",
-    "cargo-drone >= 1.7"
+    "cargo-drone >= 1.8"
   ],
   "description": "Adds a test faster drone"
 }
