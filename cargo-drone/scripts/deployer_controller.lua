@@ -204,7 +204,8 @@ local function begin_prepare_drone(deployer, game_tick, drone_name, drone_qualit
         name = "cargo-drone-deployer-dummy-fuel-" .. drone_name,
         quality = drone_quality,
         force = deployer.force,
-        position = { deployer.position.x, deployer.position.y },
+        position = { deployer.position.x, deployer.position.y + drone_placement_offset_y },
+        direction = deployer.direction,
         create_build_effect_smoke = false,
         raise_built = false,
     }
