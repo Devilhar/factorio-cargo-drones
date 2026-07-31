@@ -45,11 +45,11 @@ local function make_drone_deployer_sprites(drone_prototype, drone_data)
         west    = "cargo-drone-deployer-" .. drone_prototype.name .."-shadow-west",
     }
 
-    local sprite_data = drone_data.deployer_sprites.sprite
+    local body_data = drone_data.deployer_sprites.body
     local shadow_data = drone_data.deployer_sprites.shadow
 
-    if not sprite_data then
-        error("The drone data for " .. drone_prototype.name .. " is missing the deployer_sprites.sprite table.")
+    if not body_data then
+        error("The drone data for " .. drone_prototype.name .. " is missing the deployer_sprites.body table.")
     end
     if not shadow_data then
         error("The drone data for " .. drone_prototype.name .. " is missing the deployer_sprites.shadow table.")
@@ -64,26 +64,26 @@ local function make_drone_deployer_sprites(drone_prototype, drone_data)
     local sprites = {}
 
     for _, cardinal in ipairs({ "north", "east", "south", "west" }) do
-        if sprite_data.positions[cardinal] then
-            local position = sprite_data.positions[cardinal]
+        if body_data.positions[cardinal] then
+            local position = body_data.positions[cardinal]
 
             for i = 1, 4 do
                 local sprite_name = sprite_names[cardinal][i]
 
                 if not data.raw.sprite[sprite_name] then
-                    local height = (sprite_data.height / 4) * i
+                    local height = (body_data.height / 4) * i
 
                     local sprite = {
                         type = "sprite",
                         name = sprite_names[cardinal][i],
-                        filename = sprite_data.filename,
+                        filename = body_data.filename,
                         priority = "very-low",
                         x = position.x or position[1],
                         y = position.y or position[2],
-                        width = sprite_data.width,
+                        width = body_data.width,
                         height = height,
-                        shift = { sprite_data.shift[1], util.by_pixel(0, -sprite_data.height / 2)[2] * mults[i] },
-                        scale = sprite_data.scale,
+                        shift = { body_data.shift[1], util.by_pixel(0, -body_data.height / 2)[2] * mults[i] },
+                        scale = body_data.scale,
                         mipmap_count = 2
                     }
 

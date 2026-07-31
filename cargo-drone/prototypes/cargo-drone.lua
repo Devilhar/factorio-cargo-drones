@@ -198,7 +198,7 @@ local drone_data = {
 		attachment_shadow_offset = { x = 14, y = 0 },
 	},
 	deployer_sprites = {
-		sprite = {
+		body = {
 			filename = "__cargo-drone__/graphics/cargo-drone.png",
 			width = 502,
 			-- Make shorter to cut away empty space. Makes it more compact so it doesn't clip outside of the deployer

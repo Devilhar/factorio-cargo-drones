@@ -21,7 +21,7 @@ local mod_data = {
 				## These values are used by Deployers to be able to render them
 				deployer_sprites = {
 					## The data for the sprite that will be displayed
-					sprite = {
+					body = {
 						filename = "__cargo-drone__/graphics/cargo-drone.png",
 						width = 502,
 						## This was made shorter to cut away empty space. Makes it more compact so it doesn't clip outside of the deployer
@@ -57,7 +57,7 @@ local mod_data = {
 							west	= { 0, 3012 + 125 },
 						},
 					},
-					## The data for the sprite shadow that will be displayed
+					## The data for the shadow that will be displayed
 					shadow = {
 						filename = "__cargo-drone__/graphics/cargo-drone-shadow.png",
 						width = 502,
