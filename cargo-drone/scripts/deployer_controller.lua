@@ -303,7 +303,7 @@ local function tick_release_drone(deployer, game_tick, drone_data)
 
         local progress = 1 - (math.cos(((game_tick - drone_data.tick_start - deploy_release_rest_ticks) / deploy_release_take_off_ticks) * -math.pi) + 1) / 2
 
-        local offset = deploy_prepare_end_offset * (1 - progress) + progress * prototype_data.deployer_sprites.sprite.shift[2]
+        local offset = deploy_prepare_end_offset * (1 - progress) + progress * prototype_data.deployer_sprites.body.shift[2]
         local offset_shadow = -deploy_prepare_end_offset * (1 - progress) + progress * prototype_data.deployer_sprites.shadow.shift[1]
 
         drone_data.drone.target = {
