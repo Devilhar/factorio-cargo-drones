@@ -1,3 +1,9 @@
+  Minor Features:
+    - Added support for multiple types of drones.
+  Changes:
+    - Deployers now have a lower selection priority than Cargo drones.
+  Bugfixes:
+    - Fixed Deployers always deploying normal quality drones even when a higher quality drone is inserted.
 ---------------------------------------------------------------------------------------------------
 Version: 1.17.0
 Date: 23. 07. 2026
