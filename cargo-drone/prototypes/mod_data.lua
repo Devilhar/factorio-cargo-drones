@@ -90,6 +90,9 @@ local mod_data = {
 		-- All items are automatically found, no need to add it manually.
 		-- items = {},
 
+		-- The inventory size of all drones.
+		-- inventory_size = 10,
+
 		-- If any drone has burnt results inventory size larger than 0.
 		-- burnt_results_enabled = false,
 	},
