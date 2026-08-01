@@ -53,9 +53,45 @@ local function migrate_deployers(deployers)
     end
 end
 
+local function create_name_render_object(target)
+    local properties = storage.managed_entities[target.unit_number].properties
+
+    properties.name_render_object = rendering.draw_text{
+        text = properties.target_name,
+        target = { entity = target, offset = { 2, -2 } },
+        surface = target.surface,
+        render_mode = "chart",
+        color = { 1, 1, 1 },
+        scale_with_zoom = true,
+        scale = 1.25,
+        orientation = -31 / 360,
+        vertical_alignment = "middle",
+        use_rich_text = true,
+        visible = false,
+        players = {},
+    }
+end
+
 return function()
     for _, surface_buffer in pairs(storage.deployer_controller.surfaces) do
         migrate_deployers(surface_buffer.inactive)
         migrate_deployers(surface_buffer.active)
+    end
+
+    storage.player_storage = storage.player_storage or {}
+
+    storage.player_storage.show_map_overlays = storage.player_storage.show_map_overlays or {}
+
+    for _, surface_buffer in pairs(storage.mooring_controller.surfaces) do
+        for _, moorings in pairs(surface_buffer) do
+            for _, mooring in pairs(moorings) do
+                create_name_render_object(mooring)
+            end
+        end
+    end
+    for _, surface_buffer in pairs(storage.depot_helper.depots) do
+        for _, depot in pairs(surface_buffer) do
+            create_name_render_object(depot)
+        end
     end
 end
