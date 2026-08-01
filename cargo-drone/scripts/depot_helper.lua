@@ -51,6 +51,8 @@ end
 function depot_helper.created(depot)
     clean_settings(depot)
 
+    th.create_name_render_object(depot)
+
     add_depot(depot)
 end
 function depot_helper.destroyed(depot)
@@ -70,6 +72,14 @@ end
 
 function depot_helper.get_depots(surface_index)
 	return storage.depot_helper.depots[surface_index]
+end
+
+function depot_helper.update_map_name_visibility()
+    for _, surface_buffer in pairs(storage.depot_helper.depots) do
+        for _, depot in pairs(surface_buffer) do
+            th.update_name_render_object_visibility(depot)
+        end
+    end
 end
 
 return depot_helper

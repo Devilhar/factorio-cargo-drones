@@ -1,5 +1,6 @@
 
 local constants	= require("scripts.constants")
+local ps		= require("scripts.player_storage")
 local ep		= require("scripts.entity_property")
 local th		= require("scripts.target_helper")
 local deh		= require("scripts.depot_helper")
@@ -89,6 +90,8 @@ local redo_actions = {
 function on_init()
 	storage.mod_state = constants.current_mod_state
 
+	ps.init()
+
 	ep.init()
 
 	mc.init()
@@ -128,8 +131,15 @@ function on_tick(event)
 	gd.tick()
 	gcd.tick()
 end
+function on_input_toggle_map_overlay(event)
+	ps.toggle_player_map_overlay(event.player_index)
+
+	mc.update_map_name_visibility()
+	deh.update_map_name_visibility()
+end
 
 function on_player_removed(event)
+	ps.player_removed(event.player_index)
 	gm.on_player_removed(event)
 	gd.on_player_removed(event)
 	gcd.on_player_removed(event)
@@ -443,6 +453,7 @@ end
 script.on_init(on_init)
 script.on_configuration_changed(on_configuration_changed)
 script.on_event(defines.events.on_tick, on_tick)
+script.on_event("cargo-drone-toggle-map-overlay", on_input_toggle_map_overlay)
 
 script.on_event(defines.events.on_player_joined_game, on_player_removed)
 

@@ -1,5 +1,6 @@
 
 local ep = require("entity_property")
+local th = require("target_helper")
 local mh = require("mooring_helper")
 local dt = require("drone_tasks")
 
@@ -88,6 +89,8 @@ function mooring_controller.created(mooring)
 
 	mh.clean_settings(mooring)
 
+    th.create_name_render_object(mooring)
+
     register_mooring(mooring)
 end
 
@@ -145,6 +148,16 @@ function mooring_controller.tick()
         end
 
         mh.set_request_output(reader_data.mooring, request_output)
+    end
+end
+
+function mooring_controller.update_map_name_visibility()
+    for _, surface_buffer in pairs(storage.mooring_controller.surfaces) do
+        for _, moorings in pairs(surface_buffer) do
+            for _, mooring in pairs(moorings) do
+                th.update_name_render_object_visibility(mooring)
+            end
+        end
     end
 end
 
