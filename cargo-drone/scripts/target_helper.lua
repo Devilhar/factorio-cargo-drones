@@ -1,6 +1,7 @@
 
 local name_list = require("name_list")
 local ccse      = require("cc_string_encoder")
+local ps        = require("player_storage")
 local ep        = require("entity_property")
 local fh        = require("filter_helper")
 
@@ -76,6 +77,12 @@ local function set_name(target, name)
     name = ccse.encode(name, section_name, section_icons)
 
     ep.set_entity_property(target, "target_name", name)
+
+    local name_render_object = ep.get_entity_property(target, "name_render_object")
+
+    if name_render_object then
+        name_render_object.text = name
+    end
 end
 local function reload_name(target)
     ep.set_entity_property(target, "target_name", get_name_from_section(target))
@@ -98,6 +105,12 @@ local function update_name(target)
     name = ccse.encode(name, section_name, section_icons)
 
     ep.set_entity_property(target, "target_name", name)
+
+    local name_render_object = ep.get_entity_property(target, "name_render_object")
+
+    if name_render_object then
+        name_render_object.text = name
+    end
 end
 
 local function set_drone_limit(target, limit)
@@ -288,6 +301,44 @@ end
 
 local target_helper = {}
 
+function target_helper.create_name_render_object(target)
+    local show_map_overlays = ps.get_show_map_overlays()
+
+    local orientation = -31 / 360
+
+    local lt = target.selection_box.left_top
+    local rb = target.selection_box.right_bottom
+
+    local offset_x = math.cos(orientation * math.pi) * (rb.x - lt.x + 2) / 2
+    local offset_y = math.sin(orientation * math.pi) * (rb.y - lt.y + 2) / 2
+
+    local name_render_object = rendering.draw_text{
+        text = get_name(target),
+        target = { entity = target, offset = { offset_x, offset_y } },
+        surface = target.surface,
+        render_mode = "chart",
+        color = { 1, 1, 1 },
+        scale_with_zoom = true,
+        scale = 1.25,
+        orientation = orientation,
+        vertical_alignment = "middle",
+        use_rich_text = true,
+        visible = next(show_map_overlays) ~= nil,
+        players = show_map_overlays,
+    }
+
+    ep.set_entity_property(target, "name_render_object", name_render_object)
+end
+function target_helper.update_name_render_object_visibility(target)
+    local name_render_object = ep.get_entity_property(target, "name_render_object")
+
+    if name_render_object then
+        local show_map_overlays = ps.get_show_map_overlays()
+
+        name_render_object.visible = next(show_map_overlays) ~= nil
+        name_render_object.players = show_map_overlays
+    end
+end
 function target_helper.clean_settings(target)
     clean_settings(target)
 end

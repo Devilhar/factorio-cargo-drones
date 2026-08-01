@@ -10,3 +10,5 @@ require("prototypes.deployer")
 require("prototypes.technologies")
 
 require("prototypes.space-age")
+
+require("input.input")
