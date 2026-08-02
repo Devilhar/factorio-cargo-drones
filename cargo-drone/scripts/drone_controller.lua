@@ -83,8 +83,8 @@ local function calculate_depot_cable_render_params(drone, depot, drone_offset, i
 
     local should_flip = is_shadow and position_drone.y < position_depot.y
 
-    position_drone.x = position_drone.x + drone_offset.x
-    position_drone.y = position_drone.y + drone_offset.y
+    position_drone.x = position_drone.x + (drone_offset.x or drone_offset[1])
+    position_drone.y = position_drone.y + (drone_offset.y or drone_offset[2])
     position_depot.x = position_depot.x + depot_offset[1]
     position_depot.y = position_depot.y + depot_offset[2]
 
@@ -100,8 +100,8 @@ local function calculate_depot_cable_render_params(drone, depot, drone_offset, i
     local orientation = vector_to_orientation_xy(delta_offset[1], delta_offset[2])
 
     local offset = {
-        -delta[1] / 2 + drone_offset.x / 2 + depot_offset[1] / 2,
-        -delta[2] / 2 + drone_offset.y / 2 + depot_offset[2] / 2
+        -delta[1] / 2 + (drone_offset.x or drone_offset[1]) / 2 + depot_offset[1] / 2,
+        -delta[2] / 2 + (drone_offset.y or drone_offset[2]) / 2 + depot_offset[2] / 2
     }
 
     local cable_sprite_half_height = constants.depot_cable_sprite_size[2] / 2
