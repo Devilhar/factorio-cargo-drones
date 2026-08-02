@@ -10,18 +10,28 @@ local inventory_size = nil
 local invalid_drones = {}
 
 local function validate_drone_data(drone_name, drone_data)
+    local function is_vector(value)
+        return (type(value) == "table" or type(value) == "userdata")
+            and (type(value.x) == "number" or type(value[1]) == "number")
+            and (type(value.y) == "number" or type(value[2]) == "number")
+    end
+
     if type(drone_data.version) ~= "number" then
         error("The drone data for " .. drone_name .. " is missing the version number.")
+    end
+
+    if drone_data.version ~= 1 then
+        error("The drone data for " .. drone_name .. " has an invalid version number. Version must be equal to 1.")
     end
 
     if type(drone_data.cable) ~= "table" then
         error("The drone data for " .. drone_name .. " is missing the cable table.")
     end
 
-    if not drone_data.cable.attachment_offset then
+    if not is_vector(drone_data.cable.attachment_offset) then
         error("The drone data for " .. drone_name .. " is missing the cable.attachment_offset Vector.")
     end
-    if not drone_data.cable.attachment_shadow_offset then
+    if not is_vector(drone_data.cable.attachment_shadow_offset) then
         error("The drone data for " .. drone_name .. " is missing the cable.attachment_shadow_offset Vector.")
     end
 
@@ -33,7 +43,7 @@ local function validate_drone_data(drone_name, drone_data)
         error("The drone data for " .. drone_name .. " is missing the deployer_sprites.body table.")
     end
 
-    if drone_data.deployer_sprites.body.shift == nil then
+    if not is_vector(drone_data.deployer_sprites.body.shift) then
         error("The drone data for " .. drone_name .. " is missing the deployer_sprites.body.shift Vector.")
     end
 
@@ -60,7 +70,7 @@ local function validate_drone_data(drone_name, drone_data)
         error("The drone data for " .. drone_name .. " is missing the deployer_sprites.shadow table.")
     end
 
-    if drone_data.deployer_sprites.shadow.shift == nil then
+    if not is_vector(drone_data.deployer_sprites.shadow.shift) then
         error("The drone data for " .. drone_name .. " is missing the deployer_sprites.shadow.shift Vector.")
     end
 
