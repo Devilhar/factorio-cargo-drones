@@ -148,7 +148,7 @@ local function make_drone_deployer_sprites(drone_prototype, drone_data)
                             y = position.y or position[2],
                             width = body_data.width,
                             height = height,
-                            shift = { body_data.shift[1], util.by_pixel(0, -body_data.height / 2)[2] * mults[i] },
+                            shift = { body_data.shift.x or body_data.shift[1], util.by_pixel(0, -body_data.height / 2)[2] * mults[i] },
                             scale = body_data.scale,
                             mipmap_count = 2
                         }
@@ -176,7 +176,7 @@ local function make_drone_deployer_sprites(drone_prototype, drone_data)
                         y = position.y or position[2],
                         width = shadow_data.width,
                         height = shadow_data.height,
-                        shift = { 0, shadow_data.shift[2] },
+                        shift = { 0, shadow_data.shift.y or shadow_data.shift[2] },
                         scale = shadow_data.scale,
                         mipmap_count = 2,
                         draw_as_shadow = true,
