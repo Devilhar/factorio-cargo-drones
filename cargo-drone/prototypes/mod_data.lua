@@ -18,15 +18,17 @@ local mod_data = {
 					attachment_offset = { x = 0, y = -9 },
 					attachment_shadow_offset = { x = 14, y = 0 },
 				},
-				## These values are used by Deployers to be able to render them
+				## These values are used by Deployers to be able to render the drone
 				deployer_sprites = {
 					## The data for the sprite that will be displayed
 					body = {
+						## filename, width, height, and scale can be omitted if position is omitted.
 						filename = "__cargo-drone__/graphics/cargo-drone.png",
 						width = 502,
-						## This was made shorter to cut away empty space. Makes it more compact so it doesn't clip outside of the deployer
 						height = 252,
 						scale = 0.5,
+
+						## Shift is always required as it tells Deployers at which height the drone should stop at.
 						shift = util.by_pixel(0, -284),
 
 						## The x and y for the sprites. Will create sprites for each of the four positions set.
@@ -50,19 +52,21 @@ local mod_data = {
 						## The number following each sprite represents the number of quaters being displayed. So the ones ending in 1 will only show the top 25% of the sprite. 3 shows the top 75%. Etc.
 						## If a direction is not present, its sprites will have to be manually created.
 						positions = {
-							## Y values in this example are offset to cut away empty space from the sprite
 							north	= { 0, 125 },
-							east	= { 0, 1004 + 125 },
-							south	= { 0, 2008 + 125 },
-							west	= { 0, 3012 + 125 },
+							east	= { 0, 1129 },
+							south	= { 0, 2133 },
+							west	= { 0, 3137 },
 						},
 					},
 					## The data for the shadow that will be displayed
 					shadow = {
+						## filename, width, height, and scale can be omitted if position is omitted.
 						filename = "__cargo-drone__/graphics/cargo-drone-shadow.png",
 						width = 502,
 						height = 502,
 						scale = 0.5,
+
+						## Shift is always required as it tells Deployers which height the drone should stop at.
 						shift = util.by_pixel(383, -16),
 
 						## The x and y for the shadow sprites. Will create a sprite for each of the four positions set.
