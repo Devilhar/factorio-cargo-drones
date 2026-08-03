@@ -100,7 +100,7 @@ local drone_data = {
 }
 
 -- Once created we can register it by adding the table we just created to the drones table using the entity name as key.
-data.raw["mod-data"]["cargo-drone-data"].data.drones[new_cargo_drone_entity_name] = drone_data
+data.raw["mod-data"]["cargo-drone-drones"].data["new-cargo-drone"] = drone_data
 
 -- All done. The drone is now ready.
 

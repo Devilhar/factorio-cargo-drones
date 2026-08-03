@@ -646,7 +646,7 @@ local function tick_drone(drone, game_tick)
         end
 
         if state.parked_depot then
-            local drone_prototype_data = prototypes.mod_data["cargo-drone-data"].data.drones[drone.name]
+            local drone_prototype_data = prototypes.mod_data["cargo-drone-drones"].data[drone.name]
 
             local offset, x_scale, y_scale, orientation = calculate_depot_cable_render_params(drone, state.parked_depot, drone_prototype_data.cable.attachment_offset, false)
 

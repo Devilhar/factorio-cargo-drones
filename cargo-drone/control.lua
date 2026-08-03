@@ -204,7 +204,7 @@ local on_destroyed_entity_procs = {
 	["cargo-drone-mooring-constant-combinator-refueler"] = on_destroyed_entity_mooring_proc,
 }
 
-for name, _ in pairs(prototypes.mod_data["cargo-drone-data"].data.drones) do
+for name, _ in pairs(prototypes.mod_data["cargo-drone-drones"].data) do
 	on_built_entity_procs[name] = on_built_entity_drone
 	on_destroyed_entity_procs[name] = on_destroyed_entity_drone
 end
@@ -444,7 +444,7 @@ local destroy_events = {
 }
 local script_raised_teleported_filters = {}
 
-for name, _ in pairs(prototypes.mod_data["cargo-drone-data"].data.drones) do
+for name, _ in pairs(prototypes.mod_data["cargo-drone-drones"].data) do
 	table.insert(build_event_filters, { filter = "name", name = name })
 	table.insert(destroy_event_filters, { filter = "name", name = name })
 	table.insert(script_raised_teleported_filters, { filter = "name", name = name })
