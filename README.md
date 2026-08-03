@@ -22,5 +22,8 @@ When a Cargo Drone is waiting at a mooring, you can insert and extract items by 
 ## Want you name in the mod?
 Moorings and Depots have a list of default names. If you want your name in it, simply leave a comment on [this thread](https://mods.factorio.com/mod/cargo-drone/discussion/69cffa6b1ac576ba3a8cc2bb) or submit it in [this Google forms](https://docs.google.com/forms/d/e/1FAIpQLScxgUvPshNqgkHA6LmNkEkS_W-_6UsW4ZvHqafAvMTLcefAzg/viewform?usp=header).
 
+## Modding
+It is possible to add new drones via modding without altering the Cargo drone mod's files. An minimal example of how to implement it can be found on [Github](cargo-drone-test/data.lua) in the cargo-drone-test mod. [Documentaion](docs/modding.md)
+
 ### Special thanks
 Thank you to KeithFromCanada for feedback and help
