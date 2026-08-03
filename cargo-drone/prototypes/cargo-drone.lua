@@ -197,8 +197,11 @@ local drone_data = {
 		attachment_offset = { x = 0, y = -9 },
 		attachment_shadow_offset = { x = 14, y = 0 },
 	},
-	deployer_sprites = {
+	deployer = {
 		body = {
+			spawn_offset = { 0, -drone_shift[2] + 3.4 },
+			prepare_offset = { 0, -drone_shift[2] + 0.4 },
+
 			filename = "__cargo-drone__/graphics/cargo-drone.png",
 			width = 502,
 			-- Make shorter to cut away empty space. Makes it more compact so it doesn't clip outside of the deployer
@@ -213,6 +216,8 @@ local drone_data = {
 			},
 		},
 		shadow = {
+			prepare_offset = { -drone_shadow_shift[1], 0 },
+
 			filename = "__cargo-drone__/graphics/cargo-drone-shadow.png",
 			width = 502,
 			height = 502,

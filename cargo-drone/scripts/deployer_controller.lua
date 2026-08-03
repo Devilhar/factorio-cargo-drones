@@ -38,8 +38,6 @@ local drone_states = {
 
 local drone_placement_offset_y = 0.5
 
-local deploy_prepare_begin_offset = 3.4
-local deploy_prepare_end_offset = 0.4
 local deploy_prepare_ticks = 6 * 60
 local deploy_prepare_sprite_change_ticks = { 2 * 60, 4 * 60, 6 * 60 }
 
@@ -218,6 +216,11 @@ local function begin_prepare_drone(deployer, game_tick, drone_name, drone_qualit
         dummy_fuel_drone.burner.remaining_burning_fuel = 4000000
     end
 
+    local prototype_data = prototypes.mod_data["cargo-drone-data"].data.drones[drone_name]
+
+    local body_spawn_offset = prototype_data.deployer.body.spawn_offset
+    local shadow_prepare_offset = prototype_data.deployer.shadow.prepare_offset
+
     ep.set_entity_property(deployer, "drone_data", {
         state = drone_states.prepare,
         tick_start = game_tick,
@@ -226,13 +229,22 @@ local function begin_prepare_drone(deployer, game_tick, drone_name, drone_qualit
         drone_sprite_quater = 1,
         drone = rendering.draw_sprite{
             sprite = "cargo-drone-deployer-" .. drone_name .. "-" .. direction_to_cardinal[deployer.direction] .. "-" .. 1,
-            target = { entity = deployer, offset = { 0, deploy_prepare_begin_offset + drone_placement_offset_y } },
+            target = {
+                entity = deployer,
+                offset = {
+                    body_spawn_offset.x or body_spawn_offset[1],
+                    (body_spawn_offset.y or body_spawn_offset[2]) + drone_placement_offset_y,
+                },
+            },
             surface = deployer.surface,
             render_layer = "higher-object-under",
         },
         drone_shadow = rendering.draw_sprite{
             sprite = "cargo-drone-deployer-" .. drone_name .. "-shadow-" .. direction_to_cardinal[deployer.direction],
-            target = { entity = deployer, offset = { -deploy_prepare_end_offset, 0 } },
+            target = {
+                entity = deployer,
+                offset = shadow_prepare_offset,
+            },
             surface = deployer.surface,
             render_layer = "object",
         },
@@ -251,11 +263,19 @@ local function tick_prepare_drone(deployer, game_tick, drone_data)
         end
     end
 
-    local offset = deploy_prepare_begin_offset * (1 - progress) + progress * deploy_prepare_end_offset
+    local prototype_data = prototypes.mod_data["cargo-drone-data"].data.drones[drone_data.drone_name]
+
+    local body_spawn_offset = prototype_data.deployer.body.spawn_offset
+    local body_prepare_offset = prototype_data.deployer.body.prepare_offset
+
+    local offset = {
+        (body_spawn_offset.x or body_spawn_offset[1]) * (1 - progress) + progress * (body_prepare_offset.x or body_prepare_offset[1]),
+        (body_spawn_offset.y or body_spawn_offset[2]) * (1 - progress) + progress * (body_prepare_offset.y or body_prepare_offset[2]) + drone_placement_offset_y,
+    }
 
     drone_data.drone.target = {
         entity = deployer,
-        offset = { 0, offset + drone_placement_offset_y },
+        offset = offset,
     }
 
     if game_tick < drone_data.tick_start + deploy_prepare_ticks then
@@ -307,19 +327,25 @@ local function tick_release_drone(deployer, game_tick, drone_data)
 
         local progress = 1 - (math.cos(((game_tick - drone_data.tick_start - deploy_release_rest_ticks) / deploy_release_take_off_ticks) * -math.pi) + 1) / 2
 
-        local body_shift = prototype_data.deployer_sprites.body.shift
-        local shadow_shift = prototype_data.deployer_sprites.shadow.shift
+        local body_prepare_offset = prototype_data.deployer.body.prepare_offset
+        local shadow_prepare_offset = prototype_data.deployer.shadow.prepare_offset
 
-        local offset = deploy_prepare_end_offset * (1 - progress) + progress * (body_shift.y or body_shift[2])
-        local offset_shadow = -deploy_prepare_end_offset * (1 - progress) + progress * (shadow_shift.x or shadow_shift[1])
+        local body_offset = {
+            (body_prepare_offset.x or body_prepare_offset[1]) * (1 - progress),
+            (body_prepare_offset.y or body_prepare_offset[2]) * (1 - progress) + drone_placement_offset_y,
+        }
+        local shadow_offset = {
+            (shadow_prepare_offset.x or shadow_prepare_offset[1]) * (1 - progress),
+            (shadow_prepare_offset.y or shadow_prepare_offset[2]) * (1 - progress) + drone_placement_offset_y,
+        }
 
         drone_data.drone.target = {
             entity = deployer,
-            offset = { 0, offset + drone_placement_offset_y },
+            offset = body_offset,
         }
         drone_data.drone_shadow.target = {
             entity = deployer,
-            offset = { offset_shadow, drone_placement_offset_y },
+            offset = shadow_offset,
         }
     end
 

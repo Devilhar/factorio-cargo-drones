@@ -35,61 +35,70 @@ local function validate_drone_data(drone_name, drone_data)
         error("The drone data for " .. drone_name .. " is missing the cable.attachment_shadow_offset Vector.")
     end
 
-    if type(drone_data.deployer_sprites) ~= "table" then
-        error("The drone data for " .. drone_name .. " is missing the deployer_sprites table.")
+    if type(drone_data.deployer) ~= "table" then
+        error("The drone data for " .. drone_name .. " is missing the deployer table.")
     end
 
-    if type(drone_data.deployer_sprites.body) ~= "table" then
-        error("The drone data for " .. drone_name .. " is missing the deployer_sprites.body table.")
+    if type(drone_data.deployer.body) ~= "table" then
+        error("The drone data for " .. drone_name .. " is missing the deployer.body table.")
     end
 
-    if not is_vector(drone_data.deployer_sprites.body.shift) then
-        error("The drone data for " .. drone_name .. " is missing the deployer_sprites.body.shift Vector.")
+    if not is_vector(drone_data.deployer.body.spawn_offset) then
+        error("The drone data for " .. drone_name .. " is missing the deployer.body.spawn_offset Vector.")
+    end
+    if not is_vector(drone_data.deployer.body.prepare_offset) then
+        error("The drone data for " .. drone_name .. " is missing the deployer.body.prepare_offset Vector.")
     end
 
-    if drone_data.deployer_sprites.body.positions ~= nil then
-        if type(drone_data.deployer_sprites.body.positions) ~= "table" then
-            error("The drone data for " .. drone_name .. " has an invalid type for the the deployer_sprites.body.positions table.")
+    if drone_data.deployer.body.positions ~= nil then
+        if type(drone_data.deployer.body.positions) ~= "table" then
+            error("The drone data for " .. drone_name .. " has an invalid type for the deployer.body.positions table.")
         end
 
-        if type(drone_data.deployer_sprites.body.filename) ~= "string" then
-            error("The drone data for " .. drone_name .. " is missing the deployer_sprites.body.filename string.")
+        if type(drone_data.deployer.body.filename) ~= "string" then
+            error("The drone data for " .. drone_name .. " is missing the deployer.body.filename string.")
         end
-        if type(drone_data.deployer_sprites.body.width) ~= "number" then
-            error("The drone data for " .. drone_name .. " is missing the deployer_sprites.body.width number.")
+        if type(drone_data.deployer.body.width) ~= "number" then
+            error("The drone data for " .. drone_name .. " is missing the deployer.body.width number.")
         end
-        if type(drone_data.deployer_sprites.body.height) ~= "number" then
-            error("The drone data for " .. drone_name .. " is missing the deployer_sprites.body.height number.")
+        if type(drone_data.deployer.body.height) ~= "number" then
+            error("The drone data for " .. drone_name .. " is missing the deployer.body.height number.")
         end
-        if drone_data.deployer_sprites.body.scale ~= nil and type(drone_data.deployer_sprites.body.scale) ~= "number" then
-            error("The drone data for " .. drone_name .. " has an invalid type for the the deployer_sprites.body.scale number.")
+        if drone_data.deployer.body.scale ~= nil and type(drone_data.deployer.body.scale) ~= "number" then
+            error("The drone data for " .. drone_name .. " has an invalid type for the deployer.body.scale number.")
+        end
+        if drone_data.deployer.body.shift ~= nil and not is_vector(drone_data.deployer.body.shift) then
+            error("The drone data for " .. drone_name .. " has an invalid type for the deployer.body.shift Vector.")
         end
     end
 
-    if type(drone_data.deployer_sprites.shadow) ~= "table" then
-        error("The drone data for " .. drone_name .. " is missing the deployer_sprites.shadow table.")
+    if type(drone_data.deployer.shadow) ~= "table" then
+        error("The drone data for " .. drone_name .. " is missing the deployer.shadow table.")
     end
 
-    if not is_vector(drone_data.deployer_sprites.shadow.shift) then
-        error("The drone data for " .. drone_name .. " is missing the deployer_sprites.shadow.shift Vector.")
+    if not is_vector(drone_data.deployer.shadow.prepare_offset) then
+        error("The drone data for " .. drone_name .. " is missing the deployer.shadow.prepare_offset Vector.")
     end
 
-    if drone_data.deployer_sprites.shadow.positions ~= nil then
-        if type(drone_data.deployer_sprites.shadow.positions) ~= "table" then
-            error("The drone data for " .. drone_name .. " has an invalid type for the the deployer_sprites.shadow.positions table.")
+    if drone_data.deployer.shadow.positions ~= nil then
+        if type(drone_data.deployer.shadow.positions) ~= "table" then
+            error("The drone data for " .. drone_name .. " has an invalid type for the deployer.shadow.positions table.")
         end
 
-        if type(drone_data.deployer_sprites.shadow.filename) ~= "string" then
-            error("The drone data for " .. drone_name .. " is missing the deployer_sprites.shadow.filename string.")
+        if type(drone_data.deployer.shadow.filename) ~= "string" then
+            error("The drone data for " .. drone_name .. " is missing the deployer.shadow.filename string.")
         end
-        if type(drone_data.deployer_sprites.shadow.width) ~= "number" then
-            error("The drone data for " .. drone_name .. " is missing the deployer_sprites.shadow.width number.")
+        if type(drone_data.deployer.shadow.width) ~= "number" then
+            error("The drone data for " .. drone_name .. " is missing the deployer.shadow.width number.")
         end
-        if type(drone_data.deployer_sprites.shadow.height) ~= "number" then
-            error("The drone data for " .. drone_name .. " is missing the deployer_sprites.shadow.height number.")
+        if type(drone_data.deployer.shadow.height) ~= "number" then
+            error("The drone data for " .. drone_name .. " is missing the deployer.shadow.height number.")
         end
-        if drone_data.deployer_sprites.shadow.scale ~= nil and type(drone_data.deployer_sprites.shadow.scale) ~= "number" then
-            error("The drone data for " .. drone_name .. " has an invalid type for the the deployer_sprites.shadow.scale number.")
+        if drone_data.deployer.shadow.scale ~= nil and type(drone_data.deployer.shadow.scale) ~= "number" then
+            error("The drone data for " .. drone_name .. " has an invalid type for the deployer.shadow.scale number.")
+        end
+        if drone_data.deployer.shadow.shift ~= nil and not is_vector(drone_data.deployer.shadow.shift) then
+            error("The drone data for " .. drone_name .. " is missing the deployer.shadow.shift Vector.")
         end
     end
 end
@@ -127,8 +136,8 @@ local function make_drone_deployer_sprites(drone_prototype, drone_data)
         west    = "cargo-drone-deployer-" .. drone_prototype.name .."-shadow-west",
     }
 
-    local body_data = drone_data.deployer_sprites.body
-    local shadow_data = drone_data.deployer_sprites.shadow
+    local body_data = drone_data.deployer.body
+    local shadow_data = drone_data.deployer.shadow
 
     local mults = {
         1/8 * 3,
@@ -158,7 +167,7 @@ local function make_drone_deployer_sprites(drone_prototype, drone_data)
                             y = position.y or position[2],
                             width = body_data.width,
                             height = height,
-                            shift = { body_data.shift.x or body_data.shift[1], util.by_pixel(0, -body_data.height / 2)[2] * mults[i] },
+                            shift = { body_data.shift.x or body_data.shift[1], (body_data.shift.y or body_data.shift[2]) - util.by_pixel(0, body_data.height / 2)[2] * mults[i] },
                             scale = body_data.scale,
                             mipmap_count = 2
                         }
@@ -186,7 +195,7 @@ local function make_drone_deployer_sprites(drone_prototype, drone_data)
                         y = position.y or position[2],
                         width = shadow_data.width,
                         height = shadow_data.height,
-                        shift = { 0, shadow_data.shift.y or shadow_data.shift[2] },
+                        shift = shadow_data.shift,
                         scale = shadow_data.scale,
                         mipmap_count = 2,
                         draw_as_shadow = true,
