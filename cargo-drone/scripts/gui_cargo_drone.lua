@@ -145,7 +145,7 @@ function gui_cargo_drone.on_gui_opened(event)
 		return
 	end
 
-    if prototypes.mod_data["cargo-drone-data"].data.drones[entity.name] == nil then
+    if prototypes.mod_data["cargo-drone-drones"].data[entity.name] == nil then
         return
     end
 

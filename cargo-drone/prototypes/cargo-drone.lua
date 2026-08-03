@@ -233,7 +233,7 @@ local drone_data = {
 	}
 }
 
-data.raw["mod-data"]["cargo-drone-data"].data.drones["cargo-drone"] = drone_data
+data.raw["mod-data"]["cargo-drone-drones"].data["cargo-drone"] = drone_data
 
 data:extend({
 	cargo_drone,
