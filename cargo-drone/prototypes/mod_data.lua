@@ -19,9 +19,12 @@ local mod_data = {
 					attachment_shadow_offset = { x = 14, y = 0 },
 				},
 				## These values are used by Deployers to be able to render the drone
-				deployer_sprites = {
+				deployer = {
 					## The data for the sprite that will be displayed
 					body = {
+						spawn_offset = { 0, 12.275 },
+						prepare_offset = { 0, 9.275 },
+
 						## filename, width, height, and scale can be omitted if position is omitted.
 						filename = "__cargo-drone__/graphics/cargo-drone.png",
 						width = 502,
@@ -60,6 +63,8 @@ local mod_data = {
 					},
 					## The data for the shadow that will be displayed
 					shadow = {
+						prepare_offset = { -11.56875, 0 },
+						
 						## filename, width, height, and scale can be omitted if position is omitted.
 						filename = "__cargo-drone__/graphics/cargo-drone-shadow.png",
 						width = 502,

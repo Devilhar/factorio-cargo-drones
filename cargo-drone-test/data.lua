@@ -54,20 +54,26 @@ data:extend{
 
 -- Now we need to register our new drone so the mod knows to manage it.
 
--- The data needed. For explanation of what thees values mean, go to protypes/mod_data.lua in the cargo-drone mod.
+local drone_shift = util.by_pixel(0, -284)
+local drone_shadow_shift = util.by_pixel(383, -16)
+
+-- The data needed. For explanation of what thees values mean, go to docs/modding.md in the cargo-drone Github repository.
 local drone_data = {
 	version = 1,
 	cable = {
 		attachment_offset = { x = 0, y = -9 },
 		attachment_shadow_offset = { x = 14, y = 0 },
 	},
-	deployer_sprites = {
+	deployer = {
 		body = {
+			spawn_offset = { 0, -drone_shift[2] + 3.4 },
+			prepare_offset = { 0, -drone_shift[2] + 0.4 },
+
 			filename = "__cargo-drone-test__/graphics/cargo-drone.png",
 			width = 502,
 			height = 252,
 			scale = 0.5,
-			shift = util.by_pixel(0, -284),
+			shift = drone_shift,
 			positions = {
 				north	= { 0, 125 },
 				east	= { 0, 1004 + 125 },
@@ -76,11 +82,13 @@ local drone_data = {
 			},
 		},
 		shadow = {
+			prepare_offset = { -drone_shadow_shift[1], 0 },
+
 			filename = "__cargo-drone__/graphics/cargo-drone-shadow.png",
 			width = 502,
 			height = 502,
 			scale = 0.5,
-			shift = util.by_pixel(383, -16),
+			shift = drone_shadow_shift,
 			positions = {
 				north	= { 0, 0 },
 				east	= { 0, 1004 },

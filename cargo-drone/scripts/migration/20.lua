@@ -1,6 +1,9 @@
 
+local util = require("util")
+
+local drone_shift = util.by_pixel(0, -284)
+local drone_shadow_shift = util.by_pixel(383, -16)
 local drone_placement_offset_y = 0.5
-local deploy_prepare_end_offset = 0.4
 
 local direction_to_cardinal = {
     [defines.direction.north]	= "north",
@@ -22,13 +25,13 @@ local function migrate_deployers(deployers)
 
             drone_data.drone = rendering.draw_sprite{
                 sprite = "cargo-drone-deployer-cargo-drone-" .. direction_to_cardinal[deployer.direction] .. "-4",
-                target = { entity = deployer, offset = { 0, deploy_prepare_end_offset + drone_placement_offset_y } },
+                target = { entity = deployer, offset = { 0, -drone_shift[2] + 0.4 + drone_placement_offset_y } },
                 surface = deployer.surface,
                 render_layer = "higher-object-under",
             }
             drone_data.drone_shadow = rendering.draw_sprite{
                 sprite = "cargo-drone-deployer-cargo-drone-shadow-" .. direction_to_cardinal[deployer.direction],
-                target = { entity = deployer, offset = { -deploy_prepare_end_offset, 0 } },
+                target = { entity = deployer, offset = { -drone_shadow_shift[1] + 0.4, 0 } },
                 surface = deployer.surface,
                 render_layer = "object",
             }
