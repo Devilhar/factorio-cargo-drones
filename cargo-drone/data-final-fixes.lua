@@ -1,11 +1,11 @@
 
-local mod_data_drones = data.raw["mod-data"]["cargo-drone-drones"].data
-local mod_data_data = data.raw["mod-data"]["cargo-drone-data"].data
+local drones_data = data.raw["mod-data"]["cargo-drone-drones"].data
+local mod_data = data.raw["mod-data"]["cargo-drone-mod-data"].data
 local deployer_drone_container = data.raw["container"]["cargo-drone-deployer-drone-container"]
 
-mod_data_data.items = {}
-mod_data_data.burnt_results_enabled = false
-mod_data_data.inventory_size = 0
+mod_data.items = {}
+mod_data.burnt_results_enabled = false
+mod_data.inventory_size = 0
 
 local inventory_size = nil
 local invalid_drones = {}
@@ -226,7 +226,7 @@ local function make_drone_deployer_sprites(drone_prototype, drone_data)
     end
 end
 
-for name, drone_data in pairs(mod_data_drones) do
+for name, drone_data in pairs(drones_data) do
     local drone_prototype = data.raw.car[name]
 
     if drone_prototype then
@@ -243,7 +243,7 @@ for name, drone_data in pairs(mod_data_drones) do
 
         if drone_prototype.energy_source.type == "burner" then
             if drone_prototype.energy_source.burnt_inventory_size > 0 then
-                mod_data_data.burnt_results_enabled = true
+                mod_data.burnt_results_enabled = true
             end
             energy_source = {
                 type = "burner",
@@ -297,22 +297,22 @@ for name, drone_data in pairs(mod_data_drones) do
 end
 
 for _, name in ipairs(invalid_drones) do
-    mod_data_drones[name] = nil
+    drones_data[name] = nil
 end
 
-mod_data_data.inventory_size = inventory_size or 0
+mod_data.inventory_size = inventory_size or 0
 
 local drone_count = 0
 
 for name, item in pairs(data.raw.item) do
-    if item.place_result and mod_data_drones[item.place_result] then
-        table.insert(mod_data_data.items, name)
+    if item.place_result and drones_data[item.place_result] then
+        table.insert(mod_data.items, name)
         drone_count = drone_count + 1
     end
 end
 for name, item in pairs(data.raw["item-with-entity-data"]) do
-    if item.place_result and mod_data_drones[item.place_result] then
-        table.insert(mod_data_data.items, name)
+    if item.place_result and drones_data[item.place_result] then
+        table.insert(mod_data.items, name)
         drone_count = drone_count + 1
     end
 end

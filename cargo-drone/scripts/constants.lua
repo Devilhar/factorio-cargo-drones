@@ -5,10 +5,10 @@ local constants = {}
 constants.current_mod_state = 20
 
 -- Settings
-constants.burnt_results_enabled = prototypes.mod_data["cargo-drone-data"].data.burnt_results_enabled
+constants.burnt_results_enabled = prototypes.mod_data["cargo-drone-mod-data"].data.burnt_results_enabled
 
 -- Cargo drones
-constants.drone_trunk_size = prototypes.mod_data["cargo-drone-data"].data.inventory_size
+constants.drone_trunk_size = prototypes.mod_data["cargo-drone-mod-data"].data.inventory_size
 constants.drone_queue_distance = 20
 constants.random_tick_interval = 60
 
