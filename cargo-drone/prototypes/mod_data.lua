@@ -8,7 +8,7 @@ local drones = {
 
 local cargo_drone_data = {
 	type = "mod-data",
-	name = "cargo-drone-data",
+	name = "cargo-drone-mod-data",
 	data_type = "string",
 	data = {
 		-- The following values exist after data-final-fixes has run.
