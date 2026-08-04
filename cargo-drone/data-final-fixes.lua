@@ -1,11 +1,17 @@
 
 local drones_data = data.raw["mod-data"]["cargo-drone-drones"].data
-local mod_data = data.raw["mod-data"]["cargo-drone-mod-data"].data
 local deployer_drone_container = data.raw["container"]["cargo-drone-deployer-drone-container"]
 
-mod_data.items = {}
-mod_data.burnt_results_enabled = false
-mod_data.inventory_size = 0
+local mod_data = {
+	type = "mod-data",
+	name = "cargo-drone-mod-data",
+	data_type = "CargoDroneModData",
+	data = {
+        items = {},
+        inventory_size = 0,
+        burnt_results_enabled = false,
+    },
+}
 
 local inventory_size = nil
 local invalid_drones = {}
@@ -243,7 +249,7 @@ for name, drone_data in pairs(drones_data) do
 
         if drone_prototype.energy_source.type == "burner" then
             if drone_prototype.energy_source.burnt_inventory_size > 0 then
-                mod_data.burnt_results_enabled = true
+                mod_data.data.burnt_results_enabled = true
             end
             energy_source = {
                 type = "burner",
@@ -300,21 +306,26 @@ for _, name in ipairs(invalid_drones) do
     drones_data[name] = nil
 end
 
-mod_data.inventory_size = inventory_size or 0
+mod_data.data.inventory_size = inventory_size or 0
 
 local drone_count = 0
 
 for name, item in pairs(data.raw.item) do
     if item.place_result and drones_data[item.place_result] then
-        table.insert(mod_data.items, name)
+        table.insert(mod_data.data.items, name)
         drone_count = drone_count + 1
     end
 end
 for name, item in pairs(data.raw["item-with-entity-data"]) do
     if item.place_result and drones_data[item.place_result] then
-        table.insert(mod_data.items, name)
+        table.insert(mod_data.data.items, name)
         drone_count = drone_count + 1
     end
 end
 
 deployer_drone_container.inventory_size = drone_count
+
+data:extend{
+	mod_data,
+}
+
