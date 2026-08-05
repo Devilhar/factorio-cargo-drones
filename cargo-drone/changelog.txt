@@ -2,6 +2,7 @@
     - Added a toggleable map overlay for showing the names of moorings and depots. Default keybind is CONTROL-O.
     - Added support for multiple types of drones.
   Changes:
+    - All Cargo drone items are now in a separate group in the crafting menu.
     - Deployers now have a lower selection priority than Cargo drones.
     - Increased mining time of moorings, depots and deployers to 2 seconds.
   Bugfixes:
