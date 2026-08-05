@@ -1,7 +1,7 @@
 
 local item_sounds = require("__base__.prototypes.item_sounds")
 
--- Create new drone
+-- Creating a new drone
 
 -- Any CarPrototype will do, but the mod makes a few assumptions.
 -- If the following values are not set, the drone might not behave correctly:
@@ -27,12 +27,13 @@ new_cargo_drone.consumption = "400kW"
 new_cargo_drone.energy_source.effectivity = 1
 new_cargo_drone.rotation_speed = 0.0020
 
--- Altough we can't increase inventory_size, fuel size can still be changed freely. The fuel inventory size settings only affect the base drone.
+-- Altough we can't increase inventory_size, fuel size can still be changed freely.
 new_cargo_drone.energy_source.fuel_inventory_size = 4
 new_cargo_drone.energy_source.burnt_inventory_size = 4
 
 -- Standard item, nothing out of the ordinary here.
--- The only thing to bear in mind is that for items to be registered with the mod, they need to have the place_result value set to a drone identifier.
+-- The only thing to bear in mind is that for items to be registered with the mod so they can
+-- be used with Deployers, they need to have the place_result value set to a drone entity name.
 local new_cargo_drone_item = {
 	type = "item-with-entity-data",
 	name = "new-cargo-drone",
