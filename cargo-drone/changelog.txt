@@ -6,6 +6,7 @@
     - Deployers now have a lower selection priority than Cargo drones.
     - Increased mining time of moorings, depots and deployers to 2 seconds.
   Bugfixes:
+    - Fixed Deployers being placeable in space.
     - Fixed Deployers always deploying normal quality drones even when a higher quality drone is inserted.
 ---------------------------------------------------------------------------------------------------
 Version: 1.17.0

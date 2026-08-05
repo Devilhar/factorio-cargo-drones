@@ -15,3 +15,4 @@ data.raw["constant-combinator"]["cargo-drone-mooring-constant-combinator-provide
 data.raw["constant-combinator"]["cargo-drone-mooring-constant-combinator-requester"].surface_conditions = one_pressure_condition()
 data.raw["constant-combinator"]["cargo-drone-mooring-constant-combinator-refueler"].surface_conditions = one_pressure_condition()
 data.raw["constant-combinator"]["cargo-drone-depot-constant-combinator"].surface_conditions = one_pressure_condition()
+data.raw["constant-combinator"]["cargo-drone-deployer-constant-combinator"].surface_conditions = one_pressure_condition()
