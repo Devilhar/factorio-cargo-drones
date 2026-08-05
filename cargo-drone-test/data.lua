@@ -58,7 +58,7 @@ data:extend{
 local drone_shift = util.by_pixel(0, -284)
 local drone_shadow_shift = util.by_pixel(383, -16)
 
--- The data needed. For explanation of what thees values mean, go to docs/modding.md in the cargo-drone Github repository.
+-- The data needed. For explanation of what thees values mean, go to docs/data-structures.md in the cargo-drone Github repository.
 local drone_data = {
 	version = 1,
 	cable = {
