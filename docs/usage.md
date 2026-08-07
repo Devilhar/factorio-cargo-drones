@@ -59,7 +59,7 @@ This can be used to stop multiple drones being assigned tasks to pickup single i
 |Any   |No minimum, will pickup any amount   |
 |Stack |All requests are for full stacks only. Note that requests are rounded up, so if the Requester has a signal for 101 Iron plates, it will try to request 200 Iron plates|
 |Fuzzy |Sets the minimum to either a stack or the exact amount requested, whichever is smaller|
-|Full  |Sets the minimum to a drone's inventory capacity. Note that requests are rounded up, so assuming drones have 10 inventory slots and the Requester has a signal for 1 Iron plate, it will try to request 1000 Iron plates|
+|Full  |Sets the minimum to a drone's inventory capacity. Note that requests are not rounded up, no request will be made until there's a request big enough to fill up a drone's inventory.|
 
 ## <img src="https://raw.githubusercontent.com/Devilhar/factorio-cargo-drones/refs/heads/main/images/refueler-mooring-icon.png" width="32"> Refueler mooring
 
