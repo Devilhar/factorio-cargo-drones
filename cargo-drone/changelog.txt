@@ -1,3 +1,6 @@
+---------------------------------------------------------------------------------------------------
+Version: 1.18.0
+Date: 07. 08. 2026
   Minor Features:
     - Added a toggleable map overlay for showing the names of moorings and depots. Default keybind is CONTROL-O.
     - Added support for multiple types of drones.
