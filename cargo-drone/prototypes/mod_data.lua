@@ -1,8 +1,8 @@
 
 local drones = {
 	type = "mod-data",
-	name = "cargo-drone-drones",
-	data_type = "{String, DroneData}",
+	name = "cargo-drone-prototypes",
+	data_type = "{String, PrototypeDrone}",
 	data = {},
 }
 

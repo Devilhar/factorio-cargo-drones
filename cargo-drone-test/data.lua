@@ -61,6 +61,7 @@ local drone_shadow_shift = util.by_pixel(383, -16)
 -- The data needed. For explanation of what thees values mean, go to docs/data-structures.md in the cargo-drone Github repository.
 local drone_data = {
 	version = 1,
+	type = "cargo-drone",
 	cable = {
 		attachment_offset = { x = 0, y = -9 },
 		attachment_shadow_offset = { x = 14, y = 0 },
@@ -100,8 +101,8 @@ local drone_data = {
 	}
 }
 
--- Once created we can register it by adding the table we just created to the drones table using the entity name as key.
-data.raw["mod-data"]["cargo-drone-drones"].data["new-cargo-drone"] = drone_data
+-- Once created we can register it by adding the table we just created to the prototypes table using the entity name as key.
+data.raw["mod-data"]["cargo-drone-prototypes"].data["new-cargo-drone"] = drone_data
 
 -- All done. The drone is now ready.
 

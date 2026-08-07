@@ -193,6 +193,7 @@ local cargo_drone_sound_docking = {
 
 local drone_data = {
 	version = 1,
+	type = "cargo-drone",
 	cable = {
 		attachment_offset = { x = 0, y = -9 },
 		attachment_shadow_offset = { x = 14, y = 0 },
@@ -233,7 +234,7 @@ local drone_data = {
 	}
 }
 
-data.raw["mod-data"]["cargo-drone-drones"].data["cargo-drone"] = drone_data
+data.raw["mod-data"]["cargo-drone-prototypes"].data["cargo-drone"] = drone_data
 
 data:extend({
 	cargo_drone,

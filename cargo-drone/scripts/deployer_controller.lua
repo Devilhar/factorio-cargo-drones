@@ -216,7 +216,7 @@ local function begin_prepare_drone(deployer, game_tick, drone_name, drone_qualit
         dummy_fuel_drone.burner.remaining_burning_fuel = 4000000
     end
 
-    local prototype_data = prototypes.mod_data["cargo-drone-drones"].data[drone_name]
+    local prototype_data = prototypes.mod_data["cargo-drone-prototypes"].data[drone_name]
 
     local body_spawn_offset = prototype_data.deployer.body.spawn_offset
     local shadow_prepare_offset = prototype_data.deployer.shadow.prepare_offset
@@ -263,7 +263,7 @@ local function tick_prepare_drone(deployer, game_tick, drone_data)
         end
     end
 
-    local prototype_data = prototypes.mod_data["cargo-drone-drones"].data[drone_data.drone_name]
+    local prototype_data = prototypes.mod_data["cargo-drone-prototypes"].data[drone_data.drone_name]
 
     local body_spawn_offset = prototype_data.deployer.body.spawn_offset
     local body_prepare_offset = prototype_data.deployer.body.prepare_offset
@@ -323,7 +323,7 @@ local function tick_release_drone(deployer, game_tick, drone_data)
     end
 
     if game_tick >= drone_data.tick_start + deploy_release_rest_ticks then
-        local prototype_data = prototypes.mod_data["cargo-drone-drones"].data[drone_data.drone_name]
+        local prototype_data = prototypes.mod_data["cargo-drone-prototypes"].data[drone_data.drone_name]
 
         local progress = 1 - (math.cos(((game_tick - drone_data.tick_start - deploy_release_rest_ticks) / deploy_release_take_off_ticks) * -math.pi) + 1) / 2
 
@@ -403,7 +403,7 @@ local function tick_deployer(deployer, game_tick)
 
         local drone_name = item_prototype.place_result.name
 
-        if not prototypes.mod_data["cargo-drone-drones"].data[drone_name] then
+        if not prototypes.mod_data["cargo-drone-prototypes"].data[drone_name] then
             return activation_state.inactive
         end
 

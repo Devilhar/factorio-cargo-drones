@@ -1,17 +1,18 @@
 
-# DroneData
+# PrototypeDrone
 
 The data structure representing additional data required by drones.
 
 |Properties|Type||
 |-|-|-|
-|[version](#dronedata.version)|:: number|A value representing the version of the data structure used.|
-|[cable](#dronedata.cable)|:: [DroneCableData](#dronecabledata)||
-|[deployer](#dronedata.deployer)|:: [DroneDeployerData](#dronedeployerdata)||
+|[version](#prototypedrone.version)|:: number|A value representing the version of the data structure used.|
+|[type](#prototypedrone.type)|:: string|`"cargo-drone"`|
+|[cable](#prototypedrone.cable)|:: [DroneCableData](#dronecabledata)||
+|[deployer](#prototypedrone.deployer)|:: [DroneDeployerData](#dronedeployerdata)||
 
 ### Properties
 
-#### version :: number <a name="dronedata.version"></a>
+#### version :: number <a name="prototypedrone.version"></a>
 A value representing the version of the data structure used. This is used by the Cargo drone mod to know how to interpret the data. So even if a value is moved/renamed/changed in a newer version of the Cargo drone mod, old data structures may still function.
 
 This means that it is usually recommended to hardcode the value when creating structure.
@@ -26,10 +27,15 @@ This means that it is usually recommended to hardcode the value when creating st
 
 ---
 
-#### cable :: [DroneCableData](#dronecabledata) <a name="dronedata.cable"></a>
+#### type :: string <a name="prototypedrone.type"></a>
+`"cargo-drone"`
+
 ---
 
-#### deployer :: [DroneDeployerData](#dronedeployerdata) <a name="dronedata.deployer"></a>
+#### cable :: [DroneCableData](#dronecabledata) <a name="prototypedrone.cable"></a>
+---
+
+#### deployer :: [DroneDeployerData](#dronedeployerdata) <a name="prototypedrone.deployer"></a>
 ---
 
 # DroneCableData

@@ -1,5 +1,5 @@
 
-local drones_data = data.raw["mod-data"]["cargo-drone-drones"].data
+local prototypes_data = data.raw["mod-data"]["cargo-drone-prototypes"].data
 local deployer_drone_container = data.raw["container"]["cargo-drone-deployer-drone-container"]
 
 local mod_data = {
@@ -24,88 +24,92 @@ local function validate_drone_data(drone_name, drone_data)
     end
 
     if type(drone_data.version) ~= "number" then
-        error("The drone data for " .. drone_name .. " is missing the version number.")
+        error("The Cargo drone prototype " .. drone_name .. " is missing the version number.")
     end
 
     if drone_data.version ~= 1 then
-        error("The drone data for " .. drone_name .. " has an invalid version number. Version must be equal to 1.")
+        error("The Cargo drone prototype " .. drone_name .. " has an invalid version number. Version must be equal to 1.")
+    end
+
+    if drone_data.type ~= "cargo-drone" then
+        error("The Cargo drone prototype " .. drone_name .. " is missing the type string.")
     end
 
     if type(drone_data.cable) ~= "table" then
-        error("The drone data for " .. drone_name .. " is missing the cable table.")
+        error("The Cargo drone prototype " .. drone_name .. " is missing the cable table.")
     end
 
     if not is_vector(drone_data.cable.attachment_offset) then
-        error("The drone data for " .. drone_name .. " is missing the cable.attachment_offset Vector.")
+        error("The Cargo drone prototype " .. drone_name .. " is missing the cable.attachment_offset Vector.")
     end
     if not is_vector(drone_data.cable.attachment_shadow_offset) then
-        error("The drone data for " .. drone_name .. " is missing the cable.attachment_shadow_offset Vector.")
+        error("The Cargo drone prototype " .. drone_name .. " is missing the cable.attachment_shadow_offset Vector.")
     end
 
     if type(drone_data.deployer) ~= "table" then
-        error("The drone data for " .. drone_name .. " is missing the deployer table.")
+        error("The Cargo drone prototype " .. drone_name .. " is missing the deployer table.")
     end
 
     if type(drone_data.deployer.body) ~= "table" then
-        error("The drone data for " .. drone_name .. " is missing the deployer.body table.")
+        error("The Cargo drone prototype " .. drone_name .. " is missing the deployer.body table.")
     end
 
     if not is_vector(drone_data.deployer.body.spawn_offset) then
-        error("The drone data for " .. drone_name .. " is missing the deployer.body.spawn_offset Vector.")
+        error("The Cargo drone prototype " .. drone_name .. " is missing the deployer.body.spawn_offset Vector.")
     end
     if not is_vector(drone_data.deployer.body.prepare_offset) then
-        error("The drone data for " .. drone_name .. " is missing the deployer.body.prepare_offset Vector.")
+        error("The Cargo drone prototype " .. drone_name .. " is missing the deployer.body.prepare_offset Vector.")
     end
 
     if drone_data.deployer.body.positions ~= nil then
         if type(drone_data.deployer.body.positions) ~= "table" then
-            error("The drone data for " .. drone_name .. " has an invalid type for the deployer.body.positions table.")
+            error("The Cargo drone prototype " .. drone_name .. " has an invalid type for the deployer.body.positions table.")
         end
 
         if type(drone_data.deployer.body.filename) ~= "string" then
-            error("The drone data for " .. drone_name .. " is missing the deployer.body.filename string.")
+            error("The Cargo drone prototype " .. drone_name .. " is missing the deployer.body.filename string.")
         end
         if type(drone_data.deployer.body.width) ~= "number" then
-            error("The drone data for " .. drone_name .. " is missing the deployer.body.width number.")
+            error("The Cargo drone prototype " .. drone_name .. " is missing the deployer.body.width number.")
         end
         if type(drone_data.deployer.body.height) ~= "number" then
-            error("The drone data for " .. drone_name .. " is missing the deployer.body.height number.")
+            error("The Cargo drone prototype " .. drone_name .. " is missing the deployer.body.height number.")
         end
         if drone_data.deployer.body.scale ~= nil and type(drone_data.deployer.body.scale) ~= "number" then
-            error("The drone data for " .. drone_name .. " has an invalid type for the deployer.body.scale number.")
+            error("The Cargo drone prototype " .. drone_name .. " has an invalid type for the deployer.body.scale number.")
         end
         if drone_data.deployer.body.shift ~= nil and not is_vector(drone_data.deployer.body.shift) then
-            error("The drone data for " .. drone_name .. " has an invalid type for the deployer.body.shift Vector.")
+            error("The Cargo drone prototype " .. drone_name .. " has an invalid type for the deployer.body.shift Vector.")
         end
     end
 
     if type(drone_data.deployer.shadow) ~= "table" then
-        error("The drone data for " .. drone_name .. " is missing the deployer.shadow table.")
+        error("The Cargo drone prototype " .. drone_name .. " is missing the deployer.shadow table.")
     end
 
     if not is_vector(drone_data.deployer.shadow.prepare_offset) then
-        error("The drone data for " .. drone_name .. " is missing the deployer.shadow.prepare_offset Vector.")
+        error("The Cargo drone prototype " .. drone_name .. " is missing the deployer.shadow.prepare_offset Vector.")
     end
 
     if drone_data.deployer.shadow.positions ~= nil then
         if type(drone_data.deployer.shadow.positions) ~= "table" then
-            error("The drone data for " .. drone_name .. " has an invalid type for the deployer.shadow.positions table.")
+            error("The Cargo drone prototype " .. drone_name .. " has an invalid type for the deployer.shadow.positions table.")
         end
 
         if type(drone_data.deployer.shadow.filename) ~= "string" then
-            error("The drone data for " .. drone_name .. " is missing the deployer.shadow.filename string.")
+            error("The Cargo drone prototype " .. drone_name .. " is missing the deployer.shadow.filename string.")
         end
         if type(drone_data.deployer.shadow.width) ~= "number" then
-            error("The drone data for " .. drone_name .. " is missing the deployer.shadow.width number.")
+            error("The Cargo drone prototype " .. drone_name .. " is missing the deployer.shadow.width number.")
         end
         if type(drone_data.deployer.shadow.height) ~= "number" then
-            error("The drone data for " .. drone_name .. " is missing the deployer.shadow.height number.")
+            error("The Cargo drone prototype " .. drone_name .. " is missing the deployer.shadow.height number.")
         end
         if drone_data.deployer.shadow.scale ~= nil and type(drone_data.deployer.shadow.scale) ~= "number" then
-            error("The drone data for " .. drone_name .. " has an invalid type for the deployer.shadow.scale number.")
+            error("The Cargo drone prototype " .. drone_name .. " has an invalid type for the deployer.shadow.scale number.")
         end
         if drone_data.deployer.shadow.shift ~= nil and not is_vector(drone_data.deployer.shadow.shift) then
-            error("The drone data for " .. drone_name .. " is missing the deployer.shadow.shift Vector.")
+            error("The Cargo drone prototype " .. drone_name .. " is missing the deployer.shadow.shift Vector.")
         end
     end
 end
@@ -232,18 +236,18 @@ local function make_drone_deployer_sprites(drone_prototype, drone_data)
     end
 end
 
-for name, drone_data in pairs(drones_data) do
+for name, protoype_data in pairs(prototypes_data) do
     local drone_prototype = data.raw.car[name]
 
     if drone_prototype then
-        validate_drone_data(name, drone_data)
+        validate_drone_data(name, protoype_data)
 
         if inventory_size ~= nil and inventory_size ~= drone_prototype.inventory_size then
             error("All cargo drones must have the same inventory size.")
         end
 
         inventory_size = drone_prototype.inventory_size
-        make_drone_deployer_sprites(drone_prototype, drone_data)
+        make_drone_deployer_sprites(drone_prototype, protoype_data)
 
         local energy_source = { type = "void" }
 
@@ -303,7 +307,7 @@ for name, drone_data in pairs(drones_data) do
 end
 
 for _, name in ipairs(invalid_drones) do
-    drones_data[name] = nil
+    prototypes_data[name] = nil
 end
 
 mod_data.data.inventory_size = inventory_size or 0
@@ -311,13 +315,13 @@ mod_data.data.inventory_size = inventory_size or 0
 local drone_count = 0
 
 for name, item in pairs(data.raw.item) do
-    if item.place_result and drones_data[item.place_result] then
+    if item.place_result and prototypes_data[item.place_result] then
         table.insert(mod_data.data.items, name)
         drone_count = drone_count + 1
     end
 end
 for name, item in pairs(data.raw["item-with-entity-data"]) do
-    if item.place_result and drones_data[item.place_result] then
+    if item.place_result and prototypes_data[item.place_result] then
         table.insert(mod_data.data.items, name)
         drone_count = drone_count + 1
     end

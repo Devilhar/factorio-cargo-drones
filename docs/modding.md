@@ -22,11 +22,11 @@ The car prototype is created like normal. But the Cargo drone mod makes a few as
 
 All drones must be registered to the Cargo drone mod during the data phase for them to work as drones.
 
-This is done by creating a [DroneData](data-structures.md) structure and then adding it to the ModData named "cargo-drone-drones" using the name of the drone entity as key.
+This is done by creating a [PrototypeDrone](data-structures.md#prototypedrone) structure and then adding it to the ModData named "cargo-drone-prototypes" using the name of the drone entity as key.
 
-Here is how the DroneData structure for the Cargo drone mod's own drone is added, where `drone_data` is the structure and `"cargo-drone"` is the name of the drone prototype:
+Here is how the PrototypeDrone structure for the Cargo drone mod's own drone is added, where `drone_data` is the PrototypeDrone structure and `"cargo-drone"` is the name of the drone entity prototype:
 ```lua
-data.raw["mod-data"]["cargo-drone-drones"].data["cargo-drone"] = drone_data
+data.raw["mod-data"]["cargo-drone-prototypes"].data["cargo-drone"] = drone_data
 ```
 
 This must be done before the Cargo drone mod's data-final-fixes.lua is run, as it validates and process all data there.
