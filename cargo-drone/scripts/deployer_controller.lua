@@ -200,7 +200,9 @@ local function create_drone(deployer, drone_data)
         for i = 1, #inventory_dummy do
             local item = inventory_dummy[i]
 
-            fuel_inventory.insert({ name = item.name, quality = item.quality, count = item.count })
+            if item and item.valid and item.valid_for_read then
+                fuel_inventory.insert({ name = item.name, quality = item.quality, count = item.count })
+            end
         end
 
         inventory_dummy.clear()
