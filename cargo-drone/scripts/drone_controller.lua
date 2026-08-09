@@ -783,45 +783,70 @@ function drone_controller.surface_change(drone, old_surface_index)
     register_drone(drone)
 end
 
+local tick_change_buffer = {}
+local tick_change_buffer_size = 0
+
 function drone_controller.tick(game_tick)
+    -- Declaring variables early *appears* to have a minor performance benefit.
     local tick_delay = nil
-    local new_ticks = nil
+    local expected_buffer_size = 0
+    local tick_change_count = 0
+    local tick_change_data = nil
 
     for _, surface_buffer in pairs(storage.drone_controller.surfaces) do
+        expected_buffer_size = tick_change_count + surface_buffer.drone_count
 
-        for unit_number, drone in pairs(surface_buffer.scheduled_every) do
+        if tick_change_buffer_size < expected_buffer_size then
+            for i = tick_change_buffer_size + 1, expected_buffer_size do
+                tick_change_buffer[i] = {}
+            end
+
+            tick_change_buffer_size = table_size(tick_change_buffer)
+        end
+
+        for _, drone in pairs(surface_buffer.scheduled_every) do
             tick_delay = tick_drone(drone, game_tick)
 
-            if tick_delay ~= nil then
-                new_ticks = new_ticks or {}
+            if tick_delay ~= 1 then
+                tick_change_count = tick_change_count + 1
 
-                new_ticks[unit_number] = { drone, tick_delay }
+                tick_change_data = tick_change_buffer[tick_change_count]
+
+                tick_change_data[1] = tick_delay
+                tick_change_data[2] = drone
             end
         end
 
         local tick_buffer = surface_buffer.scheduled_ticks[game_tick]
 
         if tick_buffer then
-            new_ticks = new_ticks or {}
-
-            for unit_number, drone in pairs(tick_buffer) do
+            for _, drone in pairs(tick_buffer) do
                 tick_delay = tick_drone(drone, game_tick)
 
-                new_ticks[unit_number] = { drone, tick_delay }
+                tick_change_count = tick_change_count + 1
+
+                tick_change_data = tick_change_buffer[tick_change_count]
+
+                tick_change_data[1] = tick_delay
+                tick_change_data[2] = drone
             end
         end
 
         surface_buffer.scheduled_ticks[game_tick] = nil
     end
 
-    -- FIXME: Make indexed? Is that faster?
-    if new_ticks then
-        for _, data in pairs(new_ticks) do
-            if data[2] == nil then
-                schedule_tick_every(data[1])
-            else
-                schedule_next_tick(data[1], data[2])
-            end
+    local drone = nil
+
+    for i = 1, tick_change_count do
+        tick_change_data = tick_change_buffer[i]
+
+        tick_delay = tick_change_data[1]
+        drone = tick_change_data[2]
+
+        if tick_delay == 1 then
+            schedule_tick_every(drone)
+        else
+            schedule_next_tick(drone, tick_delay)
         end
     end
 end
