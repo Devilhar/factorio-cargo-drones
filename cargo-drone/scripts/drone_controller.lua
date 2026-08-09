@@ -67,9 +67,33 @@ local function schedule_next_tick(drone, ticks_delay)
         next_tick = next_random_tick
     end
 
+    local surface_buffer = storage.drone_controller.surfaces[drone.surface.index]
+
+    local tickrate_buffer = surface_buffer.scheduled_ticks[next_tick]
+
+    if not tickrate_buffer then
+        tickrate_buffer = {}
+
+        surface_buffer.scheduled_ticks[next_tick] = tickrate_buffer
+    end
+
+    surface_buffer.scheduled_every[drone.unit_number] = nil
+    tickrate_buffer[drone.unit_number] = drone
     ep.set_entity_property(drone, "next_tick", next_tick)
 end
 local function schedule_tick_every(drone)
+    local surface_buffer = storage.drone_controller.surfaces[drone.surface.index]
+    local next_tick = ep.get_entity_property(drone, "next_tick")
+
+    if next_tick ~= nil then
+        local tickrate_buffer = surface_buffer.scheduled_ticks[next_tick]
+
+        if tickrate_buffer then
+            tickrate_buffer[drone.unit_number] = nil
+        end
+    end
+
+    surface_buffer.scheduled_every[drone.unit_number] = drone
     ep.set_entity_property(drone, "next_tick", nil)
 end
 
@@ -528,6 +552,8 @@ local function register_drone(drone)
         surface_buffer = {
             drones = {},
             drone_count = 0,
+            scheduled_every = {},
+            scheduled_ticks = {},
         }
 
         storage.drone_controller.surfaces[drone.surface.index] = surface_buffer
@@ -536,6 +562,7 @@ local function register_drone(drone)
     surface_buffer.drones[drone.unit_number] = drone
 
     surface_buffer.drone_count = table_size(surface_buffer.drones)
+    surface_buffer.scheduled_every[drone.unit_number] = drone
 
     callback_drone_count_changed(drone.surface.index)
 end
@@ -552,6 +579,18 @@ local function unregister_drone(drone, surface_index)
 
     if next(surface_buffer.drones) == nil then
         storage.drone_controller.surfaces[surface_index] = nil
+    else
+        local next_tick = ep.get_entity_property(drone, "next_tick")
+
+        if next_tick == nil then
+            surface_buffer.scheduled_every[drone.unit_number] = nil
+        else
+            local tick_buffer = surface_buffer.scheduled_ticks[next_tick]
+
+            if tick_buffer then
+                tick_buffer[drone.unit_number] = nil
+            end
+        end
     end
 
     callback_drone_count_changed(surface_index)
@@ -745,27 +784,43 @@ function drone_controller.surface_change(drone, old_surface_index)
 end
 
 function drone_controller.tick(game_tick)
-    local next_tick_drone = nil
     local tick_delay = nil
+    local new_ticks = nil
 
     for _, surface_buffer in pairs(storage.drone_controller.surfaces) do
-        for _, drone in pairs(surface_buffer.drones) do
-            next_tick_drone = ep.get_entity_property(drone, "next_tick")
 
-            if next_tick_drone == nil then
+        for unit_number, drone in pairs(surface_buffer.scheduled_every) do
+            tick_delay = tick_drone(drone, game_tick)
+
+            if tick_delay ~= nil then
+                new_ticks = new_ticks or {}
+
+                new_ticks[unit_number] = { drone, tick_delay }
+            end
+        end
+
+        local tick_buffer = surface_buffer.scheduled_ticks[game_tick]
+
+        if tick_buffer then
+            new_ticks = new_ticks or {}
+
+            for unit_number, drone in pairs(tick_buffer) do
                 tick_delay = tick_drone(drone, game_tick)
 
-                if tick_delay ~= nil then
-                    schedule_next_tick(drone, tick_delay)
-                end
-            elseif game_tick >= next_tick_drone then
-                tick_delay = tick_drone(drone, game_tick)
+                new_ticks[unit_number] = { drone, tick_delay }
+            end
+        end
 
-                if tick_delay == nil then
-                    schedule_tick_every(drone)
-                else
-                    schedule_next_tick(drone, tick_delay)
-                end
+        surface_buffer.scheduled_ticks[game_tick] = nil
+    end
+
+    -- FIXME: Make indexed? Is that faster?
+    if new_ticks then
+        for _, data in pairs(new_ticks) do
+            if data[2] == nil then
+                schedule_tick_every(data[1])
+            else
+                schedule_next_tick(data[1], data[2])
             end
         end
     end
