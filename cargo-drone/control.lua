@@ -17,6 +17,8 @@ local gcd		= require("scripts.gui_cargo_drone")
 local scheduler	= require("scripts.scheduler")
 local migration	= require("scripts.migration")
 
+require("scripts.debug_interface")
+
 local function on_drone_count_changed(surface_index)
 	dlc.drone_count_changed(surface_index)
 end
