@@ -19,7 +19,7 @@ When a Cargo Drone is waiting at a mooring, you can insert and extract items by 
 - You can find an example setup and Blueprint book cheat sheet [here](docs/example-setup.md)
 - For more in-depth explanations go to the [usage](docs/usage.md) section
 
-## Want you name in the mod?
+## Want your name in the mod?
 Moorings and Depots have a list of default names. If you want your name in it, simply leave a comment on [this thread](https://mods.factorio.com/mod/cargo-drone/discussion/69cffa6b1ac576ba3a8cc2bb) or submit it in [this Google forms](https://docs.google.com/forms/d/e/1FAIpQLScxgUvPshNqgkHA6LmNkEkS_W-_6UsW4ZvHqafAvMTLcefAzg/viewform?usp=header).
 
 ## Modding
