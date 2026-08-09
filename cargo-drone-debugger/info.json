@@ -1,0 +1,12 @@
+{
+  "name": "cargo-drone-debugger",
+  "version": "1.0.0",
+  "title": "Cargo Drone Debugger",
+  "author": "Devilhar",
+  "factorio_version": "2.1",
+  "dependencies": [
+    "base >= 2.1",
+    "cargo-drone >= 1.8"
+  ],
+  "description": "Debug mod for cargo-drone"
+}
