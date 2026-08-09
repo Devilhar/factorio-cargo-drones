@@ -55,6 +55,24 @@ local function orientation_delta_from_to(a, b)
 end
 -- End steal mode
 
+local function schedule_next_tick(drone, ticks_delay)
+    local next_tick = game.tick + ticks_delay
+    local next_random_tick = game.tick - game.tick % constants.random_tick_interval + (drone.unit_number % constants.random_tick_interval)
+
+    if next_random_tick <= game.tick then
+        next_random_tick = next_random_tick + constants.random_tick_interval
+    end
+
+    if next_tick > next_random_tick then
+        next_tick = next_random_tick
+    end
+
+    ep.set_entity_property(drone, "next_tick", next_tick)
+end
+local function schedule_tick_every(drone)
+    ep.set_entity_property(drone, "next_tick", nil)
+end
+
 local function get_closest_depot_attachment_offset(delta)
     local closest_offset = { 0, 0 }
     local closest_distance = 100
@@ -727,22 +745,34 @@ function drone_controller.surface_change(drone, old_surface_index)
 end
 
 function drone_controller.tick(game_tick)
-    local tickrate_drone = 0
-    local tickrate_new = 0
+    local next_tick_drone = nil
+    local tick_delay = nil
 
     for _, surface_buffer in pairs(storage.drone_controller.surfaces) do
-        for unit_number, drone in pairs(surface_buffer.drones) do
-            tickrate_drone = ep.get_entity_property(drone, "tickrate") or constants.drones_tickrates.every
+        for _, drone in pairs(surface_buffer.drones) do
+            next_tick_drone = ep.get_entity_property(drone, "next_tick")
 
-            if unit_number % tickrate_drone == game_tick % tickrate_drone then
-                tickrate_new = tick_drone(drone, game_tick)
+            if next_tick_drone == nil then
+                tick_delay = tick_drone(drone, game_tick)
 
-                if tickrate_new ~= tickrate_drone then
-                    ep.set_entity_property(drone, "tickrate", tickrate_new)
+                if tick_delay ~= nil then
+                    schedule_next_tick(drone, tick_delay)
+                end
+            elseif game_tick >= next_tick_drone then
+                tick_delay = tick_drone(drone, game_tick)
+
+                if tick_delay == nil then
+                    schedule_tick_every(drone)
+                else
+                    schedule_next_tick(drone, tick_delay)
                 end
             end
         end
     end
+end
+
+function drone_controller.interrupt_drone(drone)
+    schedule_tick_every(drone)
 end
 
 function drone_controller.drone_count(surface_index)
