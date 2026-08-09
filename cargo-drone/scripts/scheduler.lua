@@ -8,6 +8,7 @@ local deh       = require("depot_helper")
 local mh	    = require("mooring_helper")
 local rc        = require("requester_cooldown")
 local dt        = require("drone_tasks")
+local dc        = require("drone_controller")
 local ir	    = require("item_requests")
 
 local mooring_scan_interval = 300
@@ -254,7 +255,7 @@ local function assign_task_to_drone_with_cargo()
     end
 
     ir.assign_to_request_with_items(surface_buffer, drone)
-    ep.set_entity_property(drone, "tickrate", constants.drones_tickrates.every)
+    dc.interrupt_drone(drone)
 
     return false
 end
@@ -304,7 +305,7 @@ local function process_next_item_request(heuristic_target_count_cost)
     table.remove(drones, closest_index)
 
     ir.assign_item_request(surface_buffer, drone, item_request)
-    ep.set_entity_property(drone, "tickrate", constants.drones_tickrates.every)
+    dc.interrupt_drone(drone)
 
     return false
 end
@@ -380,7 +381,7 @@ local function assign_depot_task()
     end
 
     dt.assign_depot(drone, closest_depot)
-    ep.set_entity_property(drone, "tickrate", constants.drones_tickrates.every)
+    dc.interrupt_drone(drone)
 
     return false
 end

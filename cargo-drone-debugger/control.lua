@@ -1,13 +1,23 @@
 
 local drone_types = {}
 
+local function get_tick_countdown(unit_number)
+	local next_tick = remote.call("cargo-drone-debug", "get_next_tick", unit_number)
+
+	if next_tick == 0 then
+		return "0"
+	end
+
+	return tostring(next_tick - game.tick)
+end
+
 local function set_drone(drone)
 	if storage.drones[drone.unit_number] then
 		return
 	end
 
 	local text = rendering.draw_text{
-		text = tostring(remote.call("cargo-drone-debug", "get_tickrate", drone.unit_number)),
+		text = get_tick_countdown(drone.unit_number),
 		color = { 1, 1, 1 },
 		target = drone,
 		surface = drone.surface,
@@ -64,7 +74,7 @@ end
 local function on_tick(_event)
 	for unit_number, data in pairs(storage.drones) do
 		if data.text.valid then
-			data.text.text = tostring(remote.call("cargo-drone-debug", "get_tickrate", unit_number))
+			data.text.text = get_tick_countdown(unit_number)
 		end
 	end
 end
@@ -87,7 +97,7 @@ local function script_raised_teleported(event)
 	end
 
 	local text = rendering.draw_text{
-		text = tostring(remote.call("cargo-drone-debug", "get_tickrate", event.entity.unit_number)),
+		text = get_tick_countdown(event.entity.unit_number),
 		color = { 1, 1, 1 },
 		target = event.entity,
 		surface = event.entity.surface,
