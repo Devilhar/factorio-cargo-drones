@@ -90,25 +90,37 @@ end
 local function collect_idle_drones()
     for surface_index, surface_buffer in pairs(dt.get_idle_drones_per_surface()) do
         for _, drone in pairs(surface_buffer.idle_drones) do
-            if not storage.scheduler.idling_cargo_drones[surface_index] then
-                storage.scheduler.idling_cargo_drones[surface_index] = {}
-            end
+            if drone.valid then
+                if not storage.scheduler.idling_cargo_drones[surface_index] then
+                    storage.scheduler.idling_cargo_drones[surface_index] = {}
+                end
 
-            table.insert(storage.scheduler.idling_cargo_drones[surface_index], drone)
+                table.insert(storage.scheduler.idling_cargo_drones[surface_index], drone)
+            else
+                storage.invalid_entity_detected = true
+            end
         end
     end
 end
 local function collect_requester_moorings()
     for _, surface_buffer in pairs(storage.mooring_controller.surfaces) do
         for _, mooring in pairs(surface_buffer[mh.mooring_types.requester]) do
-            storage.scheduler.requester_buffer[mooring.unit_number] = mooring
+            if mooring.valid then
+                storage.scheduler.requester_buffer[mooring.unit_number] = mooring
+            else
+                storage.invalid_entity_detected = true
+            end
         end
     end
 end
 local function collect_provider_moorings()
     for _, surface_buffer in pairs(storage.mooring_controller.surfaces) do
         for _, mooring in pairs(surface_buffer[mh.mooring_types.provider]) do
-            storage.scheduler.provider_buffer[mooring.unit_number] = mooring
+            if mooring.valid then
+                storage.scheduler.provider_buffer[mooring.unit_number] = mooring
+            else
+                storage.invalid_entity_detected = true
+            end
         end
     end
 end
@@ -349,6 +361,12 @@ local function assign_depot_task()
     local lowest_drone_count = 10000000
 
     for _, depot in pairs(depots) do
+        if not depot.valid then
+            storage.invalid_entity_detected = true
+
+            goto continue
+        end
+
         if not th.is_at_drone_limit(depot) then
             local priority = th.get_priority(depot)
 

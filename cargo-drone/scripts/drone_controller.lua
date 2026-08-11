@@ -342,18 +342,22 @@ local function get_closest_valid_refueler(mooring_table, entity)
     local closest_distance = constants.max_distance
 
     for _, refueler in pairs(mooring_table) do
-        if not th.is_at_drone_limit(refueler) then
-            local priority = th.get_priority(refueler)
+        if refueler.valid then
+            if not th.is_at_drone_limit(refueler) then
+                local priority = th.get_priority(refueler)
 
-            if highest_priority <= priority then
-                local distance = util.distance(entity.position, refueler.position)
+                if highest_priority <= priority then
+                    local distance = util.distance(entity.position, refueler.position)
 
-                if highest_priority < priority or distance < closest_distance then
-                    highest_priority = priority
-                    closest_entity = refueler
-                    closest_distance = distance
+                    if highest_priority < priority or distance < closest_distance then
+                        highest_priority = priority
+                        closest_entity = refueler
+                        closest_distance = distance
+                    end
                 end
             end
+        else
+            storage.invalid_entity_detected = true
         end
     end
 
@@ -523,6 +527,16 @@ local function perform_task_cargo(drone, state, task, game_tick)
         mooring_target = ep.get_managed_entity(task.requester_unit_number)
     end
 
+    if not mooring_target then
+        return true
+    end
+
+    if not mooring_target.valid then
+        storage.invalid_entity_detected = true
+
+        return true
+    end
+
     drone_goto_and_dock_with_mooring(drone, state, mooring_target)
 
     return false
@@ -549,6 +563,16 @@ local function perform_task_refuel(drone, state, task, game_tick)
     end
 
     local refueler = ep.get_managed_entity(task.refueler_unit_number)
+
+    if not refueler then
+        return true
+    end
+
+    if not refueler.valid then
+        storage.invalid_entity_detected = true
+
+        return true
+    end
 
     drone_goto_and_dock_with_mooring(drone, state, refueler)
 
@@ -578,6 +602,16 @@ local function perform_task_depot(drone, state, task, game_tick)
     end
 
     local mooring = ep.get_managed_entity(task.depot_unit_number)
+
+    if not mooring then
+        return true
+    end
+
+    if not mooring.valid then
+        storage.invalid_entity_detected = true
+
+        return true
+    end
 
     local drone_position = drone.position
     local mooring_position = mooring.position
@@ -650,29 +684,29 @@ local function register_drone(drone)
 
     callback_drone_count_changed(drone.surface.index)
 end
-local function unregister_drone(drone, surface_index)
+local function unregister_drone(unit_number, surface_index)
     local surface_buffer = storage.drone_controller.surfaces[surface_index]
 
     if not surface_buffer then
         return
     end
 
-    surface_buffer.drones[drone.unit_number] = nil
+    surface_buffer.drones[unit_number] = nil
 
     surface_buffer.drone_count = table_size(surface_buffer.drones)
 
     if next(surface_buffer.drones) == nil then
         storage.drone_controller.surfaces[surface_index] = nil
     else
-        local next_tick = ep.get_entity_property(drone, "next_tick")
+        local next_tick = ep.get_entity_property_from_unit_number(unit_number, "next_tick")
 
         if next_tick == nil then
-            surface_buffer.scheduled_every[drone.unit_number] = nil
+            surface_buffer.scheduled_every[unit_number] = nil
         else
             local tick_buffer = surface_buffer.scheduled_ticks[next_tick]
 
             if tick_buffer then
-                tick_buffer[drone.unit_number] = nil
+                tick_buffer[unit_number] = nil
             end
         end
     end
@@ -860,6 +894,25 @@ function drone_controller.surface_cleared(surface_index)
     storage.drone_controller.surfaces[surface_index] = nil
 end
 
+function drone_controller.clean()
+    local invalid_drones = {}
+
+    for surface_index, surface_buffer in pairs(storage.drone_controller.surfaces) do
+        for unit_number, drone in pairs(surface_buffer.drones) do
+            if not drone.valid then
+                table.insert(invalid_drones, {
+                    unit_number = unit_number,
+                    surface_index = surface_index,
+                })
+            end
+        end
+    end
+
+    for _, data in ipairs(invalid_drones) do
+        unregister_drone(data.unit_number, data.surface_index)
+    end
+end
+
 function drone_controller.created(drone)
     register_drone(drone)
 end
@@ -876,11 +929,11 @@ function drone_controller.destroyed(drone)
         mh.set_docked_drone(old_docked_mooring, nil)
     end
 
-    unregister_drone(drone, drone.surface.index)
+    unregister_drone(drone.unit_number, drone.surface.index)
 end
 
 function drone_controller.surface_change(drone, old_surface_index)
-    unregister_drone(drone, old_surface_index)
+    unregister_drone(drone.unit_number, old_surface_index)
 
     register_drone(drone)
 end
@@ -907,15 +960,19 @@ function drone_controller.tick(game_tick)
         end
 
         for _, drone in pairs(surface_buffer.scheduled_every) do
-            tick_delay = tick_drone(drone, game_tick)
+            if drone.valid then
+                tick_delay = tick_drone(drone, game_tick)
 
-            if tick_delay ~= 1 then
-                tick_change_count = tick_change_count + 1
+                if tick_delay ~= 1 then
+                    tick_change_count = tick_change_count + 1
 
-                tick_change_data = tick_change_buffer[tick_change_count]
+                    tick_change_data = tick_change_buffer[tick_change_count]
 
-                tick_change_data[1] = tick_delay
-                tick_change_data[2] = drone
+                    tick_change_data[1] = tick_delay
+                    tick_change_data[2] = drone
+                end
+            else
+                storage.invalid_entity_detected = true
             end
         end
 
@@ -923,14 +980,18 @@ function drone_controller.tick(game_tick)
 
         if tick_buffer then
             for _, drone in pairs(tick_buffer) do
-                tick_delay = tick_drone(drone, game_tick)
+                if drone.valid then
+                    tick_delay = tick_drone(drone, game_tick)
 
-                tick_change_count = tick_change_count + 1
+                    tick_change_count = tick_change_count + 1
 
-                tick_change_data = tick_change_buffer[tick_change_count]
+                    tick_change_data = tick_change_buffer[tick_change_count]
 
-                tick_change_data[1] = tick_delay
-                tick_change_data[2] = drone
+                    tick_change_data[1] = tick_delay
+                    tick_change_data[2] = drone
+                else
+                    storage.invalid_entity_detected = true
+                end
             end
         end
 

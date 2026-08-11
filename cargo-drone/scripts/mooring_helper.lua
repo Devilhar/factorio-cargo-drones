@@ -77,7 +77,9 @@ local function unset_request_reader(mooring_unit_number)
         return
     end
 
+    if reader_data.mooring.valid then
     ep.set_entity_property(reader_data.mooring, "request_output", nil)
+    end
 
     storage.mooring_helper.active_readers_lookup[mooring_unit_number]              = nil
     storage.mooring_helper.active_readers_lookup[reader_data.drone_unit_number]    = nil
@@ -399,6 +401,27 @@ local function flip_horizontal(mooring)
     set_inventory_target(mooring, 3, 3, c1)
 end
 
+local function remove_invalid_moorings()
+    local invalid_readers = {}
+
+    for unit_number, active_reader in pairs(storage.mooring_helper.active_readers) do
+        if not active_reader.mooring.valid or not active_reader.drone.valid then
+            table.insert(invalid_readers, {
+                unit_number = unit_number,
+                mooring = active_reader.mooring
+            })
+        end
+    end
+
+    for _, data in ipairs(invalid_readers) do
+        unset_request_reader(data.unit_number)
+
+        if data.mooring.valid then
+            update_request_output(data.mooring)
+        end
+    end
+end
+
 local mooring_helper = {}
 
 mooring_helper.mooring_types = mooring_types
@@ -409,6 +432,10 @@ function mooring_helper.init()
 
     storage.mooring_helper.active_readers           = storage.mooring_helper.active_readers or {}
     storage.mooring_helper.active_readers_lookup    = storage.mooring_helper.active_readers_lookup or {}
+end
+
+function mooring_helper.clean()
+    remove_invalid_moorings()
 end
 
 function mooring_helper.is_name_mooring(name)

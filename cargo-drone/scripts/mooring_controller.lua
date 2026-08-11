@@ -25,14 +25,14 @@ local function register_mooring(mooring)
 
     surface_buffer[mh.get_mooring_type(mooring)][mooring.unit_number] = mooring
 end
-local function unregister_mooring(mooring)
-    local surface_buffer = storage.mooring_controller.surfaces[mooring.surface.index]
+local function unregister_mooring(unit_number, mooring_type, surface_index)
+    local surface_buffer = storage.mooring_controller.surfaces[surface_index]
 
     if not surface_buffer then
         return
     end
 
-    surface_buffer[mh.get_mooring_type(mooring)][mooring.unit_number] = nil
+    surface_buffer[mooring_type][unit_number] = nil
 
     for _, mooring_type in pairs(mh.mooring_types) do
         if next(surface_buffer[mooring_type]) ~= nil then
@@ -40,7 +40,7 @@ local function unregister_mooring(mooring)
         end
     end
 
-    storage.mooring_controller.surfaces[mooring.surface.index] = nil
+    storage.mooring_controller.surfaces[surface_index] = nil
 end
 
 local mooring_controller = {}
@@ -56,6 +56,28 @@ function mooring_controller.surface_deleted(surface_index)
 end
 function mooring_controller.surface_cleared(surface_index)
     storage.mooring_controller.surfaces[surface_index] = nil
+end
+
+function mooring_controller.clean()
+    local invalid_moorings = {}
+
+    for surface_index, surface_buffer in pairs(storage.mooring_controller.surfaces) do
+        for mooring_type, moorings in pairs(surface_buffer) do
+            for unit_number, mooring in pairs(moorings) do
+                if not mooring.valid then
+                    table.insert(invalid_moorings, {
+                        unit_number = unit_number,
+                        mooring_type = mooring_type,
+                        surface_index = surface_index,
+                    })
+                end
+            end
+        end
+    end
+
+    for _, data in ipairs(invalid_moorings) do
+        unregister_mooring(data.unit_number, data.mooring_type, data.surface_index)
+    end
 end
 
 function mooring_controller.created(mooring)
@@ -93,7 +115,6 @@ function mooring_controller.created(mooring)
 
     register_mooring(mooring)
 end
-
 function mooring_controller.destroyed(mooring)
     local proxy_containers = ep.get_entity_property(mooring, "proxy_containers")
 
@@ -103,7 +124,7 @@ function mooring_controller.destroyed(mooring)
         end
     end
 
-    unregister_mooring(mooring)
+    unregister_mooring(mooring.unit_number, mh.get_mooring_type(mooring), mooring.surface.index)
 end
 
 function mooring_controller.on_rotate(mooring)
@@ -115,39 +136,43 @@ end
 
 function mooring_controller.tick()
     for _, reader_data in pairs(storage.mooring_helper.active_readers) do
-        local request_output = mh.get_request_output(reader_data.mooring)
+        if reader_data.mooring.valid and reader_data.drone.valid then
+            local request_output = mh.get_request_output(reader_data.mooring)
 
-        if request_output == nil then
-            request_output = {}
-        end
-
-        local drone_task = dt.get(dt.get_current_drone_task_id(reader_data.drone))
-        local inventory = reader_data.drone.get_inventory(defines.inventory.car_trunk)
-
-        for i, item in ipairs(drone_task.items) do
-            local count = item.count - inventory.get_item_count(item)
-            local request = request_output[i]
-
-            if not request then
-                request = {}
-
-                request_output[i] = request
+            if request_output == nil then
+                request_output = {}
             end
 
-            request.name = item.name
-            request.quality = item.quality
-            request.count = count
+            local drone_task = dt.get(dt.get_current_drone_task_id(reader_data.drone))
+            local inventory = reader_data.drone.get_inventory(defines.inventory.car_trunk)
+
+            for i, item in ipairs(drone_task.items) do
+                local count = item.count - inventory.get_item_count(item)
+                local request = request_output[i]
+
+                if not request then
+                    request = {}
+
+                    request_output[i] = request
+                end
+
+                request.name = item.name
+                request.quality = item.quality
+                request.count = count
+            end
+
+            local index = #drone_task.items + 1
+
+            while request_output[index] ~= nil do
+                request_output[index] = nil
+
+                index = index + 1
+            end
+
+            mh.set_request_output(reader_data.mooring, request_output)
+        else
+            storage.invalid_entity_detected = true
         end
-
-        local index = #drone_task.items + 1
-
-        while request_output[index] ~= nil do
-            request_output[index] = nil
-
-            index = index + 1
-        end
-
-        mh.set_request_output(reader_data.mooring, request_output)
     end
 end
 

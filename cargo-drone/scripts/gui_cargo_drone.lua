@@ -18,6 +18,11 @@ local function update_gui(player, drone)
 
     local function update_mooring(unit_number, mooring_type)
         local mooring = ep.get_managed_entity(unit_number)
+
+        if not mooring or not mooring.valid then
+            return
+        end
+
         local mooring_frame = main_frame[mooring_prefix .. current_mooring_index]
 
         mooring_frame.visible = true

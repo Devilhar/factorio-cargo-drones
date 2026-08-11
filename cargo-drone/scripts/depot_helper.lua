@@ -13,17 +13,17 @@ local function add_depot(depot)
 
     surface_buffer[depot.unit_number] = depot
 end
-local function remove_depot(depot)
-    local surface_buffer = storage.depot_helper.depots[depot.surface.index]
+local function remove_depot(unit_number, surface_index)
+    local surface_buffer = storage.depot_helper.depots[surface_index]
 
     if not surface_buffer then
         return
     end
 
-    surface_buffer[depot.unit_number] = nil
+    surface_buffer[unit_number] = nil
 
     if next(surface_buffer) == nil then
-        storage.depot_helper.depots[depot.surface.index] = nil
+        storage.depot_helper.depots[surface_index] = nil
     end
 end
 
@@ -56,7 +56,7 @@ function depot_helper.created(depot)
     add_depot(depot)
 end
 function depot_helper.destroyed(depot)
-    remove_depot(depot)
+    remove_depot(depot.unit_number, depot.surface.index)
 end
 
 function depot_helper.surface_deleted(surface_index)
@@ -64,6 +64,25 @@ function depot_helper.surface_deleted(surface_index)
 end
 function depot_helper.surface_cleared(surface_index)
     storage.depot_helper.depots[surface_index] = nil
+end
+
+function depot_helper.clean()
+    local invalid_depots = {}
+
+    for surface_index, surface_buffer in pairs(storage.depot_helper.depots) do
+        for unit_number, depot in pairs(surface_buffer) do
+            if not depot.valid then
+                table.insert(invalid_depots, {
+                    unit_number = unit_number,
+                    surface_index = surface_index,
+                })
+            end
+        end
+    end
+
+    for _, data in ipairs(invalid_depots) do
+        remove_depot(data.unit_number, data.surface_index)
+    end
 end
 
 function depot_helper.clean_settings(depot)

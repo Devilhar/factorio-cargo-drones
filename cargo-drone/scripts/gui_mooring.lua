@@ -719,7 +719,9 @@ local function update_drone_list(player_data)
 
             local drone = ep.get_managed_entity(task.drone_unit_number)
 
-            insert_sorted(drone, task)
+            if drone and drone.valid then
+                insert_sorted(drone, task)
+            end
         end
 
         for i, drone_task in ipairs(sorted_drone_task_list) do
