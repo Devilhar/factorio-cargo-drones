@@ -172,35 +172,37 @@ local function remove_and_cleanup_task(task_id)
     local mark_drone_as_idle = task.type ~= task_types.depot
 
     if task.drone_unit_number ~= nil then
-        if ep.is_managed(task.drone_unit_number) then
+        local drone = ep.get_managed_entity(task.drone_unit_number)
+
+        if drone and drone.valid then
             unassign_task_drone(task.drone_unit_number, task_id, mark_drone_as_idle)
         end
     end
     if task.provider_unit_number ~= nil then
         local mooring = ep.get_managed_entity(task.provider_unit_number)
 
-        if mooring then
+        if mooring and mooring.valid then
             unassign_task_target(mooring, task)
         end
     end
     if task.requester_unit_number ~= nil then
         local mooring = ep.get_managed_entity(task.requester_unit_number)
 
-        if mooring then
+        if mooring and mooring.valid then
             unassign_task_target(mooring, task)
         end
     end
     if task.refueler_unit_number ~= nil then
         local mooring = ep.get_managed_entity(task.refueler_unit_number)
 
-        if mooring then
+        if mooring and mooring.valid then
             unassign_task_target(mooring, task)
         end
     end
     if task.depot_unit_number ~= nil then
         local depot = ep.get_managed_entity(task.depot_unit_number)
 
-        if depot then
+        if depot and depot.valid then
             unassign_task_target(depot, task)
         end
     end
@@ -223,40 +225,30 @@ local function pop_depot_task(drone)
 end
 
 local function remove_tasks_with_invalid_entities()
-    local removed = {}
+    local invalid_tasks = {}
 
-    for task_id, task in pairs(storage.drone_tasks.tasks) do
-        if task.drone_unit_number == nil or not ep.is_managed(task.drone_unit_number) then
-            table.insert(removed, task_id)
+    local function is_drone_valid(unit_number)
+        local entity = ep.get_managed_entity(unit_number)
 
-            goto continue
-        end
+        return entity and entity.valid
+    end
+    local function is_valid(unit_number)
+        local entity = ep.get_managed_entity(unit_number)
 
-        if task.provider_unit_number ~= nil and not ep.is_managed(task.provider_unit_number) then
-            table.insert(removed, task_id)
-
-            goto continue
-        end
-        if task.requester_unit_number ~= nil and not ep.is_managed(task.requester_unit_number) then
-            table.insert(removed, task_id)
-
-            goto continue
-        end
-        if task.refueler_unit_number ~= nil and not ep.is_managed(task.refueler_unit_number) then
-            table.insert(removed, task_id)
-
-            goto continue
-        end
-        if task.depot_unit_number ~= nil and not ep.is_managed(task.depot_unit_number) then
-            table.insert(removed, task_id)
-
-            goto continue
-        end
-
-        ::continue::
+        return not entity or entity.valid
     end
 
-    for _, task_id in ipairs(removed) do
+    for task_id, task in pairs(get_tasks()) do
+        if not is_drone_valid(task.drone_unit_number)
+            or not is_valid(task.provider_unit_number)
+            or not is_valid(task.requester_unit_number)
+            or not is_valid(task.refueler_unit_number)
+            or not is_valid(task.depot_unit_number) then
+            table.insert(invalid_tasks, task_id)
+        end
+    end
+
+    for _, task_id in ipairs(invalid_tasks) do
         remove_and_cleanup_task(task_id)
     end
 end
@@ -302,6 +294,27 @@ function drone_tasks.surface_cleared(surface_index)
     remove_tasks_with_invalid_entities()
 
     storage.drone_tasks.surfaces[surface_index] = nil
+end
+
+function drone_tasks.clean()
+    remove_tasks_with_invalid_entities()
+
+    local invalid_idle_drones = {}
+
+    for surface_index, surface_buffer in pairs(storage.drone_tasks.surfaces) do
+        for unit_number, drone in pairs(surface_buffer.idle_drones) do
+            if not drone.valid then
+                table.insert(invalid_idle_drones, {
+                    unit_number = unit_number,
+                    surface_index = surface_index,
+                })
+            end
+        end
+    end
+
+    for _, data in ipairs(invalid_idle_drones) do
+        unregister_idle_drone(data.unit_number, data.surface_index)
+    end
 end
 
 function drone_tasks.is_valid(id)

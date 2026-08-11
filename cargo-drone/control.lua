@@ -119,6 +119,19 @@ function on_configuration_changed(event)
 	migration.run_migration()
 end
 function on_tick(event)
+	if storage.invalid_entity_detected then
+		storage.invalid_entity_detected = false
+
+		dlc.clean()
+		dc.clean()
+		dt.clean()
+		deh.clean()
+		mc.clean()
+		mh.clean()
+
+		ep.remove_invalid_entities()
+	end
+
 	rc.tick()
 
 	scheduler.tick(event.tick)

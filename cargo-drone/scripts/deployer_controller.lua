@@ -60,18 +60,18 @@ local function register_deployer(deployer)
 
     surface_buffer.inactive[deployer.unit_number] = deployer
 end
-local function unregister_deployer(deployer)
-    local surface_buffer = storage.deployer_controller.surfaces[deployer.surface.index]
+local function unregister_deployer(unit_number, surface_index)
+    local surface_buffer = storage.deployer_controller.surfaces[surface_index]
 
     if not surface_buffer then
         return
     end
 
-    surface_buffer.inactive[deployer.unit_number] = nil
-    surface_buffer.active[deployer.unit_number] = nil
+    surface_buffer.inactive[unit_number] = nil
+    surface_buffer.active[unit_number] = nil
 
     if next(surface_buffer.inactive) == nil and next(surface_buffer.active) == nil then
-        storage.deployer_controller.surfaces[deployer.surface.index] = nil
+        storage.deployer_controller.surfaces[surface_index] = nil
     end
 end
 
@@ -475,6 +475,33 @@ function deployer_controller.surface_cleared(surface_index)
     storage.deployer_controller.surfaces[surface_index] = nil
 end
 
+function deployer_controller.clean()
+    local invalid_deployer = {}
+
+    for surface_index, surface_buffer in pairs(storage.deployer_controller.surfaces) do
+        for unit_number, deployer in pairs(surface_buffer.inactive) do
+            if not deployer.valid then
+                table.insert(invalid_deployer, {
+                    unit_number = unit_number,
+                    surface_index = surface_index,
+                })
+            end
+        end
+        for unit_number, deployer in pairs(surface_buffer.active) do
+            if not deployer.valid then
+                table.insert(invalid_deployer, {
+                    unit_number = unit_number,
+                    surface_index = surface_index,
+                })
+            end
+        end
+    end
+
+    for _, data in ipairs(invalid_deployer) do
+        unregister_deployer(data.unit_number, data.surface_index)
+    end
+end
+
 function deployer_controller.created(deployer)
     register_deployer(deployer)
 
@@ -528,7 +555,7 @@ function deployer_controller.destroyed(deployer)
         drone_container.destroy({ raise_destroy = true })
     end
 
-    unregister_deployer(deployer)
+    unregister_deployer(deployer.unit_number, deployer.surface.index)
 
     recalculate_releasing_drones(deployer.surface.index)
 
@@ -542,27 +569,35 @@ function deployer_controller.tick(game_tick)
         local deactivate = nil
 
         for _, deployer in pairs(surface_buffer.inactive) do
-            if deployer.unit_number % 60 == game_tick % 60 then
-                local state = tick_deployer(deployer, game_tick)
+            if deployer.valid then
+                if deployer.unit_number % 60 == game_tick % 60 then
+                    local state = tick_deployer(deployer, game_tick)
 
-                if state == activation_state.active then
-                    if not activate then
-                        activate = {}
+                    if state == activation_state.active then
+                        if not activate then
+                            activate = {}
+                        end
+
+                        table.insert(activate, deployer)
                     end
-
-                    table.insert(activate, deployer)
                 end
+            else
+                storage.invalid_entity_detected = true
             end
         end
         for _, deployer in pairs(surface_buffer.active) do
-            local state = tick_deployer(deployer, game_tick)
+            if deployer.valid then
+                local state = tick_deployer(deployer, game_tick)
 
-            if state == activation_state.inactive then
-                if not deactivate then
-                    deactivate = {}
+                if state == activation_state.inactive then
+                    if not deactivate then
+                        deactivate = {}
+                    end
+
+                    table.insert(deactivate, deployer)
                 end
-
-                table.insert(deactivate, deployer)
+            else
+                storage.invalid_entity_detected = true
             end
         end
 
