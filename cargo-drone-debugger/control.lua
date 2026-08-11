@@ -1,5 +1,10 @@
 
 local drone_types = {}
+local acceleration_names = {
+	[defines.riding.acceleration.accelerating]	= "Accelerating",
+	[defines.riding.acceleration.braking]		= "Braking",
+	[defines.riding.acceleration.nothing]		= "Nothing",
+}
 
 local function get_tick_countdown(unit_number)
 	local next_tick = remote.call("cargo-drone-debug", "get_next_tick", unit_number)
@@ -10,6 +15,11 @@ local function get_tick_countdown(unit_number)
 
 	return tostring(next_tick - game.tick)
 end
+local function get_drone_text(drone)
+	local riding_state = drone.riding_state
+
+	return get_tick_countdown(drone.unit_number) .. " " .. acceleration_names[riding_state.acceleration]
+end
 
 local function set_drone(drone)
 	if storage.drones[drone.unit_number] then
@@ -17,7 +27,7 @@ local function set_drone(drone)
 	end
 
 	local text = rendering.draw_text{
-		text = get_tick_countdown(drone.unit_number),
+		text = get_drone_text(drone),
 		color = { 1, 1, 1 },
 		target = drone,
 		surface = drone.surface,
@@ -74,7 +84,7 @@ end
 local function on_tick(_event)
 	for unit_number, data in pairs(storage.drones) do
 		if data.text.valid then
-			data.text.text = get_tick_countdown(unit_number)
+			data.text.text = get_drone_text(data.drone)
 		end
 	end
 end
@@ -97,7 +107,7 @@ local function script_raised_teleported(event)
 	end
 
 	local text = rendering.draw_text{
-		text = get_tick_countdown(event.entity.unit_number),
+		text = get_drone_text(event.entity),
 		color = { 1, 1, 1 },
 		target = event.entity,
 		surface = event.entity.surface,
