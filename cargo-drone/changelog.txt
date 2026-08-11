@@ -1,8 +1,10 @@
   Changes:
+    - Reduced the performance cost of sleeping drones.
     - Drones now try to predict how long time rotation and travelling so they need less updates, but also to try and avoid overshooting when turning.
     - Added a debug setting that is used for development and can be ignored by regular users.
   Bugfixes:
     - Fixed error when deleting or clearing a surface with moorings.
+    - Fixed error when a mod related entity was destoryed without raising an event.
 ---------------------------------------------------------------------------------------------------
 Version: 1.18.0
 Date: 07. 08. 2026
