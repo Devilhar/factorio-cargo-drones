@@ -81,6 +81,55 @@ local function get_rotation_speed(drone)
     -- Where a is the rotation_speed, and b is the fuel's acceleration multiplier
     return (0.25 * rotation_speed * acc_mult) + (0.75 * rotation_speed)
 end
+local function get_top_speed(drone)
+    if not drone.burner or not drone.burner.currently_burning then
+        return drone.prototype.rotation_speed
+    end
+
+    local fuel_prototype = drone.burner.currently_burning.name
+    local fuel_quality = drone.burner.currently_burning.quality
+
+    local top_speed_mult = fuel_prototype.fuel_top_speed_multiplier
+
+    if fuel_quality then
+        top_speed_mult = top_speed_mult + fuel_prototype.fuel_top_speed_multiplier_quality_bonus * fuel_quality.level
+
+        -- Legendary has the double effect
+        if fuel_quality.level == 5 then
+            top_speed_mult = top_speed_mult + fuel_prototype.fuel_top_speed_multiplier_quality_bonus
+        end
+    end
+
+    -- This formula was stolen from https://github.com/yalov/factorio-mods/blob/master/StatsGui-MovementSpeed/control.lua
+    local vehicle_weight = drone.prototype.weight
+    local friction_force = drone.prototype.friction_force
+    local terrain_friction_modifier = drone.prototype.terrain_friction_modifier
+    local average_tile_friction_modifier = 1.6 -- Average of tile Friction is a calc of all tiles the bounding box of the vehicle resides over
+    local car_friction_modifier = 1
+    local sticker_friction_modifier = 1
+    local combined_friction = 1 - friction_force *
+                            (1 + terrain_friction_modifier * (average_tile_friction_modifier - 1)) *
+                            car_friction_modifier * sticker_friction_modifier
+
+    local combined_friction_square = combined_friction * combined_friction
+
+    local vehicle_consumption = drone.prototype.consumption
+    local vehicle_consumption_modifier = 1
+    local vehicle_effectivity = drone.prototype.effectivity
+    local speed_bonus = 1
+    local sticker_bonus = 1
+
+    local energy_per_tick = vehicle_consumption * vehicle_consumption_modifier * vehicle_effectivity *
+                            top_speed_mult * speed_bonus *
+                            sticker_bonus
+
+    local max_energy = energy_per_tick * combined_friction_square / (1 - combined_friction_square)
+
+    local kmph = (max_energy * 2 / vehicle_weight) ^ 0.5 * 3.6
+    -- End steal mode
+
+    return (((kmph * 1000) / 60) / 60) / 60
+end
 
 local function schedule_next_tick(drone, ticks_delay)
     local next_tick = game.tick + ticks_delay
@@ -208,7 +257,7 @@ local function calculate_depot_cable_render_params(drone, depot, drone_offset, i
     return offset, x_scale, y_scale, orientation
 end
 
-local function move_to_position(drone_position, drone_orientation, drone_speed, drone_rotation_speed, state, target_position)
+local function move_to_position(drone, drone_position, drone_orientation, drone_speed, state, target_position)
     local distance_to_target = util.distance(drone_position, target_position)
 
     if distance_to_target < 1 then
@@ -241,10 +290,14 @@ local function move_to_position(drone_position, drone_orientation, drone_speed, 
     min_orientation_delta = orientation_closest_64_cardinal(min_orientation_delta)
     local quater_64_cardinal = 1 / 256
 
-    if distance_to_target >= 100 or math.abs(orientation_delta) <= min_orientation_delta + quater_64_cardinal then
+    if distance_to_target >= constants.drone_target_minimal_distance or math.abs(orientation_delta) <= min_orientation_delta + quater_64_cardinal then
         if drone_speed < target_speed then
             acceleration = defines.riding.acceleration.accelerating
-        elseif drone_speed > target_speed + (1 / 60) then
+        elseif distance_to_target < 5 then
+            if drone_speed > target_speed + (1 / 60) then
+                acceleration = defines.riding.acceleration.braking
+            end
+        elseif drone_speed > target_speed + (5 / 60) then
             acceleration = defines.riding.acceleration.braking
         end
     end
@@ -260,17 +313,19 @@ local function move_to_position(drone_position, drone_orientation, drone_speed, 
 
     state.riding_state = { acceleration = acceleration, direction = direction }
 
+    local next_tick = 1
+
     if direction == defines.riding.direction.straight then
-        if distance_to_target >= 50 then
-            state.tickrate = constants.drones_tickrates.reduced
-        elseif distance_to_target >= 200 then
-            state.tickrate = constants.drones_tickrates.minimal
+        if distance_to_target < constants.drone_target_minimal_distance then
+            next_tick = math.min(distance_to_target / drone_speed, 20)
+        else
+            next_tick = (distance_to_target - constants.drone_target_minimal_distance) / get_top_speed(drone)
         end
     else
-        local next_tick = math.abs(orientation_delta) / drone_rotation_speed
-
-        state.tickrate = math.max(math.floor(next_tick), 1)
+        next_tick = math.abs(orientation_delta) / get_rotation_speed(drone)
     end
+
+    state.tickrate = math.max(math.floor(next_tick), 1)
 
     return false
 end
@@ -382,7 +437,7 @@ local function drone_goto_and_dock_with_mooring(drone, state, mooring)
         local docking_drone = ep.get_entity_property(mooring, "docking_drone")
 
         if docking_drone and docking_drone.valid and docking_drone ~= drone then
-            state.tickrate = constants.drones_tickrates.reduced
+            state.tickrate = constants.drones_tickrates.minimal
             state.queuing_mooring = mooring
 
             return
@@ -393,9 +448,8 @@ local function drone_goto_and_dock_with_mooring(drone, state, mooring)
 
     local drone_orientation = drone.orientation
     local drone_speed = drone.speed
-    local drone_rotation_speed = get_rotation_speed(drone)
 
-    local completed = move_to_position(drone_position, drone_orientation, drone_speed, drone_rotation_speed, state, mooring_position)
+    local completed = move_to_position(drone, drone_position, drone_orientation, drone_speed, state, mooring_position)
 
     if not completed then
         return
@@ -555,9 +609,8 @@ local function perform_task_depot(drone, state, task, game_tick)
 
     local drone_orientation = drone.orientation
     local drone_speed = drone.speed
-    local drone_rotation_speed = get_rotation_speed(drone)
 
-    local completed = move_to_position(drone_position, drone_orientation, drone_speed, drone_rotation_speed, state, target_position)
+    local completed = move_to_position(drone, drone_position, drone_orientation, drone_speed, state, target_position)
 
     if completed then
         state.tickrate = constants.drones_tickrates.minimal

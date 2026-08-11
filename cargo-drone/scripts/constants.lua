@@ -10,7 +10,8 @@ constants.burnt_results_enabled = prototypes.mod_data["cargo-drone-mod-data"].da
 -- Cargo drones
 constants.drone_trunk_size = prototypes.mod_data["cargo-drone-mod-data"].data.inventory_size
 constants.drone_queue_distance = 20
-constants.random_tick_interval = 60 * 5
+constants.drone_target_minimal_distance = 100
+constants.random_tick_interval = 60 * 30
 
 -- Scheduling
 constants.requester_cooldown_ticks = 30
