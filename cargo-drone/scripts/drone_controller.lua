@@ -55,6 +55,33 @@ local function orientation_delta_from_to(a, b)
 end
 -- End steal mode
 
+local function get_rotation_speed(drone)
+    if not drone.burner or not drone.burner.currently_burning then
+        return drone.prototype.rotation_speed
+    end
+
+    local fuel_prototype = drone.burner.currently_burning.name
+    local fuel_quality = drone.burner.currently_burning.quality
+
+    local acc_mult = fuel_prototype.fuel_acceleration_multiplier
+
+    if fuel_quality then
+        acc_mult = acc_mult + fuel_prototype.fuel_acceleration_multiplier_quality_bonus * fuel_quality.level
+
+        -- Legendary has the double effect
+        if fuel_quality.level == 5 then
+            acc_mult = acc_mult + fuel_prototype.fuel_acceleration_multiplier_quality_bonus
+        end
+    end
+
+    local rotation_speed = drone.prototype.rotation_speed
+
+    -- From testing, it appears that the rotation speed follows this formula:
+    -- f(a,b) = 0.25ab + 0.75a
+    -- Where a is the rotation_speed, and b is the fuel's acceleration multiplier
+    return (0.25 * rotation_speed * acc_mult) + (0.75 * rotation_speed)
+end
+
 local function schedule_next_tick(drone, ticks_delay)
     local next_tick = game.tick + ticks_delay
     local next_random_tick = game.tick - game.tick % constants.random_tick_interval + (drone.unit_number % constants.random_tick_interval)
@@ -181,7 +208,7 @@ local function calculate_depot_cable_render_params(drone, depot, drone_offset, i
     return offset, x_scale, y_scale, orientation
 end
 
-local function move_to_position(drone_position, drone_orientation, drone_speed, state, target_position)
+local function move_to_position(drone_position, drone_orientation, drone_speed, drone_rotation_speed, state, target_position)
     local distance_to_target = util.distance(drone_position, target_position)
 
     if distance_to_target < 1 then
@@ -239,8 +266,10 @@ local function move_to_position(drone_position, drone_orientation, drone_speed, 
         elseif distance_to_target >= 200 then
             state.tickrate = constants.drones_tickrates.minimal
         end
-    elseif math.abs(orientation_delta) > 0.1 then
-        state.tickrate = constants.drones_tickrates.reduced
+    else
+        local next_tick = math.abs(orientation_delta) / drone_rotation_speed
+
+        state.tickrate = math.max(math.floor(next_tick), 1)
     end
 
     return false
@@ -364,8 +393,9 @@ local function drone_goto_and_dock_with_mooring(drone, state, mooring)
 
     local drone_orientation = drone.orientation
     local drone_speed = drone.speed
+    local drone_rotation_speed = get_rotation_speed(drone)
 
-    local completed = move_to_position(drone_position, drone_orientation, drone_speed, state, mooring_position)
+    local completed = move_to_position(drone_position, drone_orientation, drone_speed, drone_rotation_speed, state, mooring_position)
 
     if not completed then
         return
@@ -525,8 +555,9 @@ local function perform_task_depot(drone, state, task, game_tick)
 
     local drone_orientation = drone.orientation
     local drone_speed = drone.speed
+    local drone_rotation_speed = get_rotation_speed(drone)
 
-    local completed = move_to_position(drone_position, drone_orientation, drone_speed, state, target_position)
+    local completed = move_to_position(drone_position, drone_orientation, drone_speed, drone_rotation_speed, state, target_position)
 
     if completed then
         state.tickrate = constants.drones_tickrates.minimal
