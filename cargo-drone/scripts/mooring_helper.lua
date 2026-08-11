@@ -78,7 +78,7 @@ local function unset_request_reader(mooring_unit_number)
     end
 
     if reader_data.mooring.valid then
-    ep.set_entity_property(reader_data.mooring, "request_output", nil)
+        ep.set_entity_property(reader_data.mooring, "request_output", nil)
     end
 
     storage.mooring_helper.active_readers_lookup[mooring_unit_number]              = nil
@@ -432,6 +432,13 @@ function mooring_helper.init()
 
     storage.mooring_helper.active_readers           = storage.mooring_helper.active_readers or {}
     storage.mooring_helper.active_readers_lookup    = storage.mooring_helper.active_readers_lookup or {}
+end
+
+function mooring_helper.surface_deleted(surface_index)
+    remove_invalid_moorings()
+end
+function mooring_helper.surface_cleared(surface_index)
+    remove_invalid_moorings()
 end
 
 function mooring_helper.clean()
