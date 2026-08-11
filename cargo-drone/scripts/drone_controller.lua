@@ -759,6 +759,24 @@ local function tick_drone(drone, game_tick)
     if old_docking_mooring and old_docking_mooring ~= state.docking_mooring then
         if old_docking_mooring.valid and ep.get_entity_property(old_docking_mooring, "docking_drone") == drone then
             ep.set_entity_property(old_docking_mooring, "docking_drone", nil)
+
+            local task_ids = dt.get_entity_task_ids(old_docking_mooring)
+
+            if task_ids then
+                for task_id, _ in pairs(task_ids) do
+                    local task = dt.get(task_id)
+
+                    local next_queuing_mooring = ep.get_entity_property_from_unit_number(task.drone_unit_number, "queuing_mooring")
+
+                    if next_queuing_mooring and next_queuing_mooring.unit_number == old_docking_mooring.unit_number then
+                        local next_drone = ep.get_managed_entity(task.drone_unit_number)
+
+                        schedule_tick_every(next_drone)
+
+                        break
+                    end
+                end
+            end
         end
 
         ep.set_entity_property(drone, "docking_mooring", nil)
