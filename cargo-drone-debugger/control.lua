@@ -6,6 +6,30 @@ local acceleration_names = {
 	[defines.riding.acceleration.nothing]		= "Nothing",
 }
 
+local scheduler_state_names = {
+    [0] = "begin_frame",
+
+    [1] = "collect_idle_drones",
+    [2] = "collect_requester_moorings",
+    [3] = "collect_provider_moorings",
+
+    [10] = "scan_providers",
+    [11] = "scan_requesters",
+
+    [4] = "sort_idle_drone",
+
+    [5] = "collect_requester_items",
+    [6] = "collect_provider_items",
+
+    [7] = "assign_task_to_drone_with_cargo",
+    [8] = "process_next_item_request",
+
+    [12] = "assign_depot_task",
+
+    [9] = "wait_for_next_interval",
+}
+
+
 local function get_tick_countdown(unit_number)
 	local next_tick = remote.call("cargo-drone-debug", "get_next_tick", unit_number)
 
@@ -71,14 +95,18 @@ local function update_window_info(player)
 	local label = window["debug-label"]
 	local storage_info = remote.call("cargo-drone-debug", "get_storage_info")
 	local drones_info = remote.call("cargo-drone-debug", "get_drones_info")
+	local scheduler_info = remote.call("cargo-drone-debug", "get_scheduler_info")
 
 	label.caption = "Storage values: "		.. storage_info.value_count
 			   .. "\nDrones"
-			   .. "\n    Total: "	.. drones_info.count
-			   .. "\n    Idle: "	.. drones_info.idle_count
-			   .. "\n    Docked: "	.. drones_info.docked
-			   .. "\n    Queuing: "	.. drones_info.queuing
-			   .. "\n    Parked: "	.. drones_info.parked
+			   .. "\n    Total: "			.. drones_info.count
+			   .. "\n    Idle: "			.. drones_info.idle_count
+			   .. "\n    Docked: "			.. drones_info.docked
+			   .. "\n    Queuing: "			.. drones_info.queuing
+			   .. "\n    Parked: "			.. drones_info.parked
+			   .. "\nScheduler"
+			   .. "\n    Next State: "		.. scheduler_state_names[scheduler_info.state]
+			   .. "\n    Next Interval: "	.. scheduler_info.next_interval
 end
 
 local function init_drones()
@@ -99,6 +127,8 @@ local function open_window(player)
         name = "cargo-drone-debugger-window",
         direction = "vertical",
     }
+
+	window.style.minimal_width = 250
 
 	local label = window.add{
         type = "label",

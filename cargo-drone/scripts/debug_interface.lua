@@ -70,4 +70,12 @@ remote.add_interface("cargo-drone-debug", {
 
         return info
     end,
+    get_scheduler_info = function()
+        local info = {}
+
+        info.state = storage.scheduler.update_state
+        info.next_interval = storage.scheduler.last_schedule_tick + settings.global["cargo-drone-min-schedule-interval"].value - game.tick
+
+        return info
+    end,
 })
