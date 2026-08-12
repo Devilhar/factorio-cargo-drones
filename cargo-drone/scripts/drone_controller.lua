@@ -673,6 +673,26 @@ local function get_current_task(drone)
     return dt.get(current_task_id)
 end
 
+local function interrupt_queuing_drone(mooring)
+    local task_ids = dt.get_entity_task_ids(mooring)
+
+    if task_ids then
+        for task_id, _ in pairs(task_ids) do
+            local task = dt.get(task_id)
+
+            local next_queuing_mooring = ep.get_entity_property_from_unit_number(task.drone_unit_number, "queuing_mooring")
+
+            if next_queuing_mooring and next_queuing_mooring.unit_number == mooring.unit_number then
+                local next_drone = ep.get_managed_entity(task.drone_unit_number)
+
+                schedule_tick_every(next_drone)
+
+                break
+            end
+        end
+    end
+end
+
 local function register_drone(drone)
     local surface_buffer = storage.drone_controller.surfaces[drone.surface.index]
 
@@ -804,23 +824,7 @@ local function tick_drone(drone, game_tick)
         if old_docking_mooring.valid and ep.get_entity_property(old_docking_mooring, "docking_drone") == drone then
             ep.set_entity_property(old_docking_mooring, "docking_drone", nil)
 
-            local task_ids = dt.get_entity_task_ids(old_docking_mooring)
-
-            if task_ids then
-                for task_id, _ in pairs(task_ids) do
-                    local task = dt.get(task_id)
-
-                    local next_queuing_mooring = ep.get_entity_property_from_unit_number(task.drone_unit_number, "queuing_mooring")
-
-                    if next_queuing_mooring and next_queuing_mooring.unit_number == old_docking_mooring.unit_number then
-                        local next_drone = ep.get_managed_entity(task.drone_unit_number)
-
-                        schedule_tick_every(next_drone)
-
-                        break
-                    end
-                end
-            end
+            interrupt_queuing_drone(old_docking_mooring)
         end
 
         ep.set_entity_property(drone, "docking_mooring", nil)
@@ -928,6 +932,7 @@ function drone_controller.created(drone)
 end
 function drone_controller.destroyed(drone)
     local old_docked_mooring = ep.get_entity_property(drone, "docked_mooring")
+    local old_docking_mooring = ep.get_entity_property(drone, "docking_mooring")
 
     if old_docked_mooring and old_docked_mooring.valid then
         local proxy_containers = ep.get_entity_property(old_docked_mooring, "proxy_containers")
@@ -937,6 +942,9 @@ function drone_controller.destroyed(drone)
         end
 
         mh.set_docked_drone(old_docked_mooring, nil)
+    end
+    if old_docking_mooring and old_docking_mooring then
+        interrupt_queuing_drone(old_docking_mooring)
     end
 
     unregister_drone(drone.unit_number, drone.surface.index)
