@@ -61,6 +61,26 @@ local function clean_drones()
 	end
 end
 
+local function update_window_info(player)
+	local window = player.gui.screen["cargo-drone-debugger-window"]
+
+	if not window then
+		return
+	end
+
+	local label = window["debug-label"]
+	local storage_info = remote.call("cargo-drone-debug", "get_storage_info")
+	local drones_info = remote.call("cargo-drone-debug", "get_drones_info")
+
+	label.caption = "Storage values: "		.. storage_info.value_count
+			   .. "\nDrones"
+			   .. "\n    Total: "	.. drones_info.count
+			   .. "\n    Idle: "	.. drones_info.idle_count
+			   .. "\n    Docked: "	.. drones_info.docked
+			   .. "\n    Queuing: "	.. drones_info.queuing
+			   .. "\n    Parked: "	.. drones_info.parked
+end
+
 local function init_drones()
 	storage.drones = storage.drones or {}
 
@@ -70,6 +90,34 @@ local function init_drones()
 				set_drone(drone)
 			end
 		end
+	end
+end
+
+local function open_window(player)
+	local window = player.gui.screen.add{
+        type = "frame",
+        name = "cargo-drone-debugger-window",
+        direction = "vertical",
+    }
+
+	local label = window.add{
+        type = "label",
+        name = "debug-label",
+    }
+
+	label.drag_target = window
+	label.style.single_line = false
+
+	update_window_info(player)
+end
+local function close_window(player)
+	player.gui.screen["cargo-drone-debugger-window"].destroy()
+end
+local function toggle_window(player)
+	if player.gui.screen["cargo-drone-debugger-window"] then
+		close_window(player)
+	else
+		open_window(player)
 	end
 end
 
@@ -86,6 +134,10 @@ local function on_tick(_event)
 		if data.text.valid then
 			data.text.text = get_drone_text(data.drone)
 		end
+	end
+
+	for _, player in pairs(game.players) do
+		update_window_info(player)
 	end
 end
 
@@ -116,6 +168,9 @@ local function script_raised_teleported(event)
 	storage.drones[event.entity.unit_number].text = text
 end
 
+local function on_input_toggle_window(event)
+	toggle_window(game.get_player(event.player_index))
+end
 
 local build_event_filters = {
 	{ filter = "name", name = "cargo-drone" },
@@ -154,6 +209,8 @@ script.on_event(defines.events.on_surface_cleared, on_surface_cleared)
 script.on_event(build_events, on_built_entity)
 script.on_event(destroy_events, on_destroyed_entity)
 script.on_event(defines.events.script_raised_teleported, script_raised_teleported)
+
+script.on_event("cargo-drone-debugger-toggle-window", on_input_toggle_window)
 
 for _, event in ipairs(build_events) do
 	script.set_event_filter(event, build_event_filters)
