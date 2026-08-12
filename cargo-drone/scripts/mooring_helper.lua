@@ -376,7 +376,7 @@ end
 local function clean_settings(mooring)
     clean_settings_all(mooring, mooring.name)
 
-    if mooring_type_lookup[mooring.name] == mooring_types.provider then
+    if mooring_type_lookup[mooring.name] ~= mooring_types.provider then
         set_read_requests(mooring, false)
     end
 
