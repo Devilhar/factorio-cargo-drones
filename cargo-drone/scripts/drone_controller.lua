@@ -265,6 +265,16 @@ local function move_to_position(drone, drone_position, drone_orientation, drone_
             state.riding_state = { acceleration = defines.riding.acceleration.nothing, direction = defines.riding.direction.straight }
 
             return true
+        elseif distance_to_target < 1 then
+            local target_orientation = orientation_from_to(drone_position, target_position)
+
+            local orientation_delta = orientation_delta_from_to(drone_orientation, target_orientation)
+
+            if math.abs(orientation_delta) > 0.4 then
+                state.riding_state = { acceleration = defines.riding.acceleration.nothing, direction = defines.riding.direction.straight }
+
+                return true
+            end
         end
 
         state.riding_state = { acceleration = defines.riding.acceleration.braking, direction = defines.riding.direction.straight }
@@ -317,7 +327,7 @@ local function move_to_position(drone, drone_position, drone_orientation, drone_
 
     if direction == defines.riding.direction.straight then
         if distance_to_target < constants.drone_target_minimal_distance then
-            next_tick = math.min(distance_to_target / drone_speed, 20)
+            next_tick = math.min(distance_to_target / drone_speed, distance_to_target)
         else
             next_tick = (distance_to_target - constants.drone_target_minimal_distance) / get_top_speed(drone)
         end
