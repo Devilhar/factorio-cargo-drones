@@ -2,7 +2,7 @@
 local util      = require("util")
 
 local constants = require("constants")
-local cf        = require("call_frame")
+local sf        = require("stack_frame")
 local th        = require("target_helper")
 local deh       = require("depot_helper")
 local mh	    = require("mooring_helper")
@@ -296,9 +296,9 @@ local function process_next_item_request(heuristic_target_count_cost)
         return storage.scheduler.key_surface == nil
     end
 
-    local _, item_request = cf.call(surface_buffer.frame_buffer, ir.get_next_item_request, surface_buffer, heuristic_target_count_cost)
+    local _, item_request = sf.call(surface_buffer.frame_buffer, ir.get_next_item_request, surface_buffer, heuristic_target_count_cost)
 
-    if cf.status ~= cf.complete then
+    if sf.status ~= sf.complete then
         return false
     end
 
