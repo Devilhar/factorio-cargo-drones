@@ -28,18 +28,20 @@ function frame.call(frame_buffer, func, ...)
     return false, frame.ret_val
 end
 
+-- Reserved frame_buffer keys:
+-- iterate_set
+-- iterate_key
 function frame.iterate(list, last_key, frame_buffer, func, ...)
-    if not frame_buffer.next_frame then
-        frame_buffer.next_frame = {
-            key = next(list, last_key),
-        }
+    if not frame_buffer.iterate_set then
+        frame_buffer.iterate_set = true
+        frame_buffer.iterate_key = next(list, last_key)
     end
 
-    while frame_buffer.next_frame.key do
-        frame.call(frame_buffer.next_frame, func, frame_buffer.next_frame.key, list[frame_buffer.next_frame.key], ...)
+    while frame_buffer.iterate_key do
+        frame.call(frame_buffer, func, frame_buffer.iterate_key, list[frame_buffer.iterate_key], ...)
 
         if frame.status == frame.complete then
-            frame_buffer.next_frame = nil
+            frame_buffer = nil
 
             return true, frame.ret_val
         end
@@ -48,7 +50,7 @@ function frame.iterate(list, last_key, frame_buffer, func, ...)
             return true, frame.ret_val
         end
 
-        frame_buffer.next_frame.key = next(list, frame_buffer.next_frame.key)
+        frame_buffer.iterate_key = next(list, frame_buffer.iterate_key)
 
         if frame.status == frame.continue_and_yield then
             frame.status = frame.yield
@@ -56,8 +58,6 @@ function frame.iterate(list, last_key, frame_buffer, func, ...)
             return true, frame.ret_val
         end
     end
-
-    frame_buffer.next_frame = nil
 
     return false
 end
