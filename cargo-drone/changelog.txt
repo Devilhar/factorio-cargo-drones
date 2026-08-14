@@ -1,6 +1,7 @@
   Changes:
     - Reduced the performance cost of sleeping drones.
     - Drones now try to predict how long time rotation and travelling so they need less updates, but also to try and avoid overshooting when turning.
+    - Split the task creation and assigments into smaller parts run over several frames to reduce lag spikes.
     - Added a debug setting that is used for development and can be ignored by regular users.
   Bugfixes:
     - Fixed the Read request setting in Provider moorings not being copied correctly.
