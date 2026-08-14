@@ -11,4 +11,6 @@ return function()
             surface_buffer.scheduled_every[unit_number] = drone
         end
     end
+
+    storage.scheduler.update_state = 0
 end
