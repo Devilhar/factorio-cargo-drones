@@ -2,7 +2,7 @@
 local util      = require("util")
 
 local constants = require("constants")
-local cf        = require("call_frame")
+local sf        = require("stack_frame")
 local ep        = require("entity_property")
 local th        = require("target_helper")
 local mh        = require("mooring_helper")
@@ -208,7 +208,7 @@ end
 
 local function get_closest_provider(root_fb, requester, item_name, item_quality, minimum_amount, item_provider_lookup, heuristic_target_count_cost)
     if not item_provider_lookup[item_name] or not item_provider_lookup[item_name][item_quality] then
-        return cf.complete, nil
+        return sf.complete, nil
     end
 
     if root_fb.step == nil then
@@ -219,7 +219,7 @@ local function get_closest_provider(root_fb, requester, item_name, item_quality,
         root_fb.lowest_cost = constants.max_distance
     end
 
-    if cf.iterate(root_fb.providers, nil, root_fb, function(fb, index, item_data)
+    if sf.iterate(root_fb.providers, nil, root_fb, function(fb, index, item_data)
         local provider = item_data.mooring
 
         if item_data.count >= minimum_amount and provider.valid and not th.is_at_drone_limit(provider) then
@@ -236,37 +236,37 @@ local function get_closest_provider(root_fb, requester, item_name, item_quality,
             end
         end
 
-        return cf.continue_and_yield
+        return sf.continue_and_yield
     end) then
-        return cf.status, cf.ret_val
+        return sf.status, sf.ret_val
     end
 
-    return cf.complete, root_fb.closest_provider
+    return sf.complete, root_fb.closest_provider
 end
 
 local function get_common_items(root_fb, requester, request_mode, requester_items, selected_provider_items)
     root_fb.items = {}
 
-    cf.iterate(requester_items[requester], nil, root_fb, function(fb, item_name, r_qualities)
+    sf.iterate(requester_items[requester], nil, root_fb, function(fb, item_name, r_qualities)
         local stack_size = prototypes.item[item_name].stack_size
 
-        cf.iterate(r_qualities, nil, fb, function(fb, item_quality, r_item_data)
+        sf.iterate(r_qualities, nil, fb, function(fb, item_quality, r_item_data)
             local p_quality_count = selected_provider_items[item_name]
 
             if not p_quality_count then
-                return cf.continue_and_yield
+                return sf.continue_and_yield
             end
 
             local p_item_data = p_quality_count[item_quality]
 
             if p_item_data == nil then
-                return cf.continue_and_yield
+                return sf.continue_and_yield
             end
 
             local minimum_amount = get_minimum_item_request_amount(item_name, r_item_data.count, request_mode)
 
             if p_item_data.count < minimum_amount then
-                return cf.continue_and_yield
+                return sf.continue_and_yield
             end
 
             if not root_fb.items[item_name] then
@@ -276,7 +276,7 @@ local function get_common_items(root_fb, requester, request_mode, requester_item
             if request_mode == mh.request_modes.full then
                 root_fb.items[item_name][item_quality] = minimum_amount
 
-                return cf.continue_and_yield
+                return sf.continue_and_yield
             end
 
             local request_amount = math.min(r_item_data.count, p_item_data.count)
@@ -291,11 +291,11 @@ local function get_common_items(root_fb, requester, request_mode, requester_item
 
             root_fb.items[item_name][item_quality] = request_amount
 
-            return cf.continue_and_yield
+            return sf.continue_and_yield
         end)
     end)
 
-    return cf.complete, root_fb.items
+    return sf.complete, root_fb.items
 end
 
 local function transfer_items_in_buffer(surface_buffer, provider, requester, items)
@@ -349,7 +349,7 @@ function item_requests.create_surface_buffer()
         -- index, { priority, requester }
         sorted_requesters = {},
 
-        frame_buffer = cf.create_buffer()
+        frame_buffer = sf.create_buffer()
     }
 end
 
@@ -372,16 +372,16 @@ function item_requests.add_items_to_requester(mooring, mooring_items, item_moori
 end
 
 function item_requests.get_next_item_request(frame_buffer, surface_buffer, heuristic_target_count_cost)
-    if cf.iterate(surface_buffer.sorted_requesters, nil, frame_buffer, function(root_fb, requester_key, requester_data)
+    if sf.iterate(surface_buffer.sorted_requesters, nil, frame_buffer, function(root_fb, requester_key, requester_data)
         local requester = requester_data.requester
 
         if not requester.valid then
-            return cf.continue_and_yield
+            return sf.continue_and_yield
         end
 
         if root_fb.step == nil then
             if th.is_at_drone_limit(requester) then
-                return cf.continue_and_yield
+                return sf.continue_and_yield
             end
 
             root_fb.step = 1
@@ -390,8 +390,8 @@ function item_requests.get_next_item_request(frame_buffer, surface_buffer, heuri
             root_fb.requester_items = surface_buffer.requester_items[requester]
         end
 
-        if cf.iterate(root_fb.requester_items, nil, root_fb, function(fb, item_name, qualities)
-            if qualities and cf.iterate(qualities, nil, fb, function(fb, item_quality, item_data)
+        if sf.iterate(root_fb.requester_items, nil, root_fb, function(fb, item_name, qualities)
+            if qualities and sf.iterate(qualities, nil, fb, function(fb, item_quality, item_data)
                 if fb.step == nil then
                     fb.step = 1
                     fb.minimum_req_amount = 1
@@ -405,48 +405,48 @@ function item_requests.get_next_item_request(frame_buffer, surface_buffer, heuri
 
                 if fb.step == 1 then
                     if item_data.count < fb.minimum_req_amount then
-                        return cf.continue_and_yield
+                        return sf.continue_and_yield
                     end
 
                     if fb.minimum_amount == nil then
                         fb.minimum_amount = get_minimum_item_request_amount(item_name, item_data.count, root_fb.request_mode)
                     end
 
-                    if cf.call(fb, get_closest_provider, requester, item_name, item_quality, fb.minimum_amount, surface_buffer.item_provider_lookup, heuristic_target_count_cost) then
-                        return cf.status, cf.ret_val
+                    if sf.call(fb, get_closest_provider, requester, item_name, item_quality, fb.minimum_amount, surface_buffer.item_provider_lookup, heuristic_target_count_cost) then
+                        return sf.status, sf.ret_val
                     end
 
-                    fb.provider = cf.ret_val
+                    fb.provider = sf.ret_val
 
                     if not fb.provider then
-                        return cf.continue_and_yield
+                        return sf.continue_and_yield
                     end
 
                     fb.step = 2
                 end
 
-                if cf.call(fb, get_common_items, requester, root_fb.request_mode, surface_buffer.requester_items, surface_buffer.provider_items[fb.provider]) then
-                    return cf.status, cf.ret_val
+                if sf.call(fb, get_common_items, requester, root_fb.request_mode, surface_buffer.requester_items, surface_buffer.provider_items[fb.provider]) then
+                    return sf.status, sf.ret_val
                 end
 
                 local request = {}
 
                 request.requester = requester
                 request.provider = fb.provider
-                request.items = cf.ret_val
+                request.items = sf.ret_val
 
-                return cf.complete, request
+                return sf.complete, request
             end) then
-                return cf.status, cf.ret_val
+                return sf.status, sf.ret_val
             end
         end) then
-            return cf.status, cf.ret_val
+            return sf.status, sf.ret_val
         end
     end) then
-        return cf.status, cf.ret_val
+        return sf.status, sf.ret_val
     end
 
-    return cf.complete, nil
+    return sf.complete, nil
 end
 
 function item_requests.assign_to_request_with_items(surface_buffer, drone)
