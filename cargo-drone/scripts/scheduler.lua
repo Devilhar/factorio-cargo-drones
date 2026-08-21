@@ -46,26 +46,10 @@ local function try_create_and_get_surface_buffer(surface_index)
     return storage.scheduler.surface_buffer[surface_index]
 end
 
-local function get_closest_drone_to_mooring(drones, mooring)
-    local closest_index = nil
-    local closest_distance = constants.max_distance
-
-    for i, drone in ipairs(drones) do
-        if drone.valid then
-            local distance = util.distance(drone.position, mooring.position)
-
-            if distance < closest_distance then
-                closest_index = i
-                closest_distance = distance
-            end
-        end
-    end
-
-    return closest_index
-end
-
 local function begin_frame()
     storage.scheduler.update_stage = 0
+
+    storage.scheduler.frame_buffer = sf.create_buffer()
 
     storage.scheduler.should_perform_mooring_scan =
         (settings.global["cargo-drone-mooring-no-wire-connection-alert"].value
@@ -271,59 +255,76 @@ local function assign_task_to_drone_with_cargo()
 
     return false
 end
+
 local function process_next_item_request(heuristic_target_count_cost)
-    if storage.scheduler.key_surface == nil then
-        storage.scheduler.key_surface = next(storage.scheduler.idling_cargo_drones_empty, storage.scheduler.key_surface)
-
-        if storage.scheduler.key_surface == nil then
-            return true
+    return not sf.iterate(storage.scheduler.idling_cargo_drones_empty, nil, storage.scheduler.frame_buffer, function(fb, surface_index, drones)
+        if not next(drones) then
+            return sf.continue_and_yield
         end
-    end
 
-    local drones = storage.scheduler.idling_cargo_drones_empty[storage.scheduler.key_surface]
+        return sf.sequence(fb, {
+            function()
+                fb.surface_buffer = storage.scheduler.surface_buffer[surface_index]
 
-    if next(drones) == nil then
-        storage.scheduler.key_surface = next(storage.scheduler.idling_cargo_drones_empty, storage.scheduler.key_surface)
+                if not fb.surface_buffer then
+                    return true, sf.continue_and_yield
+                end
+            end,
+            sf.sequence_call(fb, ir.get_next_item_request, function() return fb.surface_buffer, heuristic_target_count_cost end),
+            function()
+                fb.item_request = sf.ret_val
 
-        return storage.scheduler.key_surface == nil
-    end
+                if not fb.item_request then
+                    return true, sf.continue_and_yield
+                end
 
-    local surface_buffer = storage.scheduler.surface_buffer[storage.scheduler.key_surface]
+                fb.mooring = fb.item_request.provider
+                fb.closest_index = nil
+                fb.closest_distance = constants.max_distance
+            end,
+            sf.sequence_iterator(function() return drones, nil end, fb, function(_, i, drone)
+                if not fb.mooring.valid then
+                    return sf.continue_and_yield
+                end
 
-    if not surface_buffer then
-        storage.scheduler.key_surface = next(storage.scheduler.idling_cargo_drones_empty, storage.scheduler.key_surface)
+                if drone.valid then
+                    local distance = util.distance(drone.position, fb.mooring.position)
 
-        return storage.scheduler.key_surface == nil
-    end
+                    if distance < fb.closest_distance then
+                        fb.closest_index = i
+                        fb.closest_distance = distance
+                    end
+                end
 
-    local _, item_request = sf.call(surface_buffer.frame_buffer, ir.get_next_item_request, surface_buffer, heuristic_target_count_cost)
+                return sf.continue_and_yield
+            end),
+            function()
+                if fb.closest_index == nil then
+                    return true, sf.continue_and_yield
+                end
 
-    if sf.status ~= sf.complete then
-        return false
-    end
+                local drone = drones[fb.closest_index]
 
-    if not item_request then
-        storage.scheduler.key_surface = next(storage.scheduler.idling_cargo_drones_empty, storage.scheduler.key_surface)
+                table.remove(drones, fb.closest_index)
 
-        return storage.scheduler.key_surface == nil
-    end
+                if not drone.valid then
+                    fb.sequence_step = 4
+                    fb.iterate_set = nil
+                    fb.closest_index = nil
+                    fb.closest_distance = constants.max_distance
+                    return true, sf.yield
+                end
 
-    local closest_index = get_closest_drone_to_mooring(drones, item_request.provider)
+                ir.assign_item_request(fb.surface_buffer, drone, fb.item_request)
+                dc.interrupt_drone(drone)
 
-    if closest_index == nil then
-        storage.scheduler.key_surface = next(storage.scheduler.idling_cargo_drones_empty, storage.scheduler.key_surface)
+                fb.sequence_step = 2
+                fb.iterate_set = nil
 
-        return storage.scheduler.key_surface == nil
-    end
-
-    local drone = drones[closest_index]
-
-    table.remove(drones, closest_index)
-
-    ir.assign_item_request(surface_buffer, drone, item_request)
-    dc.interrupt_drone(drone)
-
-    return false
+                return true, sf.yield
+            end,
+        })
+    end)
 end
 
 local function assign_depot_task()

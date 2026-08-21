@@ -348,8 +348,6 @@ function item_requests.create_surface_buffer()
         requester_items = {},
         -- index, { priority, requester }
         sorted_requesters = {},
-
-        frame_buffer = sf.create_buffer()
     }
 end
 
@@ -379,69 +377,59 @@ function item_requests.get_next_item_request(frame_buffer, surface_buffer, heuri
             return sf.continue_and_yield
         end
 
-        if root_fb.step == nil then
-            if th.is_at_drone_limit(requester) then
-                return sf.continue_and_yield
-            end
-
-            root_fb.step = 1
-
-            root_fb.request_mode = mh.get_request_mode(requester)
-            root_fb.requester_items = surface_buffer.requester_items[requester]
+        if th.is_at_drone_limit(requester) then
+            return sf.continue_and_yield
         end
 
-        if sf.iterate(root_fb.requester_items, nil, root_fb, function(fb, item_name, qualities)
-            if qualities and sf.iterate(qualities, nil, fb, function(fb, item_quality, item_data)
-                if fb.step == nil then
-                    fb.step = 1
-                    fb.minimum_req_amount = 1
+        return sf.sequence(root_fb, {
+            function ()
+                root_fb.request_mode = mh.get_request_mode(requester)
+                root_fb.requester_items = surface_buffer.requester_items[requester]
+            end,
+            sf.sequence_iterator(function() return root_fb.requester_items, nil end, root_fb, function(fb, item_name, qualities)
+                if qualities and sf.iterate(qualities, nil, fb, function(fb, item_quality, item_data)
+                    return sf.sequence(fb, {
+                        function ()
+                            fb.minimum_req_amount = 1
 
-                    if root_fb.request_mode == mh.request_modes.full then
-                        local stack_size = prototypes.item[item_name].stack_size
+                            if root_fb.request_mode == mh.request_modes.full then
+                                local stack_size = prototypes.item[item_name].stack_size
 
-                        fb.minimum_req_amount = constants.drone_trunk_size * stack_size
-                    end
-                end
+                                fb.minimum_req_amount = constants.drone_trunk_size * stack_size
+                            end
 
-                if fb.step == 1 then
-                    if item_data.count < fb.minimum_req_amount then
-                        return sf.continue_and_yield
-                    end
+                            if item_data.count < fb.minimum_req_amount then
+                                return true, sf.continue_and_yield
+                            end
 
-                    if fb.minimum_amount == nil then
-                        fb.minimum_amount = get_minimum_item_request_amount(item_name, item_data.count, root_fb.request_mode)
-                    end
+                            if fb.minimum_amount == nil then
+                                fb.minimum_amount = get_minimum_item_request_amount(item_name, item_data.count, root_fb.request_mode)
+                            end
+                        end,
+                        sf.sequence_call(fb, get_closest_provider, function() return requester, item_name, item_quality, fb.minimum_amount, surface_buffer.item_provider_lookup, heuristic_target_count_cost end),
+                        function ()
+                            fb.provider = sf.ret_val
 
-                    if sf.call(fb, get_closest_provider, requester, item_name, item_quality, fb.minimum_amount, surface_buffer.item_provider_lookup, heuristic_target_count_cost) then
-                        return sf.status, sf.ret_val
-                    end
+                            if not fb.provider then
+                                return true, sf.continue_and_yield
+                            end
+                        end,
+                        sf.sequence_call(fb, get_common_items, function() return requester, root_fb.request_mode, surface_buffer.requester_items, surface_buffer.provider_items[fb.provider] end),
+                        function ()
+                            local request = {}
 
-                    fb.provider = sf.ret_val
+                            request.requester = requester
+                            request.provider = fb.provider
+                            request.items = sf.ret_val
 
-                    if not fb.provider then
-                        return sf.continue_and_yield
-                    end
-
-                    fb.step = 2
-                end
-
-                if sf.call(fb, get_common_items, requester, root_fb.request_mode, surface_buffer.requester_items, surface_buffer.provider_items[fb.provider]) then
+                            return true, sf.complete, request
+                        end
+                    })
+                end) then
                     return sf.status, sf.ret_val
                 end
-
-                local request = {}
-
-                request.requester = requester
-                request.provider = fb.provider
-                request.items = sf.ret_val
-
-                return sf.complete, request
-            end) then
-                return sf.status, sf.ret_val
-            end
-        end) then
-            return sf.status, sf.ret_val
-        end
+            end),
+        })
     end) then
         return sf.status, sf.ret_val
     end
