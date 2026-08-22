@@ -345,6 +345,26 @@ local function assign_task_to_drone_with_cargo()
     return false
 end
 
+local function sort_into_quad_list(quad_list, quad, pos_x, pos_y, distance)
+    for i = 1, 4 do
+        if distance < quad_list[i].d then
+            for j = 4, i + 1, -1 do
+                quad_list[j].q = quad_list[j - 1].q
+                quad_list[j].d = quad_list[j - 1].d
+                quad_list[j].x = quad_list[j - 1].x
+                quad_list[j].y = quad_list[j - 1].y
+            end
+
+            quad_list[i].q = quad
+            quad_list[i].d = distance
+            quad_list[i].x = pos_x
+            quad_list[i].y = pos_y
+
+            return
+        end
+    end
+end
+
 local function process_next_item_request(heuristic_target_count_cost)
     return not sf.iterate(storage.scheduler.idling_cargo_drones_empty, nil, storage.scheduler.frame_buffer, function(top_fb, surface_index, drones)
         -- FIXME: drones is currently not changed
@@ -372,62 +392,76 @@ local function process_next_item_request(heuristic_target_count_cost)
                 top_fb.closest_quad = nil
                 top_fb.closest_distance = constants.max_distance
             end,
+            function()
+                top_fb.current_depth = 1
+                top_fb.depth_size = storage.scheduler.idling_cargo_drones_quadtree[surface_index].size
+                top_fb.closest_quads = {
+                    { d = constants.max_distance },
+                    { d = constants.max_distance },
+                    { d = constants.max_distance },
+                    { d = constants.max_distance },
+                }
+            end,
             sf.sequence_iterator(function() return storage.scheduler.idling_cargo_drones_quadtree[surface_index].quadtrees, nil end, top_fb, function(fb, grid_x, quads_x)
-                if not top_fb.item_request.provider.valid then
-                    return sf.continue_and_yield
-                end
-
-                local grid_size = storage.scheduler.idling_cargo_drones_quadtree[surface_index].size
-                local grid_depth = storage.scheduler.idling_cargo_drones_quadtree[surface_index].depth
-
-                local provider_pos = top_fb.item_request.provider.position
-                local find_closest_in_quad = nil
-
-                find_closest_in_quad = function(quad, pos_x, pos_y, size, current_depth)
-                    local child_size = size / 2
-
-                    local closest_quad = nil
-                    local closest_distance = constants.max_distance
-                    local closest_x = 0
-                    local closest_y = 0
-
-                    for i, child in pairs(quad) do
-                        local x = pos_x + ((i - 1) % 2) * child_size
-                        local y = pos_y + math.floor((i - 1) / 2) * child_size
-
-                        local distance = util.distance(provider_pos, { x + child_size / 2, y + child_size / 2 })
-
-                        if distance < closest_distance then
-                            closest_distance = distance
-                            closest_quad = child
-                            closest_x = x
-                            closest_y = y
-                        end
-                    end
-
-                    if current_depth == grid_depth then
-                        return closest_quad, closest_distance
-                    end
-
-                    ---@diagnostic disable-next-line: need-check-nil
-                    return find_closest_in_quad(closest_quad, closest_x, closest_y, child_size, current_depth + 1)
-                end
-
                 if sf.iterate(quads_x, nil, fb, function(_, grid_y, quad)
-                    local bottom_quad, distance = find_closest_in_quad(quad, grid_x * grid_size, grid_y * grid_size, grid_size, 1)
+                    local provider_pos = top_fb.item_request.provider.position
+                    local grid_size = top_fb.depth_size
 
-                    if distance < top_fb.closest_distance then
-                        top_fb.closest_quad = bottom_quad
-                        top_fb.closest_distance = distance
-                    end
+                    local pos_x = grid_x * grid_size
+                    local pos_y = grid_y * grid_size
+
+                    sort_into_quad_list(top_fb.closest_quads, quad, pos_x, pos_y, util.distance(provider_pos, { pos_x + grid_size / 2, pos_y + grid_size / 2 }))
 
                     return sf.continue_and_yield
                 end) then
                     return sf.status, sf.ret_val
                 end
+            end),
+            function()
+                top_fb.current_depth = top_fb.current_depth + 1
+                top_fb.depth_size = top_fb.depth_size / 2
+                top_fb.prev_quads = top_fb.closest_quads
+
+                top_fb.closest_quads = {
+                    { d = constants.max_distance },
+                    { d = constants.max_distance },
+                    { d = constants.max_distance },
+                    { d = constants.max_distance },
+                }
+            end,
+            sf.sequence_iterator(function() return top_fb.prev_quads, nil end, top_fb, function(_, _, entry)
+                if not entry.q then
+                    return
+                end
+
+                for x = 0, 1 do
+                    for y = 0, 1 do
+                        local index = y * 2 + x + 1
+
+                        if entry.q[index] then
+                            local provider_pos = top_fb.item_request.provider.position
+                            local quad_size = top_fb.depth_size
+
+                            local pos_x = entry.x + quad_size * x
+                            local pos_y = entry.y + quad_size * y
+
+                            sort_into_quad_list(top_fb.closest_quads, entry.q[index], pos_x, pos_y, util.distance(provider_pos, { pos_x + quad_size / 2, pos_y + quad_size / 2 }))
+                        end
+                    end
+                end
 
                 return sf.continue_and_yield
             end),
+            function()
+                if top_fb.current_depth <= storage.scheduler.idling_cargo_drones_quadtree[surface_index].depth then
+                    top_fb.sequence_step = 6
+
+                    return true, sf.yield -- FIXME: Should not yield. But stack_frame currently don't support changing step without breaking
+                end
+
+                -- FIXME: Final search does not need a list
+                top_fb.closest_quad = top_fb.closest_quads[1].q
+            end,
             function()
                 if top_fb.closest_quad == nil then
                     return true, sf.continue_and_yield
