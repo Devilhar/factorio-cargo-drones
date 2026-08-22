@@ -77,6 +77,9 @@ function stack_frame.sequence(frame_buffer, funcs)
         if should_break then
             return status, ret_val
         end
+
+        frame_buffer.iterate_set = nil
+        frame_buffer.iterate_key = nil
     end
 end
 

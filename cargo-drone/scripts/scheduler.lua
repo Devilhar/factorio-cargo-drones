@@ -38,6 +38,90 @@ local states = {
     wait_for_next_interval          = 9,
 }
 
+local function create_quadtree_grid(size, depth)
+    return {
+        size = size,
+        depth = depth,
+        quadtrees = {},
+    }
+end
+local function add_to_quadtree_grid(grid, position, key, element)
+    local grid_x = math.floor(position.x / grid.size)
+    local grid_y = math.floor(position.y / grid.size)
+
+    if not grid.quadtrees[grid_x] then
+        grid.quadtrees[grid_x] = {}
+    end
+
+    if not grid.quadtrees[grid_x][grid_y] then
+        grid.quadtrees[grid_x][grid_y] = {}
+    end
+
+    local quad = grid.quadtrees[grid_x][grid_y]
+
+    local pos_x = position.x - grid_x * grid.size
+    local pos_y = position.y - grid_y * grid.size
+    local size = grid.size
+
+    for _ = 1, grid.depth do
+        size = size / 2
+
+        local index = math.floor(pos_y / size) * 2 + math.floor(pos_x / size) + 1
+
+        pos_x = pos_x - math.floor(pos_x / size) * size
+        pos_y = pos_y - math.floor(pos_y / size) * size
+
+        if not quad[index] then
+            quad[index] = {}
+        end
+
+        quad = quad[index]
+    end
+
+    quad[key] = { position = position , element = element }
+end
+local function remove_from_quadtree_grid(grid, position, key)
+    local grid_x = math.floor(position.x / grid.size)
+    local grid_y = math.floor(position.y / grid.size)
+
+    if not grid.quadtrees[grid_x] or not grid.quadtrees[grid_x][grid_y] then
+        return
+    end
+
+    local function remove(quad, size, remaining, pos_x, pos_y)
+        size = size / 2
+
+        local index = math.floor(pos_y / size) * 2 + math.floor(pos_x / size) + 1
+
+        if not quad[index] then
+            return
+        end
+
+        if remaining > 1 then
+            pos_x = pos_x - math.floor(pos_x / size) * size
+            pos_y = pos_y - math.floor(pos_y / size) * size
+
+            remove(quad[index], size, remaining - 1, pos_x, pos_y)
+        else
+            quad[index][key] = nil
+        end
+
+        if not next(quad[index]) then
+            quad[index] = nil
+        end
+    end
+
+    local pos_x = position.x - grid_x * grid.size
+    local pos_y = position.y - grid_y * grid.size
+    local size = grid.size
+
+    remove(grid.quadtrees[grid_x][grid_y], size, grid.depth, pos_x, pos_y)
+
+    if not next(grid.quadtrees[grid_x][grid_y]) then
+        grid.quadtrees[grid_x][grid_y] = nil
+    end
+end
+
 local function try_create_and_get_surface_buffer(surface_index)
     if not storage.scheduler.surface_buffer[surface_index] then
         storage.scheduler.surface_buffer[surface_index] = ir.create_surface_buffer()
@@ -59,6 +143,7 @@ local function begin_frame()
     storage.scheduler.idling_cargo_drones = {}
     storage.scheduler.idling_cargo_drones_empty = {}
     storage.scheduler.idling_cargo_drones_with_cargo = {}
+    storage.scheduler.idling_cargo_drones_quadtree = {}
 
     storage.scheduler.surface_buffer = {}
     storage.scheduler.provider_buffer = {}
@@ -167,8 +252,12 @@ local function sort_idle_drone()
         if not storage.scheduler.idling_cargo_drones_empty[storage.scheduler.key_surface] then
             storage.scheduler.idling_cargo_drones_empty[storage.scheduler.key_surface] = {}
         end
+        if not storage.scheduler.idling_cargo_drones_quadtree[storage.scheduler.key_surface] then
+            storage.scheduler.idling_cargo_drones_quadtree[storage.scheduler.key_surface] = create_quadtree_grid(32 * 2^5, 5)
+        end
 
-        table.insert(storage.scheduler.idling_cargo_drones_empty[storage.scheduler.key_surface], drone)
+        storage.scheduler.idling_cargo_drones_empty[storage.scheduler.key_surface][drone.unit_number] = { drone = drone, position = drone.position }
+        add_to_quadtree_grid(storage.scheduler.idling_cargo_drones_quadtree[storage.scheduler.key_surface], drone.position, drone.unit_number, drone)
     else
         if not storage.scheduler.idling_cargo_drones_with_cargo[storage.scheduler.key_surface] then
             storage.scheduler.idling_cargo_drones_with_cargo[storage.scheduler.key_surface] = {}
@@ -257,69 +346,118 @@ local function assign_task_to_drone_with_cargo()
 end
 
 local function process_next_item_request(heuristic_target_count_cost)
-    return not sf.iterate(storage.scheduler.idling_cargo_drones_empty, nil, storage.scheduler.frame_buffer, function(fb, surface_index, drones)
+    return not sf.iterate(storage.scheduler.idling_cargo_drones_empty, nil, storage.scheduler.frame_buffer, function(top_fb, surface_index, drones)
+        -- FIXME: drones is currently not changed
         if not next(drones) then
             return sf.continue_and_yield
         end
 
-        return sf.sequence(fb, {
+        return sf.sequence(top_fb, {
             function()
-                fb.surface_buffer = storage.scheduler.surface_buffer[surface_index]
+                top_fb.surface_buffer = storage.scheduler.surface_buffer[surface_index]
 
-                if not fb.surface_buffer then
+                if not top_fb.surface_buffer then
                     return true, sf.continue_and_yield
                 end
             end,
-            sf.sequence_call(fb, ir.get_next_item_request, function() return fb.surface_buffer, heuristic_target_count_cost end),
+            sf.sequence_call(top_fb, ir.get_next_item_request, function() return top_fb.surface_buffer, heuristic_target_count_cost end),
             function()
-                fb.item_request = sf.ret_val
+                top_fb.item_request = sf.ret_val
 
-                if not fb.item_request then
+                if not top_fb.item_request then
                     return true, sf.continue_and_yield
                 end
 
-                fb.mooring = fb.item_request.provider
-                fb.closest_index = nil
-                fb.closest_distance = constants.max_distance
+                top_fb.mooring = top_fb.item_request.provider
+                top_fb.closest_quad = nil
+                top_fb.closest_distance = constants.max_distance
             end,
-            sf.sequence_iterator(function() return drones, nil end, fb, function(_, i, drone)
-                if not fb.mooring.valid then
+            sf.sequence_iterator(function() return storage.scheduler.idling_cargo_drones_quadtree[surface_index].quadtrees, nil end, top_fb, function(fb, grid_x, quads_x)
+                if not top_fb.item_request.provider.valid then
                     return sf.continue_and_yield
                 end
 
-                if drone.valid then
-                    local distance = util.distance(drone.position, fb.mooring.position)
+                local grid_size = storage.scheduler.idling_cargo_drones_quadtree[surface_index].size
+                local grid_depth = storage.scheduler.idling_cargo_drones_quadtree[surface_index].depth
 
-                    if distance < fb.closest_distance then
-                        fb.closest_index = i
-                        fb.closest_distance = distance
+                local provider_pos = top_fb.item_request.provider.position
+                local find_closest_in_quad = nil
+
+                find_closest_in_quad = function(quad, pos_x, pos_y, size, current_depth)
+                    local child_size = size / 2
+
+                    local closest_quad = nil
+                    local closest_distance = constants.max_distance
+                    local closest_x = 0
+                    local closest_y = 0
+
+                    for i, child in pairs(quad) do
+                        local x = pos_x + ((i - 1) % 2) * child_size
+                        local y = pos_y + math.floor((i - 1) / 2) * child_size
+
+                        local distance = util.distance(provider_pos, { x + child_size / 2, y + child_size / 2 })
+
+                        if distance < closest_distance then
+                            closest_distance = distance
+                            closest_quad = child
+                            closest_x = x
+                            closest_y = y
+                        end
                     end
+
+                    if current_depth == grid_depth then
+                        return closest_quad, closest_distance
+                    end
+
+                    ---@diagnostic disable-next-line: need-check-nil
+                    return find_closest_in_quad(closest_quad, closest_x, closest_y, child_size, current_depth + 1)
+                end
+
+                if sf.iterate(quads_x, nil, fb, function(_, grid_y, quad)
+                    local bottom_quad, distance = find_closest_in_quad(quad, grid_x * grid_size, grid_y * grid_size, grid_size, 1)
+
+                    if distance < top_fb.closest_distance then
+                        top_fb.closest_quad = bottom_quad
+                        top_fb.closest_distance = distance
+                    end
+
+                    return sf.continue_and_yield
+                end) then
+                    return sf.status, sf.ret_val
                 end
 
                 return sf.continue_and_yield
             end),
             function()
-                if fb.closest_index == nil then
+                if top_fb.closest_quad == nil then
                     return true, sf.continue_and_yield
                 end
 
-                local drone = drones[fb.closest_index]
+                local selected_entry = nil
 
-                table.remove(drones, fb.closest_index)
+                for _, entry in pairs(top_fb.closest_quad) do
+                    if entry.element.valid then
+                        selected_entry = entry
 
-                if not drone.valid then
-                    fb.sequence_step = 4
-                    fb.iterate_set = nil
-                    fb.closest_index = nil
-                    fb.closest_distance = constants.max_distance
+                        break
+                    end
+                end
+
+                -- FIXME: Drones were invalid, needs to be removed before continuing
+                if not selected_entry then
+                    top_fb.sequence_step = 4
+                    top_fb.closest_quad = nil
+                    top_fb.closest_distance = constants.max_distance
                     return true, sf.yield
                 end
 
-                ir.assign_item_request(fb.surface_buffer, drone, fb.item_request)
-                dc.interrupt_drone(drone)
+                drones[selected_entry.element.unit_number] = nil
+                remove_from_quadtree_grid(storage.scheduler.idling_cargo_drones_quadtree[surface_index], selected_entry.position, selected_entry.element.unit_number) -- FIXME: Drone may not be valid
 
-                fb.sequence_step = 2
-                fb.iterate_set = nil
+                ir.assign_item_request(top_fb.surface_buffer, selected_entry.element, top_fb.item_request)
+                dc.interrupt_drone(selected_entry.element)
+
+                top_fb.sequence_step = 2
 
                 return true, sf.yield
             end,
@@ -340,19 +478,19 @@ local function assign_depot_task()
         drones = storage.scheduler.idling_cargo_drones_empty[storage.scheduler.key_surface]
     end
 
-    local drone = nil
+    local entry = nil
 
-    storage.scheduler.key_drone, drone = next(drones, storage.scheduler.key_drone)
+    storage.scheduler.key_drone, entry = next(drones, storage.scheduler.key_drone)
 
-    if storage.scheduler.key_drone == nil or not drone.valid then
+    if storage.scheduler.key_drone == nil or not entry.drone.valid then
         return false
     end
 
-    if dt.get_current_drone_task_id(drone) ~= nil then
+    if dt.get_current_drone_task_id(entry.drone) ~= nil then
         return false
     end
 
-    local depots = deh.get_depots(drone.surface.index)
+    local depots = deh.get_depots(storage.scheduler.key_surface)
 
     if depots == nil then
         return false
@@ -376,7 +514,7 @@ local function assign_depot_task()
             local priority = th.get_priority(depot)
 
             if priority >= highest_priority then
-                local distance = util.distance(drone.position, depot.position)
+                local distance = util.distance(entry.drone.position, depot.position)
                 local drone_count = th.get_drone_count(depot)
 
                 if priority == highest_priority then
@@ -403,8 +541,8 @@ local function assign_depot_task()
         return false
     end
 
-    dt.assign_depot(drone, closest_depot)
-    dc.interrupt_drone(drone)
+    dt.assign_depot(entry.drone, closest_depot)
+    dc.interrupt_drone(entry.drone)
 
     return false
 end
@@ -426,6 +564,7 @@ function scheduler.init()
     storage.scheduler.idling_cargo_drones = storage.scheduler.idling_cargo_drones or {}
     storage.scheduler.idling_cargo_drones_empty = storage.scheduler.idling_cargo_drones_empty or {}
     storage.scheduler.idling_cargo_drones_with_cargo = storage.scheduler.idling_cargo_drones_with_cargo or {}
+    storage.scheduler.idling_cargo_drones_quadtree = storage.scheduler.idling_cargo_drones_quadtree or {}
 
     storage.scheduler.surface_buffer = storage.scheduler.surface_buffer or {}
     storage.scheduler.provider_buffer = storage.scheduler.provider_buffer or {}
