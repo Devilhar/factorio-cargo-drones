@@ -345,14 +345,22 @@ local function assign_task_to_drone_with_cargo()
     return false
 end
 
-local function sort_into_quad_list(quad_list, quad, pos_x, pos_y, distance)
+local function sort_into_quad_list(quad_list, quad, quad_size, pos_x, pos_y, distance)
+    if distance > quad_list[1].d + quad_size then
+        return
+    end
+
     for i = 1, 4 do
         if distance < quad_list[i].d then
             for j = 4, i + 1, -1 do
+                if quad_list[j - 1].d > quad_list[1].d + quad_size then
+                    quad_list[j].q = nil
+                else
                 quad_list[j].q = quad_list[j - 1].q
                 quad_list[j].d = quad_list[j - 1].d
                 quad_list[j].x = quad_list[j - 1].x
                 quad_list[j].y = quad_list[j - 1].y
+                end
             end
 
             quad_list[i].q = quad
@@ -410,7 +418,7 @@ local function process_next_item_request(heuristic_target_count_cost)
                     local pos_x = grid_x * grid_size
                     local pos_y = grid_y * grid_size
 
-                    sort_into_quad_list(top_fb.closest_quads, quad, pos_x, pos_y, util.distance(provider_pos, { pos_x + grid_size / 2, pos_y + grid_size / 2 }))
+                    sort_into_quad_list(top_fb.closest_quads, quad, grid_size, pos_x, pos_y, util.distance(provider_pos, { pos_x + grid_size / 2, pos_y + grid_size / 2 }))
 
                     return sf.continue_and_yield
                 end) then
@@ -445,7 +453,7 @@ local function process_next_item_request(heuristic_target_count_cost)
                             local pos_x = entry.x + quad_size * x
                             local pos_y = entry.y + quad_size * y
 
-                            sort_into_quad_list(top_fb.closest_quads, entry.q[index], pos_x, pos_y, util.distance(provider_pos, { pos_x + quad_size / 2, pos_y + quad_size / 2 }))
+                            sort_into_quad_list(top_fb.closest_quads, entry.q[index], quad_size, pos_x, pos_y, util.distance(provider_pos, { pos_x + quad_size / 2, pos_y + quad_size / 2 }))
                         end
                     end
                 end
