@@ -14,4 +14,5 @@ return {
     "Kriss",
     "Mister Furious",
     "xDarkZax",
+    "Sounder",
 }
