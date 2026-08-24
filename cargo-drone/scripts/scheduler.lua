@@ -375,8 +375,8 @@ end
 
 local function process_next_item_request(heuristic_target_count_cost)
     return not sf.iterate(storage.scheduler.idling_cargo_drones_empty, nil, storage.scheduler.frame_buffer, function(top_fb, surface_index, drones)
-        -- FIXME: drones is currently not changed
         if not next(drones) then
+            -- FIXME: Test
             return sf.continue_and_yield
         end
 
@@ -385,7 +385,8 @@ local function process_next_item_request(heuristic_target_count_cost)
                 top_fb.surface_buffer = storage.scheduler.surface_buffer[surface_index]
 
                 if not top_fb.surface_buffer then
-                    return true, sf.continue_and_yield
+                    -- FIXME: Test
+                    return sf.seq.break_and_rerun, sf.continue_and_yield
                 end
             end,
             sf.sequence_call(top_fb, ir.get_next_item_request, function() return top_fb.surface_buffer, heuristic_target_count_cost end),
@@ -393,7 +394,8 @@ local function process_next_item_request(heuristic_target_count_cost)
                 top_fb.item_request = sf.ret_val
 
                 if not top_fb.item_request then
-                    return true, sf.continue_and_yield
+                    -- FIXME: Test
+                    return sf.seq.break_and_rerun, sf.continue_and_yield
                 end
 
                 top_fb.mooring = top_fb.item_request.provider
@@ -462,9 +464,10 @@ local function process_next_item_request(heuristic_target_count_cost)
             end),
             function()
                 if top_fb.current_depth <= storage.scheduler.idling_cargo_drones_quadtree[surface_index].depth then
+                    -- FIXME: Test
                     top_fb.sequence_step = 6
 
-                    return true, sf.yield -- FIXME: Should not yield. But stack_frame currently don't support changing step without breaking
+                    return sf.seq.break_and_rerun, sf.yield -- FIXME: Should not yield. But stack_frame currently don't support changing step without breaking
                 end
 
                 -- FIXME: Final search does not need a list
@@ -472,36 +475,48 @@ local function process_next_item_request(heuristic_target_count_cost)
             end,
             function()
                 if top_fb.closest_quad == nil then
-                    return true, sf.continue_and_yield
+                    -- FIXME: Test
+                    return sf.seq.break_and_rerun, sf.continue_and_yield
                 end
-
-                local selected_entry = nil
 
                 for _, entry in pairs(top_fb.closest_quad) do
                     if entry.element.valid then
-                        selected_entry = entry
+                        top_fb.selected_entry = entry
 
                         break
                     end
                 end
 
-                -- FIXME: Drones were invalid, needs to be removed before continuing
-                if not selected_entry then
+                -- FIXME: Test
+                if not top_fb.selected_entry then
                     top_fb.sequence_step = 4
                     top_fb.closest_quad = nil
                     top_fb.closest_distance = constants.max_distance
-                    return true, sf.yield
+
+                    for _, entry in pairs(top_fb.closest_quad) do
+                        remove_from_quadtree_grid(storage.scheduler.idling_cargo_drones_quadtree[surface_index], entry.position, entry.element.unit_number)
+                    end
+
+                    return sf.seq.break_and_rerun, sf.yield
                 end
 
-                drones[selected_entry.element.unit_number] = nil
-                remove_from_quadtree_grid(storage.scheduler.idling_cargo_drones_quadtree[surface_index], selected_entry.position, selected_entry.element.unit_number) -- FIXME: Drone may not be valid
+                remove_from_quadtree_grid(storage.scheduler.idling_cargo_drones_quadtree[surface_index], top_fb.selected_entry.position, top_fb.selected_entry.element.unit_number)
 
-                ir.assign_item_request(top_fb.surface_buffer, selected_entry.element, top_fb.item_request)
-                dc.interrupt_drone(selected_entry.element)
+                return sf.seq.break_and_advance, sf.yield
+            end,
+            sf.sequence_call(top_fb, ir.assign_item_request, function() return top_fb.surface_buffer, top_fb.selected_entry.element, top_fb.item_request end),
+            function()
+                if not top_fb.selected_entry.element.valid then
+                    -- FIXME: Test
+                    return sf.seq.break_and_rerun, sf.continue_and_yield
+                end
 
+                dc.interrupt_drone(top_fb.selected_entry.element)
+
+                drones[top_fb.selected_entry.element.unit_number] = nil
                 top_fb.sequence_step = 2
 
-                return true, sf.yield
+                return sf.seq.break_and_rerun, sf.yield
             end,
         })
     end)

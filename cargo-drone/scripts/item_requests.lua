@@ -399,7 +399,7 @@ function item_requests.get_next_item_request(frame_buffer, surface_buffer, heuri
                             end
 
                             if item_data.count < fb.minimum_req_amount then
-                                return true, sf.continue_and_yield
+                                return sf.seq.break_and_rerun, sf.continue_and_yield
                             end
 
                             if fb.minimum_amount == nil then
@@ -411,7 +411,7 @@ function item_requests.get_next_item_request(frame_buffer, surface_buffer, heuri
                             fb.provider = sf.ret_val
 
                             if not fb.provider then
-                                return true, sf.continue_and_yield
+                                return sf.seq.break_and_rerun, sf.continue_and_yield
                             end
                         end,
                         sf.sequence_call(fb, get_common_items, function() return requester, root_fb.request_mode, surface_buffer.requester_items, surface_buffer.provider_items[fb.provider] end),
@@ -422,7 +422,7 @@ function item_requests.get_next_item_request(frame_buffer, surface_buffer, heuri
                             request.provider = fb.provider
                             request.items = sf.ret_val
 
-                            return true, sf.complete, request
+                            return sf.seq.break_and_rerun, sf.complete, request
                         end
                     })
                 end) then
@@ -493,54 +493,69 @@ function item_requests.assign_to_request_with_items(surface_buffer, drone)
     end
 end
 
-function item_requests.assign_item_request(surface_buffer, drone, item_request)
-	local inventory = drone.get_inventory(defines.inventory.car_trunk)
-
-	local slot_count = constants.drone_trunk_size
-	local items_to_fetch = {}
-	local inventory_filters = {}
-
-	local slot_index = 1
-
-	local item_name, quality_count = next(item_request.items)
-	local item_quality, count = nil, 0
-
-	if quality_count then
-		item_quality, count = next(quality_count)
-	end
-
-	while item_name ~= nil and slot_index <= slot_count do
-		local added = 0
-		local stack_size = prototypes.item[item_name].stack_size
-
-		while count > 0 and slot_index <= slot_count do
-			inventory_filters[slot_index] = { name = item_name, quality = item_quality }
-            inventory.set_filter(slot_index, { name = item_name, quality = item_quality })
-			added = added + math.min(count, stack_size)
-
-			count = count - stack_size
-			slot_index = slot_index + 1
-		end
-
-		table.insert(items_to_fetch, { name = item_name, quality = item_quality, count = added })
-
-		item_quality, count = next(quality_count, item_quality)
-
-		if item_quality == nil then
-			item_name, quality_count = next(item_request.items, item_name)
-
-			if quality_count ~= nil then
-				item_quality, count = next(quality_count)
-			end
-		end
-	end
-
-    for i = slot_index, slot_count do
-        inventory.set_filter(i, { name = "red-wire", quality = "normal" })
+function item_requests.assign_item_request(frame_buffer, surface_buffer, drone, item_request)
+    if not drone.valid then
+        -- FIXME: Test
+        return sf.continue_and_yield
     end
 
-	transfer_items_in_buffer(surface_buffer, item_request.provider, item_request.requester, items_to_fetch)
-	dt.assign_cargo(drone, item_request.provider, item_request.requester, items_to_fetch, inventory_filters)
+    return sf.sequence(frame_buffer, {
+        function()
+            local inventory = drone.get_inventory(defines.inventory.car_trunk)
+
+            local slot_count = constants.drone_trunk_size
+            frame_buffer.items_to_fetch = {}
+            frame_buffer.inventory_filters = {}
+
+            local slot_index = 1
+
+            local item_name, quality_count = next(item_request.items)
+            local item_quality, count = nil, 0
+
+            if quality_count then
+                item_quality, count = next(quality_count)
+            end
+
+            while item_name ~= nil and slot_index <= slot_count do
+                local added = 0
+                local stack_size = prototypes.item[item_name].stack_size
+
+                while count > 0 and slot_index <= slot_count do
+                    frame_buffer.inventory_filters[slot_index] = { name = item_name, quality = item_quality }
+                    inventory.set_filter(slot_index, { name = item_name, quality = item_quality })
+                    added = added + math.min(count, stack_size)
+
+                    count = count - stack_size
+                    slot_index = slot_index + 1
+                end
+
+                table.insert(frame_buffer.items_to_fetch, { name = item_name, quality = item_quality, count = added })
+
+                item_quality, count = next(quality_count, item_quality)
+
+                if item_quality == nil then
+                    item_name, quality_count = next(item_request.items, item_name)
+
+                    if quality_count ~= nil then
+                        item_quality, count = next(quality_count)
+                    end
+                end
+            end
+
+            for i = slot_index, slot_count do
+                inventory.set_filter(i, { name = "red-wire", quality = "normal" })
+            end
+
+            transfer_items_in_buffer(surface_buffer, item_request.provider, item_request.requester, frame_buffer.items_to_fetch)
+
+            return sf.seq.break_and_advance, sf.yield
+        end,
+        function()
+            dt.assign_cargo(drone, item_request.provider, item_request.requester, frame_buffer.items_to_fetch, frame_buffer.inventory_filters)
+
+            return sf.seq.break_and_advance, sf.yield
+        end,
+    })
 end
 
 return item_requests

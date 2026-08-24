@@ -5,6 +5,12 @@ stack_frame.yield = {}
 stack_frame.complete = {}
 stack_frame.continue_and_yield = {}
 
+stack_frame.seq = {
+    advance = {},
+    break_and_rerun = {},
+    break_and_advance = {},
+}
+
 stack_frame.status = stack_frame.yield
 stack_frame.ret_val = nil
 
@@ -72,9 +78,15 @@ function stack_frame.sequence(frame_buffer, funcs)
     for i = frame_buffer.sequence_step, #funcs do
         frame_buffer.sequence_step = i
 
-        local should_break, status, ret_val = funcs[i]()
+        local seq_status, status, ret_val = funcs[i]()
 
-        if should_break then
+        if seq_status == stack_frame.seq.break_and_advance then
+            frame_buffer.iterate_set = nil
+            frame_buffer.iterate_key = nil
+            frame_buffer.sequence_step = i + 1
+        end
+
+        if seq_status == stack_frame.seq.break_and_rerun or seq_status == stack_frame.seq.break_and_advance then
             return status, ret_val
         end
 
@@ -88,14 +100,14 @@ function stack_frame.sequence_iterator(list_and_key_getter, frame_buffer, func)
         local list, key = list_and_key_getter()
 
         if stack_frame.iterate(list, key, frame_buffer, func) then
-            return true, stack_frame.status, stack_frame.ret_val
+            return stack_frame.seq.break_and_rerun, stack_frame.status, stack_frame.ret_val
         end
     end
 end
 function stack_frame.sequence_call(frame_buffer, func, args_getter)
     return function()
         if stack_frame.call(frame_buffer, func, args_getter()) then
-            return true, stack_frame.status, stack_frame.ret_val
+            return stack_frame.seq.break_and_rerun, stack_frame.status, stack_frame.ret_val
         end
     end
 end
