@@ -399,8 +399,6 @@ local function process_next_item_request(heuristic_target_count_cost)
                 end
 
                 top_fb.mooring = top_fb.item_request.provider
-                top_fb.closest_quad = nil
-                top_fb.closest_distance = constants.max_distance
             end,
             function()
                 top_fb.current_depth = 1
@@ -463,18 +461,44 @@ local function process_next_item_request(heuristic_target_count_cost)
                 return sf.continue_and_yield
             end),
             function()
-                if top_fb.current_depth <= storage.scheduler.idling_cargo_drones_quadtree[surface_index].depth then
+                if top_fb.current_depth < storage.scheduler.idling_cargo_drones_quadtree[surface_index].depth then
                     -- FIXME: Test
-                    top_fb.sequence_step = 6
-
-                    return sf.seq.break_and_rerun, sf.yield -- FIXME: Should not yield. But stack_frame currently don't support changing step without breaking
+                    return sf.sequence_goto_step(6)
                 end
 
-                -- FIXME: Final search does not need a list
-                top_fb.closest_quad = top_fb.closest_quads[1].q
+                top_fb.closest_quad = nil
+                top_fb.closest_distance = constants.max_distance
             end,
+            sf.sequence_iterator(function() return top_fb.closest_quads, nil end, top_fb, function(_, _, entry)
+                if not entry.q then
+                    return
+                end
+
+                for x = 0, 1 do
+                    for y = 0, 1 do
+                        local index = y * 2 + x + 1
+
+                        if entry.q[index] then
+                            local provider_pos = top_fb.item_request.provider.position
+                            local quad_size = top_fb.depth_size
+
+                            local pos_x = entry.x + quad_size * x
+                            local pos_y = entry.y + quad_size * y
+
+                            local distance = util.distance(provider_pos, { pos_x + quad_size / 2, pos_y + quad_size / 2 })
+
+                            if distance < top_fb.closest_distance then
+                                top_fb.closest_quad = entry.q[index]
+                                top_fb.closest_distance = distance
+                            end
+                        end
+                    end
+                end
+
+                return sf.continue_and_yield
+            end),
             function()
-                if top_fb.closest_quad == nil then
+                if not top_fb.closest_quad then
                     -- FIXME: Test
                     return sf.seq.break_and_rerun, sf.continue_and_yield
                 end
@@ -489,15 +513,15 @@ local function process_next_item_request(heuristic_target_count_cost)
 
                 -- FIXME: Test
                 if not top_fb.selected_entry then
-                    top_fb.sequence_step = 4
-                    top_fb.closest_quad = nil
-                    top_fb.closest_distance = constants.max_distance
-
                     for _, entry in pairs(top_fb.closest_quad) do
                         remove_from_quadtree_grid(storage.scheduler.idling_cargo_drones_quadtree[surface_index], entry.position, entry.element.unit_number)
                     end
 
-                    return sf.seq.break_and_rerun, sf.yield
+                    top_fb.sequence_step = 4
+                    top_fb.closest_quad = nil
+                    top_fb.closest_distance = constants.max_distance
+
+                    return sf.sequence_goto_step_break(4, sf.yield)
                 end
 
                 remove_from_quadtree_grid(storage.scheduler.idling_cargo_drones_quadtree[surface_index], top_fb.selected_entry.position, top_fb.selected_entry.element.unit_number)
@@ -514,9 +538,8 @@ local function process_next_item_request(heuristic_target_count_cost)
                 dc.interrupt_drone(top_fb.selected_entry.element)
 
                 drones[top_fb.selected_entry.element.unit_number] = nil
-                top_fb.sequence_step = 2
 
-                return sf.seq.break_and_rerun, sf.yield
+                return sf.sequence_goto_step_break(2, sf.yield)
             end,
         })
     end)

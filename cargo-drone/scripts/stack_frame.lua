@@ -6,9 +6,14 @@ stack_frame.complete = {}
 stack_frame.continue_and_yield = {}
 
 stack_frame.seq = {
-    advance = {},
-    break_and_rerun = {},
-    break_and_advance = {},
+    advance = 1,
+    break_and_rerun = 2,
+    break_and_advance = 3,
+}
+
+local seq_set_step = {
+    rerun = 4,
+    stop = 5,
 }
 
 stack_frame.status = stack_frame.yield
@@ -75,24 +80,48 @@ function stack_frame.sequence(frame_buffer, funcs)
         frame_buffer.sequence_step = 1
     end
 
+    ::rerun::
+
     for i = frame_buffer.sequence_step, #funcs do
         frame_buffer.sequence_step = i
 
         local seq_status, status, ret_val = funcs[i]()
 
+        if seq_status == seq_set_step.rerun then
+            i = status
+            frame_buffer.sequence_step = status
+
+            goto rerun
+        end
+
+        if seq_status == seq_set_step.stop then
+            frame_buffer.sequence_step = status
+
+            -- status is step, offseting the return values
+            return ret_val
+        end
+
         if seq_status == stack_frame.seq.break_and_advance then
             frame_buffer.iterate_set = nil
             frame_buffer.iterate_key = nil
             frame_buffer.sequence_step = i + 1
+
+            return status, ret_val
         end
 
-        if seq_status == stack_frame.seq.break_and_rerun or seq_status == stack_frame.seq.break_and_advance then
+        if seq_status == stack_frame.seq.break_and_rerun then
             return status, ret_val
         end
 
         frame_buffer.iterate_set = nil
         frame_buffer.iterate_key = nil
     end
+end
+function stack_frame.sequence_goto_step(step)
+    return seq_set_step.rerun, step
+end
+function stack_frame.sequence_goto_step_break(step, status)
+    return seq_set_step.stop, step, status
 end
 
 function stack_frame.sequence_iterator(list_and_key_getter, frame_buffer, func)
