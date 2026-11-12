@@ -1,5 +1,6 @@
 return {
     "Assertores",
+    "Azruine",
     "Cameron",
     "Captain",
     "CaptFishmouth",
@@ -13,6 +14,6 @@ return {
     "Kessie",
     "Kriss",
     "Mister Furious",
-    "xDarkZax",
     "Sounder",
+    "xDarkZax",
 }
