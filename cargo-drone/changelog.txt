@@ -1,5 +1,6 @@
   Changes:
-    - Added Sounder to the list of default names.
+    - Update to make the 2.1 version the default when downloading.
+    - Added Azruine and Sounder to the list of default names.
 ---------------------------------------------------------------------------------------------------
 Version: 1.18.2
 Date: 20. 08. 2026
